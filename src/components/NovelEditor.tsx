@@ -46,27 +46,6 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
               class: "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
             },
           }}
-          slashCommand={{
-            suggestion: {
-              items: () => [
-                {
-                  title: "Continue writing",
-                  description: "Use AI to expand your thoughts.",
-                  icon: "✨",
-                },
-                {
-                  title: "Summarize",
-                  description: "Summarize your content so far.",
-                  icon: "📝",
-                },
-                {
-                  title: "Improve writing", 
-                  description: "Fix grammar and improve clarity.",
-                  icon: "👌",
-                },
-              ],
-            },
-          }}
         />
       </EditorRoot>
     </div>
