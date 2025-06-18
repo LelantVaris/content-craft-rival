@@ -447,36 +447,46 @@ const ArticleForm = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {steps.map(step => (
-                <div 
-                  key={step.number}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                    currentStep === step.number 
-                      ? 'bg-gradient-to-r from-purple-100 to-blue-100 border border-purple-200' 
-                      : currentStep > step.number
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-slate-50 hover:bg-slate-100'
-                  }`}
-                  onClick={() => setCurrentStep(step.number)}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep === step.number 
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white' 
-                      : currentStep > step.number
-                      ? 'bg-green-500 text-white'
-                      : 'bg-white border-2 border-slate-300 text-slate-600'
-                  }`}>
-                    {currentStep > step.number ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      step.number
-                    )}
+              {steps.map(step => {
+                const getStepClasses = () => {
+                  if (currentStep === step.number) {
+                    return 'bg-gradient-to-r from-purple-100 to-blue-100 border border-purple-200'
+                  } else if (currentStep > step.number) {
+                    return 'bg-green-50 border border-green-200'
+                  } else {
+                    return 'bg-slate-50 hover:bg-slate-100'
+                  }
+                }
+
+                const getIconClasses = () => {
+                  if (currentStep === step.number) {
+                    return 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                  } else if (currentStep > step.number) {
+                    return 'bg-green-500 text-white'
+                  } else {
+                    return 'bg-white border-2 border-slate-300 text-slate-600'
+                  }
+                }
+
+                return (
+                  <div 
+                    key={step.number}
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${getStepClasses()}`}
+                    onClick={() => setCurrentStep(step.number)}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${getIconClasses()}`}>
+                      {currentStep > step.number ? (
+                        <CheckCircle2 className="w-4 h-4" />
+                      ) : (
+                        step.number
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{step.title}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-medium text-sm">{step.title}</div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
