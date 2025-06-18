@@ -1,19 +1,16 @@
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { NovelEditor } from "@/components/NovelEditor"
 import { 
   Save, 
   Eye, 
   Share, 
-  MoreHorizontal,
   Target,
   TrendingUp,
-  Users,
   Clock,
   FileText,
   Lightbulb,
@@ -136,7 +133,7 @@ With the rise of smart speakers and voice assistants, optimizing for voice searc
             </CardContent>
           </Card>
 
-          {/* Content Editor */}
+          {/* Content Editor - Now using Novel */}
           <Card className="border-0 bg-white/80 backdrop-blur">
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -147,21 +144,21 @@ With the rise of smart speakers and voice assistants, optimizing for voice searc
                 </div>
               </div>
               <CardDescription>
-                Write your content here. The editor supports Markdown formatting.
+                Write your content here. Use "/" for AI commands and rich text formatting.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[600px] font-mono text-sm leading-relaxed"
-                placeholder="Start writing your article..."
+              <NovelEditor
+                content={content}
+                onChange={setContent}
+                className="min-h-[600px]"
               />
               
               {/* Editor Toolbar */}
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">Markdown</Badge>
+                  <Badge variant="outline">Rich Text</Badge>
+                  <Badge variant="outline">AI-Powered</Badge>
                   <Badge variant="outline">Auto-save enabled</Badge>
                 </div>
                 <Button variant="ghost" size="sm">
