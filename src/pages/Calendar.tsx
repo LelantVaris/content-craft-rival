@@ -1,287 +1,169 @@
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Filter } from "lucide-react"
-import { Link } from "react-router-dom"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
-const Calendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
+const mockEvents = [
+  { id: 1, title: "AI Content Strategy Blog", date: "2025-01-20", status: "published", type: "blog" },
+  { id: 2, title: "Social Media Campaign", date: "2025-01-22", status: "draft", type: "social" },
+  { id: 3, title: "Product Launch Article", date: "2025-01-25", status: "scheduled", type: "blog" },
+  { id: 4, title: "Newsletter Content", date: "2025-01-28", status: "draft", type: "newsletter" },
+];
 
-  // Mock data for calendar events
-  const events = [
-    {
-      id: 1,
-      title: "Publish: SEO Best Practices 2024",
-      date: new Date(2024, 11, 20),
-      type: "publish",
-      status: "scheduled"
-    },
-    {
-      id: 2,
-      title: "Review: AI Content Strategy",
-      date: new Date(2024, 11, 22),
-      type: "review",
-      status: "pending"
-    },
-    {
-      id: 3,
-      title: "Keyword Research: E-commerce",
-      date: new Date(2024, 11, 25),
-      type: "research",
-      status: "in-progress"
-    },
-    {
-      id: 4,
-      title: "Content Audit: Q4 Performance",
-      date: new Date(2024, 11, 28),
-      type: "audit",
-      status: "upcoming"
+export default function Calendar() {
+  const [currentDate] = useState(new Date());
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "published": return "bg-success text-success-foreground";
+      case "scheduled": return "bg-info text-info-foreground";
+      case "draft": return "bg-warning text-warning-foreground";
+      default: return "bg-secondary text-secondary-foreground";
     }
-  ]
+  };
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ]
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const daysInMonth = lastDay.getDate()
-    const startingDayOfWeek = firstDay.getDay()
-
-    const days = []
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null)
-    }
-    
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day))
-    }
-    
-    return days
-  }
-
-  const getEventsForDate = (date: Date | null) => {
-    if (!date) return []
-    return events.filter(event => 
-      event.date.toDateString() === date.toDateString()
-    )
-  }
-
-  const getEventTypeColor = (type: string) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'publish': return 'bg-green-100 text-green-800 border-green-200'
-      case 'review': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'research': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'audit': return 'bg-orange-100 text-orange-800 border-orange-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      case "blog": return "bg-primary text-primary-foreground";
+      case "social": return "bg-info text-info-foreground";
+      case "newsletter": return "bg-success text-success-foreground";
+      default: return "bg-secondary text-secondary-foreground";
     }
-  }
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev)
-      if (direction === 'prev') {
-        newDate.setMonth(prev.getMonth() - 1)
-      } else {
-        newDate.setMonth(prev.getMonth() + 1)
-      }
-      return newDate
-    })
-  }
-
-  const days = getDaysInMonth(currentDate)
+  };
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Content Calendar
-          </h1>
-          <p className="text-slate-600 mt-1">Plan and schedule your content strategy</p>
+          <h1 className="text-3xl font-bold text-foreground">Content Calendar</h1>
+          <p className="text-muted-foreground">Plan and schedule your content</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-            <Link to="/article/new">
-              <Plus className="w-4 h-4 mr-2" />
-              Schedule Content
-            </Link>
-          </Button>
-        </div>
+        <Button className="gap-2">
+          <Plus className="w-4 h-4" />
+          Schedule Content
+        </Button>
       </div>
 
-      {/* Calendar Controls */}
-      <Card className="border-0 bg-white/80 backdrop-blur">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigateMonth('prev')}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <h2 className="text-xl font-semibold">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </h2>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigateMonth('next')}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant={viewMode === 'month' ? 'default' : 'outline'} 
-                size="sm"
-                onClick={() => setViewMode('month')}
-              >
-                Month
-              </Button>
-              <Button 
-                variant={viewMode === 'week' ? 'default' : 'outline'} 
-                size="sm"
-                onClick={() => setViewMode('week')}
-              >
-                Week
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
-            {/* Day headers */}
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-slate-600 border-b">
-                {day}
-              </div>
-            ))}
-            
-            {/* Calendar days */}
-            {days.map((date, index) => {
-              const dayEvents = getEventsForDate(date)
-              const isToday = date && date.toDateString() === new Date().toDateString()
-              
-              return (
-                <div 
-                  key={index} 
-                  className={`min-h-[120px] p-2 border border-slate-200 rounded-lg ${
-                    date ? 'bg-white hover:bg-slate-50 cursor-pointer' : 'bg-slate-50'
-                  } ${isToday ? 'ring-2 ring-purple-500 ring-opacity-50' : ''}`}
-                >
-                  {date && (
-                    <>
-                      <div className={`text-sm font-medium mb-2 ${
-                        isToday ? 'text-purple-600' : 'text-slate-700'
-                      }`}>
-                        {date.getDate()}
-                      </div>
-                      <div className="space-y-1">
-                        {dayEvents.map(event => (
-                          <div 
-                            key={event.id}
-                            className={`text-xs p-1 rounded border ${getEventTypeColor(event.type)} line-clamp-2`}
-                          >
-                            {event.title}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Calendar View */}
+        <div className="lg:col-span-2">
+          <Card className="card-elevated">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5" />
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm">
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Upcoming Events */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-0 bg-white/80 backdrop-blur">
-          <CardHeader>
-            <CardTitle>Upcoming Content</CardTitle>
-            <CardDescription>Your scheduled content for the next 7 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {events.slice(0, 3).map(event => (
-                <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <CalendarIcon className="w-5 h-5 text-slate-400" />
-                    <div>
-                      <h4 className="font-medium">{event.title}</h4>
-                      <p className="text-sm text-slate-500">
-                        {event.date.toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-7 gap-1 mb-4">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 35 }, (_, i) => {
+                  const day = i - 2; // Start from previous month
+                  const isCurrentMonth = day > 0 && day <= 31;
+                  const hasEvent = mockEvents.some(event => 
+                    new Date(event.date).getDate() === day
+                  );
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className={`
+                        aspect-square p-2 text-sm border border-border hover:bg-accent cursor-pointer
+                        ${isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'} 
+                        ${hasEvent ? 'bg-primary/5' : 'bg-background'}
+                      `}
+                    >
+                      <div className="font-medium">{isCurrentMonth ? day : ''}</div>
+                      {hasEvent && (
+                        <div className="w-2 h-2 bg-primary rounded-full mt-1"></div>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Upcoming Content */}
+        <div>
+          <Card className="card-elevated">
+            <CardHeader>
+              <CardTitle className="text-foreground">Upcoming Content</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {mockEvents.map(event => (
+                <div key={event.id} className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <h4 className="font-medium text-foreground text-sm">{event.title}</h4>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={getEventTypeColor(event.type)}>
-                      {event.type}
-                    </Badge>
-                    <Badge variant="secondary">
+                    <Badge variant="outline" className={getStatusColor(event.status)}>
                       {event.status}
                     </Badge>
+                    <Badge variant="outline" className={getTypeColor(event.type)}>
+                      {event.type}
+                    </Badge>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(event.date).toLocaleDateString()}
+                  </p>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Content Stats */}
-        <Card className="border-0 bg-white/80 backdrop-blur">
-          <CardHeader>
-            <CardTitle>This Month</CardTitle>
-            <CardDescription>Content planning overview</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span className="text-sm font-medium">Published</span>
-                <span className="text-lg font-bold text-green-600">8</span>
+          <Card className="card-elevated mt-6">
+            <CardHeader>
+              <CardTitle className="text-foreground">Content Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-foreground">12</div>
+                  <div className="text-sm text-muted-foreground">This Month</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-foreground">8</div>
+                  <div className="text-sm text-muted-foreground">Published</div>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium">Scheduled</span>
-                <span className="text-lg font-bold text-blue-600">12</span>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Blog Posts</span>
+                  <span className="text-foreground">6</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Social Media</span>
+                  <span className="text-foreground">4</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Newsletters</span>
+                  <span className="text-foreground">2</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                <span className="text-sm font-medium">In Draft</span>
-                <span className="text-lg font-bold text-orange-600">5</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span className="text-sm font-medium">Ideas</span>
-                <span className="text-lg font-bold text-purple-600">23</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
-  )
+  );
 }
-
-export default Calendar
