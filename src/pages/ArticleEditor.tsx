@@ -1,260 +1,316 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Eye, Sparkles, CheckCircle, AlertCircle, Info } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
+import { 
+  Save, 
+  Eye, 
+  Share, 
+  MoreHorizontal,
+  Target,
+  TrendingUp,
+  Users,
+  Clock,
+  FileText,
+  Lightbulb,
+  CheckCircle2,
+  AlertCircle,
+  Zap
+} from "lucide-react"
 
-export default function ArticleEditor() {
-  const navigate = useNavigate();
-  const [seoScore] = useState(78);
-  const [wordCount] = useState(1247);
-  const [readabilityScore] = useState(85);
+const ArticleEditor = () => {
+  const [title, setTitle] = useState("10 Best Practices for Content Marketing in 2024")
+  const [content, setContent] = useState(`# Introduction
 
-  const handleSave = () => {
-    toast.success("Article saved successfully!");
-  };
+Content marketing continues to evolve rapidly in 2024, with new technologies and changing consumer behaviors reshaping how brands connect with their audiences. In this comprehensive guide, we'll explore the most effective strategies that are driving results for businesses today.
 
-  const handlePublish = () => {
-    toast.success("Article published successfully!");
-    navigate("/dashboard");
-  };
+## 1. AI-Powered Content Personalization
+
+Artificial intelligence is revolutionizing how we create and deliver personalized content experiences...
+
+## 2. Video-First Content Strategy
+
+Video content consumption has reached an all-time high, with platforms like TikTok, YouTube Shorts, and Instagram Reels dominating engagement metrics...
+
+## 3. Interactive Content Elements
+
+Interactive content generates 2x more engagement than passive content. Consider incorporating:
+
+- Polls and surveys
+- Interactive infographics
+- Quizzes and assessments
+- Calculators and tools
+
+## 4. Voice Search Optimization
+
+With the rise of smart speakers and voice assistants, optimizing for voice search is crucial...
+
+`)
+
+  const [wordCount, setWordCount] = useState(0)
+  const [readingTime, setReadingTime] = useState(0)
+  const [seoScore, setSeoScore] = useState(78)
+
+  useEffect(() => {
+    const words = content.trim().split(/\s+/).length
+    setWordCount(words)
+    setReadingTime(Math.ceil(words / 200)) // Average reading speed
+  }, [content])
+
+  const seoChecks = [
+    { item: "Primary keyword in title", status: "completed", score: 15 },
+    { item: "Meta description optimized", status: "completed", score: 10 },
+    { item: "Proper heading structure", status: "warning", score: 8 },
+    { item: "Internal links added", status: "pending", score: 0 },
+    { item: "External authoritative links", status: "completed", score: 12 },
+    { item: "Image alt text", status: "pending", score: 0 },
+    { item: "Content length (1500+ words)", status: "warning", score: 8 },
+    { item: "Call-to-action included", status: "pending", score: 0 }
+  ]
+
+  const completedChecks = seoChecks.filter(check => check.status === "completed").length
+  const totalChecks = seoChecks.length
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle2 className="w-4 h-4 text-green-600" />
+      case 'warning': return <AlertCircle className="w-4 h-4 text-yellow-600" />
+      case 'pending': return <AlertCircle className="w-4 h-4 text-slate-400" />
+      default: return null
+    }
+  }
+
+  const suggestions = [
+    "Add more internal links to related articles",
+    "Include data or statistics to support your claims",
+    "Consider adding a FAQ section",
+    "Optimize images with descriptive alt text",
+    "Add a compelling call-to-action at the end"
+  ]
 
   return (
-    <div className="min-h-screen bg-surface">
-      <div className="border-b border-border bg-background">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate("/dashboard")}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold text-foreground">The Ultimate Guide to AI Content Creation</h1>
-                <p className="text-sm text-muted-foreground">Draft • Last saved 2 minutes ago</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleSave}>
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
-              <Button variant="outline">
-                <Eye className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-              <Button onClick={handlePublish}>
-                Publish
-              </Button>
-            </div>
-          </div>
+    <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            Article Editor
+          </h1>
+          <p className="text-slate-600 mt-1">Write and optimize your content with AI assistance</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline">
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+          <Button variant="outline">
+            <Share className="w-4 h-4 mr-2" />
+            Share
+          </Button>
+          <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+            <Save className="w-4 h-4 mr-2" />
+            Save & Publish
+          </Button>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Editor */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="text-foreground flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  AI-Generated Content
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-foreground">Title</Label>
-                  <Input 
-                    id="title" 
-                    value="The Ultimate Guide to AI Content Creation"
-                    className="bg-background text-foreground"
-                  />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Main Editor */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Title */}
+          <Card className="border-0 bg-white/80 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-lg">Article Title</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="text-lg font-medium"
+                placeholder="Enter your article title..."
+              />
+            </CardContent>
+          </Card>
+
+          {/* Content Editor */}
+          <Card className="border-0 bg-white/80 backdrop-blur">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Content</CardTitle>
+                <div className="flex items-center gap-4 text-sm text-slate-500">
+                  <span>{wordCount} words</span>
+                  <span>{readingTime} min read</span>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="meta-description" className="text-foreground">Meta Description</Label>
-                  <Textarea 
-                    id="meta-description"
-                    value="Discover how AI is revolutionizing content creation. Learn best practices, tools, and strategies to enhance your content workflow with artificial intelligence."
-                    className="bg-background text-foreground"
-                  />
+              </div>
+              <CardDescription>
+                Write your content here. The editor supports Markdown formatting.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="min-h-[600px] font-mono text-sm leading-relaxed"
+                placeholder="Start writing your article..."
+              />
+              
+              {/* Editor Toolbar */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">Markdown</Badge>
+                  <Badge variant="outline">Auto-save enabled</Badge>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="content" className="text-foreground">Content</Label>
-                  <Textarea 
-                    id="content"
-                    value={`# The Ultimate Guide to AI Content Creation
-
-## Introduction
-
-Artificial Intelligence has transformed the way we create content. From blog posts to social media updates, AI tools are helping content creators produce high-quality material faster than ever before.
-
-## What is AI Content Creation?
-
-AI content creation refers to the use of artificial intelligence technologies to generate, enhance, or optimize written content...
-
-## Benefits of AI Content Creation
-
-### 1. Increased Efficiency
-AI can produce content at speeds impossible for human writers alone...
-
-### 2. Consistency in Quality
-With proper prompting and guidelines, AI maintains consistent tone and style...
-
-### 3. SEO Optimization
-Modern AI tools understand SEO best practices and can optimize content automatically...
-
-## Best Practices for AI Content Creation
-
-### Research and Planning
-- Define your target audience clearly
-- Gather relevant keywords and topics
-- Create detailed content briefs
-
-### Tool Selection
-- Choose AI tools that fit your specific needs
-- Consider integration capabilities
-- Evaluate output quality and customization options
-
-## Conclusion
-
-AI content creation is not about replacing human creativity, but enhancing it. By leveraging AI tools effectively, content creators can focus on strategy and creativity while automating repetitive tasks.`}
-                    className="bg-background text-foreground min-h-[600px] font-mono text-sm"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* SEO Score */}
-            <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="text-foreground text-lg">SEO Analysis</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">SEO Score</span>
-                    <span className="text-sm font-medium text-foreground">{seoScore}/100</span>
-                  </div>
-                  <Progress value={seoScore} className="h-2" />
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span className="text-foreground">Title optimized</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                    <span className="text-foreground">Meta description included</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <AlertCircle className="w-4 h-4 text-warning" />
-                    <span className="text-foreground">Add more internal links</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Info className="w-4 h-4 text-info" />
-                    <span className="text-foreground">Consider adding images</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Content Stats */}
-            <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="text-foreground text-lg">Content Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">{wordCount.toLocaleString()}</div>
-                    <div className="text-sm text-muted-foreground">Words</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">{readabilityScore}</div>
-                    <div className="text-sm text-muted-foreground">Readability</div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Reading time</span>
-                    <span className="text-foreground">~5 minutes</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Paragraphs</span>
-                    <span className="text-foreground">12</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Headings</span>
-                    <span className="text-foreground">8</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Keywords */}
-            <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="text-foreground text-lg">Target Keywords</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">AI content creation</Badge>
-                  <Badge variant="secondary">artificial intelligence</Badge>
-                  <Badge variant="secondary">content marketing</Badge>
-                  <Badge variant="secondary">SEO optimization</Badge>
-                  <Badge variant="secondary">content strategy</Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* AI Actions */}
-            <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="text-foreground text-lg">AI Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Improve SEO
+                <Button variant="ghost" size="sm">
+                  <Zap className="w-4 h-4 mr-2" />
+                  AI Assist
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Add Images
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Suggestions */}
+          <Card className="border-0 bg-white/80 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-yellow-500" />
+                AI Suggestions
+              </CardTitle>
+              <CardDescription>
+                Improve your content with these AI-powered recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {suggestions.map((suggestion, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <Lightbulb className="w-4 h-4 mt-0.5 text-blue-600" />
+                    <span className="text-sm">{suggestion}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* SEO Score */}
+          <Card className="border-0 bg-white/80 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                SEO Score
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center mb-4">
+                <div className="text-3xl font-bold text-purple-600 mb-1">{seoScore}/100</div>
+                <div className="text-sm text-slate-500">Good optimization</div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Completed checks</span>
+                  <span>{completedChecks}/{totalChecks}</span>
+                </div>
+                
+                <div className="space-y-2">
+                  {seoChecks.map((check, index) => (
+                    <div key={index} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(check.status)}
+                        <span>{check.item}</span>
+                      </div>
+                      <span className="font-medium">+{check.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Article Stats */}
+          <Card className="border-0 bg-white/80 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Article Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Word Count</span>
+                  <span className="font-medium">{wordCount}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Reading Time</span>
+                  <span className="font-medium">{readingTime} min</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Paragraphs</span>
+                  <span className="font-medium">12</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Headings</span>
+                  <span className="font-medium">8</span>
+                </div>
+                
+                <Separator />
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Readability</span>
+                  <Badge variant="outline" className="text-green-600 border-green-200">
+                    Good
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Keyword Density</span>
+                  <Badge variant="outline" className="text-blue-600 border-blue-200">
+                    2.1%
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Publishing Options */}
+          <Card className="border-0 bg-white/80 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Publishing
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Save as Draft
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Summary
+                <Button variant="outline" className="w-full justify-start">
+                  <Clock className="w-4 h-4 mr-2" />
+                  Schedule Publication
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create TLDR
+                <Button className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Publish Now
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t text-xs text-slate-500">
+                Last saved: 2 minutes ago
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
-  );
+  )
 }
+
+export default ArticleEditor

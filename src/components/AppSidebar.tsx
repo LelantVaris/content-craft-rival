@@ -1,17 +1,20 @@
 
-import {
-  Calendar,
-  Home,
-  FileText,
+import { 
+  Calendar, 
+  Home, 
+  PenTool, 
+  FileText, 
+  BarChart3, 
   Settings,
-  PlusCircle,
-  BarChart3,
+  Target,
+  Users,
+  Search
 } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
 
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -19,19 +22,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar"
-import { Link } from "react-router-dom"
 
-const items = [
+const navigationItems = [
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: "/",
     icon: Home,
-  },
-  {
-    title: "Create Article",
-    url: "/article/new",
-    icon: PlusCircle,
   },
   {
     title: "Content Calendar",
@@ -39,14 +37,37 @@ const items = [
     icon: Calendar,
   },
   {
-    title: "Analytics",
-    url: "/analytics",
-    icon: BarChart3,
+    title: "New Article",
+    url: "/article/new",
+    icon: PenTool,
   },
   {
     title: "Articles",
     url: "/articles",
     icon: FileText,
+  },
+  {
+    title: "Analytics",
+    url: "/analytics",
+    icon: BarChart3,
+  },
+  {
+    title: "Keyword Research",
+    url: "/keywords",
+    icon: Search,
+  },
+  {
+    title: "Competitors",
+    url: "/competitors",
+    icon: Target,
+  },
+]
+
+const settingsItems = [
+  {
+    title: "Team",
+    url: "/team",
+    icon: Users,
   },
   {
     title: "Settings",
@@ -56,25 +77,60 @@ const items = [
 ]
 
 export function AppSidebar() {
+  const location = useLocation()
+
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-4 py-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">M</span>
+    <Sidebar className="border-r bg-gradient-to-b from-slate-50 to-white">
+      <SidebarHeader className="p-6">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+            <Target className="w-5 h-5 text-white" />
           </div>
-          <span className="text-lg font-semibold text-sidebar-foreground">metakit.ai</span>
+          <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            ContentRank
+          </span>
         </div>
       </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground">Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm font-semibold text-slate-600 mb-2">
+            Main Navigation
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                    <Link to={item.url}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                    className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
+                  >
+                    <Link to={item.url} className="flex items-center gap-3">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sm font-semibold text-slate-600 mb-2">
+            Management
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {settingsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                    className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
+                  >
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -85,11 +141,10 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border">
-        <div className="p-4">
-          <p className="text-xs text-sidebar-foreground/60">
-            © 2025 metakit.ai
-          </p>
+
+      <SidebarFooter className="p-4">
+        <div className="text-xs text-slate-500">
+          © 2024 ContentRank Pro
         </div>
       </SidebarFooter>
     </Sidebar>
