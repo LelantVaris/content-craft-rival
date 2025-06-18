@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +25,7 @@ const Dashboard = () => {
       change: "+12%",
       trend: "up",
       icon: FileText,
-      color: "text-blue-600"
+      color: "text-primary"
     },
     {
       title: "Avg. Page Views",
@@ -32,7 +33,7 @@ const Dashboard = () => {
       change: "+24%",
       trend: "up",
       icon: Eye,
-      color: "text-green-600"
+      color: "text-success"
     },
     {
       title: "Click Rate",
@@ -40,7 +41,7 @@ const Dashboard = () => {
       change: "-0.8%",
       trend: "down",
       icon: MousePointer,
-      color: "text-orange-600"
+      color: "text-warning"
     },
     {
       title: "SEO Score",
@@ -48,7 +49,7 @@ const Dashboard = () => {
       change: "+5%",
       trend: "up",
       icon: Target,
-      color: "text-purple-600"
+      color: "text-info"
     }
   ]
 
@@ -83,23 +84,23 @@ const Dashboard = () => {
   ]
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-surface min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold gradient-primary bg-clip-text text-transparent">
             Dashboard
           </h1>
-          <p className="text-slate-600 mt-1">Welcome back! Here's your content performance overview.</p>
+          <p className="text-muted-foreground mt-1">Welcome back! Here's your content performance overview.</p>
         </div>
         <div className="flex gap-3">
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="border-border hover:bg-accent">
             <Link to="/calendar">
               <Calendar className="w-4 h-4 mr-2" />
               View Calendar
             </Link>
           </Button>
-          <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+          <Button asChild className="gradient-primary text-white hover:opacity-90 transition-opacity">
             <Link to="/article/new">
               <FileText className="w-4 h-4 mr-2" />
               New Article
@@ -111,25 +112,25 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="hover:shadow-lg transition-all duration-200 border-0 bg-white/80 backdrop-blur">
+          <Card key={index} className="card-elevated">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="flex items-center text-xs">
+              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+              <div className="flex items-center text-xs mt-1">
                 {stat.trend === "up" ? (
-                  <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
+                  <TrendingUp className="w-3 h-3 text-success mr-1" />
                 ) : (
-                  <TrendingDown className="w-3 h-3 text-red-600 mr-1" />
+                  <TrendingDown className="w-3 h-3 text-destructive mr-1" />
                 )}
-                <span className={stat.trend === "up" ? "text-green-600" : "text-red-600"}>
+                <span className={stat.trend === "up" ? "text-success" : "text-destructive"}>
                   {stat.change}
                 </span>
-                <span className="text-slate-500 ml-1">from last month</span>
+                <span className="text-muted-foreground ml-1">from last month</span>
               </div>
             </CardContent>
           </Card>
@@ -138,14 +139,14 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Articles */}
-        <Card className="lg:col-span-2 border-0 bg-white/80 backdrop-blur">
+        <Card className="lg:col-span-2 card-elevated">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Recent Articles</CardTitle>
+                <CardTitle className="text-foreground">Recent Articles</CardTitle>
                 <CardDescription>Your latest content performance</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" asChild className="text-primary hover:bg-accent">
                 <Link to="/articles">
                   View All <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>
@@ -155,13 +156,19 @@ const Dashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {recentArticles.map((article, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors">
                   <div className="flex-1">
-                    <h4 className="font-medium line-clamp-1">{article.title}</h4>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                    <h4 className="font-medium line-clamp-1 text-foreground">{article.title}</h4>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                       <Badge 
                         variant={article.status === "Published" ? "default" : article.status === "Draft" ? "secondary" : "outline"}
-                        className={article.status === "Published" ? "bg-green-100 text-green-700" : ""}
+                        className={
+                          article.status === "Published" 
+                            ? "bg-success/10 text-success border-success/20" 
+                            : article.status === "Scheduled"
+                            ? "bg-info/10 text-info border-info/20"
+                            : ""
+                        }
                       >
                         {article.status}
                       </Badge>
@@ -169,7 +176,7 @@ const Dashboard = () => {
                       <span>SEO: {article.seoScore}/100</span>
                     </div>
                   </div>
-                  <div className="text-right text-sm text-slate-500">
+                  <div className="text-right text-sm text-muted-foreground">
                     {article.publishedAt}
                   </div>
                 </div>
@@ -179,9 +186,9 @@ const Dashboard = () => {
         </Card>
 
         {/* Upcoming Tasks */}
-        <Card className="border-0 bg-white/80 backdrop-blur">
+        <Card className="card-elevated">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <Clock className="w-5 h-5" />
               Upcoming Tasks
             </CardTitle>
@@ -190,16 +197,23 @@ const Dashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {upcomingTasks.map((task, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
-                  <CheckCircle2 className="w-4 h-4 mt-0.5 text-slate-400" />
+                <div key={index} className="flex items-start gap-3 p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{task.task}</p>
+                    <p className="text-sm font-medium text-foreground">{task.task}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-slate-500">{task.deadline}</span>
+                      <span className="text-xs text-muted-foreground">{task.deadline}</span>
                       <Badge 
                         variant={
                           task.priority === "High" ? "destructive" : 
                           task.priority === "Medium" ? "default" : "secondary"
+                        }
+                        className={
+                          task.priority === "High" 
+                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                            : task.priority === "Medium"
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : ""
                         }
                       >
                         {task.priority}
@@ -214,31 +228,31 @@ const Dashboard = () => {
       </div>
 
       {/* SEO Performance Chart */}
-      <Card className="border-0 bg-white/80 backdrop-blur">
+      <Card className="card-elevated">
         <CardHeader>
-          <CardTitle>SEO Performance Trend</CardTitle>
+          <CardTitle className="text-foreground">SEO Performance Trend</CardTitle>
           <CardDescription>Your content optimization progress over time</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Overall SEO Health</span>
-              <span className="text-sm text-slate-500">87/100</span>
+              <span className="text-sm font-medium text-foreground">Overall SEO Health</span>
+              <span className="text-sm text-muted-foreground">87/100</span>
             </div>
-            <Progress value={87} className="h-2" />
+            <Progress value={87} className="h-3" />
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="text-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-                <div className="text-2xl font-bold text-green-700">42</div>
-                <div className="text-sm text-green-600">High-performing articles</div>
+              <div className="text-center p-6 bg-success/5 border border-success/20 rounded-lg">
+                <div className="text-2xl font-bold text-success">42</div>
+                <div className="text-sm text-success/80">High-performing articles</div>
               </div>
-              <div className="text-center p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-700">28</div>
-                <div className="text-sm text-yellow-600">Need optimization</div>
+              <div className="text-center p-6 bg-warning/5 border border-warning/20 rounded-lg">
+                <div className="text-2xl font-bold text-warning">28</div>
+                <div className="text-sm text-warning/80">Need optimization</div>
               </div>
-              <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
-                <div className="text-2xl font-bold text-purple-700">156</div>
-                <div className="text-sm text-purple-600">Keywords tracked</div>
+              <div className="text-center p-6 bg-info/5 border border-info/20 rounded-lg">
+                <div className="text-2xl font-bold text-info">156</div>
+                <div className="text-sm text-info/80">Keywords tracked</div>
               </div>
             </div>
           </div>
