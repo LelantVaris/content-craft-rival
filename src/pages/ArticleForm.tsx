@@ -166,7 +166,6 @@ const ArticleForm = () => {
 
   const handleSubmit = () => {
     console.log("Article form data:", formData)
-    // Navigate to editor
     navigate("/article/editor")
   }
 
@@ -431,7 +430,6 @@ const ArticleForm = () => {
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -442,7 +440,6 @@ const ArticleForm = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Progress Sidebar */}
         <Card className="border-0 bg-white/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="text-lg">Progress</CardTitle>
@@ -484,7 +481,6 @@ const ArticleForm = () => {
           </CardContent>
         </Card>
 
-        {/* Main Form */}
         <Card className="lg:col-span-3 border-0 bg-white/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -501,7 +497,6 @@ const ArticleForm = () => {
           <CardContent>
             {renderStepContent()}
 
-            {/* Navigation Buttons */}
             <div className="flex justify-between mt-8 pt-6 border-t">
               <Button 
                 variant="outline" 
