@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -494,7 +493,7 @@ const ArticleForm = () => {
         <Card className="lg:col-span-3 border-0 bg-white/80 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <steps[currentStep - 1].icon className="w-5 h-5" />
+              {React.createElement(steps[currentStep - 1].icon, { className: "w-5 h-5" })}
               Step {currentStep}: {steps[currentStep - 1].title}
             </CardTitle>
             <CardDescription>
