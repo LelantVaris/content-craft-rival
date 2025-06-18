@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -198,7 +197,6 @@ const Dashboard = () => {
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-slate-500">{task.deadline}</span>
                       <Badge 
-                        size="sm" 
                         variant={
                           task.priority === "High" ? "destructive" : 
                           task.priority === "Medium" ? "default" : "secondary"
