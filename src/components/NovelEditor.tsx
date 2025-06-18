@@ -18,11 +18,27 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
     onChange(text)
   }
 
+  // Convert string content to basic JSONContent structure
+  const initialContent: JSONContent = {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          {
+            type: 'text',
+            text: content || ''
+          }
+        ]
+      }
+    ]
+  }
+
   return (
     <div className={className}>
       <EditorRoot>
         <EditorContent
-          initialContent={content}
+          initialContent={initialContent}
           onUpdate={handleEditorChange}
           className="min-h-[600px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           editorProps={{
