@@ -1,5 +1,5 @@
 
-import { Editor } from "novel"
+import { EditorRoot, EditorContent, type JSONContent } from "novel"
 import { useState } from "react"
 
 interface NovelEditorProps {
@@ -20,37 +20,39 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
 
   return (
     <div className={className}>
-      <Editor
-        defaultValue={content}
-        onUpdate={handleEditorChange}
-        className="min-h-[600px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        editorProps={{
-          attributes: {
-            class: "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
-          },
-        }}
-        slashCommand={{
-          suggestion: {
-            items: () => [
-              {
-                title: "Continue writing",
-                description: "Use AI to expand your thoughts.",
-                icon: "✨",
-              },
-              {
-                title: "Summarize",
-                description: "Summarize your content so far.",
-                icon: "📝",
-              },
-              {
-                title: "Improve writing", 
-                description: "Fix grammar and improve clarity.",
-                icon: "👌",
-              },
-            ],
-          },
-        }}
-      />
+      <EditorRoot>
+        <EditorContent
+          initialContent={content}
+          onUpdate={handleEditorChange}
+          className="min-h-[600px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          editorProps={{
+            attributes: {
+              class: "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+            },
+          }}
+          slashCommand={{
+            suggestion: {
+              items: () => [
+                {
+                  title: "Continue writing",
+                  description: "Use AI to expand your thoughts.",
+                  icon: "✨",
+                },
+                {
+                  title: "Summarize",
+                  description: "Summarize your content so far.",
+                  icon: "📝",
+                },
+                {
+                  title: "Improve writing", 
+                  description: "Fix grammar and improve clarity.",
+                  icon: "👌",
+                },
+              ],
+            },
+          }}
+        />
+      </EditorRoot>
     </div>
   )
 }
