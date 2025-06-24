@@ -1,123 +1,186 @@
+"use client"
 
-import { 
-  Home, 
-  FileEdit, 
-  Calendar, 
-  BarChart3, 
+import * as React from "react"
+import {
+  AudioWaveform,
+  BookOpen,
+  Bot,
+  Command,
+  Frame,
+  GalleryVerticalEnd,
+  Map,
+  PieChart,
+  Settings2,
+  SquareTerminal,
+  Home,
+  FileEdit,
+  Calendar,
+  BarChart3,
   Search,
-  Target,
-  LogOut
 } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
-import { useAuth } from "@/contexts/AuthContext"
 
+import { NavMain } from "@/components/nav-main"
+import { NavProjects } from "@/components/nav-projects"
+import { NavUser } from "@/components/nav-user"
+import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
   SidebarFooter,
+  SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import CreditBalance from "@/components/CreditBalance"
 
-const navigationItems = [
-  {
-    title: "Home",
-    url: "/",
-    icon: Home,
+// This is sample data for the original template - we'll keep the structure but update content
+const data = {
+  user: {
+    name: "User",
+    email: "user@metakit.ai",
+    avatar: "/avatars/shadcn.jpg",
   },
-  {
-    title: "Content Writer",
-    url: "/article/new",
-    icon: FileEdit,
-  },
-  {
-    title: "Calendar",
-    url: "/calendar",
-    icon: Calendar,
-  },
-  {
-    title: "Analytics",
-    url: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Keyword Research",
-    url: "/keywords",
-    icon: Search,
-  },
-]
+  teams: [
+    {
+      name: "Metakit.ai",
+      logo: GalleryVerticalEnd,
+      plan: "Enterprise",
+    },
+    {
+      name: "Acme Corp.",
+      logo: AudioWaveform,
+      plan: "Startup",
+    },
+    {
+      name: "Evil Corp.",
+      logo: Command,
+      plan: "Free",
+    },
+  ],
+  navMain: [
+    {
+      title: "Favorites",
+      url: "#",
+      icon: SquareTerminal,
+      isActive: true,
+      items: [
+        {
+          title: "Dashboard",
+          url: "/",
+        },
+        {
+          title: "Content Writer",
+          url: "/article/new",
+        },
+        {
+          title: "Calendar",
+          url: "/calendar",
+        },
+        {
+          title: "Analytics",
+          url: "/analytics",
+        },
+        {
+          title: "Keyword Research",
+          url: "/keywords",
+        },
+      ],
+    },
+    {
+      title: "Platform",
+      url: "#",
+      icon: Bot,
+      items: [
+        {
+          title: "Genesis",
+          url: "#",
+        },
+        {
+          title: "Explorer",
+          url: "#",
+        },
+        {
+          title: "Quantum",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Documentation",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Introduction",
+          url: "#",
+        },
+        {
+          title: "Get Started",
+          url: "#",
+        },
+        {
+          title: "Tutorials",
+          url: "#",
+        },
+        {
+          title: "Changelog",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings2,
+      items: [
+        {
+          title: "General",
+          url: "#",
+        },
+        {
+          title: "Team",
+          url: "#",
+        },
+        {
+          title: "Billing",
+          url: "#",
+        },
+        {
+          title: "Limits",
+          url: "#",
+        },
+      ],
+    },
+  ],
+  projects: [
+    {
+      name: "Design Engineering",
+      url: "#",
+      icon: Frame,
+    },
+    {
+      name: "Sales & Marketing",
+      url: "#",
+      icon: PieChart,
+    },
+    {
+      name: "Travel",
+      url: "#",
+      icon: Map,
+    },
+  ],
+}
 
-export function AppSidebar() {
-  const location = useLocation()
-  const { signOut } = useAuth()
-
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="icon" className="border-r bg-gradient-to-b from-slate-50 to-white">
-      <SidebarHeader className="p-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-            <Target className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Metakit.ai
-          </span>
-        </div>
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
-      
       <SidebarContent>
-        <SidebarGroup>
-          <div className="px-3 mb-4">
-            <CreditBalance />
-          </div>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold text-slate-600 mb-2">
-            Favorites
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === item.url}
-                    className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
-                    tooltip={item.title}
-                  >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavMain items={data.navMain} />
+        <NavProjects projects={data.projects} />
       </SidebarContent>
-
-      <SidebarFooter className="p-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={signOut}
-          className="w-full flex items-center gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </Button>
-        <div className="text-xs text-slate-500 mt-2 text-center">
-          © 2024 Metakit.ai
-        </div>
+      <SidebarFooter>
+        <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
