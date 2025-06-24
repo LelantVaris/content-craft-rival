@@ -9,6 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ArticleForm from "./pages/ArticleForm";
+import ArticleEditor from "./pages/ArticleEditor";
 import ArticleEditorRoute from "./pages/ArticleEditorRoute";
 import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
@@ -34,7 +35,8 @@ function App() {
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                       <Route path="/article/new" element={<ProtectedRoute><ArticleForm /></ProtectedRoute>} />
-                      <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
+                      <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
+                      <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
                       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

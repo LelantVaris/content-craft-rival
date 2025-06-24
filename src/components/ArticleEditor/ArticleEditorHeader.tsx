@@ -1,28 +1,57 @@
 
 import { Button } from "@/components/ui/button"
-import { Eye, Share, Save } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Save, ArrowLeft, Clock } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
-const ArticleEditorHeader = () => {
+interface ArticleEditorHeaderProps {
+  onSave?: () => void
+  isSaving?: boolean
+  isNew?: boolean
+}
+
+const ArticleEditorHeader = ({ onSave, isSaving = false, isNew = true }: ArticleEditorHeaderProps) => {
+  const navigate = useNavigate()
+
   return (
-    <div className="flex justify-between items-center">
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-          Article Editor
-        </h1>
-        <p className="text-slate-600 mt-1">Write and optimize your content with AI assistance</p>
+    <div className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm border">
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => navigate('/')}
+          className="text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+        
+        <div className="h-6 w-px bg-gray-200" />
+        
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-semibold text-gray-900">
+            {isNew ? "New Article" : "Edit Article"}
+          </h1>
+          
+          {isSaving && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Saving...
+            </Badge>
+          )}
+        </div>
       </div>
-      <div className="flex gap-3">
-        <Button variant="outline">
-          <Eye className="w-4 h-4 mr-2" />
-          Preview
-        </Button>
-        <Button variant="outline">
-          <Share className="w-4 h-4 mr-2" />
-          Share
-        </Button>
-        <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-          <Save className="w-4 h-4 mr-2" />
-          Save & Publish
+
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={onSave}
+          disabled={isSaving}
+          className="flex items-center gap-2"
+        >
+          <Save className="w-4 h-4" />
+          {isSaving ? "Saving..." : "Save"}
         </Button>
       </div>
     </div>

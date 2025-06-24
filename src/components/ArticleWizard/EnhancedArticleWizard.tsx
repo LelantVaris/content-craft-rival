@@ -16,6 +16,8 @@ import TitleGenerationStep from './TitleGenerationStep';
 import OutlineCreationStep from './OutlineCreationStep';
 import ContentGenerationStep from './ContentGenerationStep';
 import { useNavigate } from 'react-router-dom';
+import { useArticles } from '@/hooks/useArticles';
+import { toast } from 'sonner';
 
 const STEPS = [
   { 
@@ -70,6 +72,7 @@ const EnhancedArticleWizard = () => {
     seoNotes: ''
   });
   const navigate = useNavigate();
+  const { saveArticle } = useArticles();
 
   const progress = (currentStep / STEPS.length) * 100;
 
@@ -85,15 +88,37 @@ const EnhancedArticleWizard = () => {
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
-    navigate('/article/editor', { 
-      state: { 
+    const finalContent = articleData.generatedContent || `# ${finalTitle}\n\nStart writing your article here...`;
+    
+    try {
+      // Save the article to the database
+      const savedArticle = await saveArticle({
         title: finalTitle,
-        content: articleData.generatedContent || `# ${finalTitle}\n\nStart writing your article here...`,
-        outline: articleData.outline
-      }
-    });
+        content: finalContent,
+        status: 'draft',
+        content_type: 'blog-post',
+        tone: 'professional',
+        target_audience: articleData.audience || undefined,
+        keywords: articleData.keywords.length > 0 ? articleData.keywords : undefined,
+      });
+
+      toast.success('Article created successfully!');
+      
+      // Navigate to the editor with the saved article
+      navigate(`/article/${savedArticle.id}/edit`);
+    } catch (error) {
+      console.error('Error saving article:', error);
+      // Fallback to the old behavior if saving fails
+      navigate('/article/editor', { 
+        state: { 
+          title: finalTitle,
+          content: finalContent,
+          outline: articleData.outline
+        }
+      });
+    }
   };
 
   const updateArticleData = (updates: Partial<ArticleData>) => {
@@ -253,7 +278,7 @@ const EnhancedArticleWizard = () => {
                 className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600"
               >
                 <PenTool className="w-4 h-4" />
-                Open in Editor
+                Create Article
               </Button>
             )}
           </div>
