@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import BlogWriterWizard from "@/components/BlogWriterWizard";
+import { EnhancedArticleWizard } from "@/components/ArticleWizard";
 import { PenTool, Sparkles, Target } from "lucide-react";
 
 const ArticleForm = () => {
@@ -30,7 +30,7 @@ const ArticleForm = () => {
         </div>
       </div>
       
-      <BlogWriterWizard />
+      <EnhancedArticleWizard />
     </div>
   );
 };
