@@ -1,13 +1,11 @@
+
 import { 
-  Calendar, 
   Home, 
-  PenTool, 
-  FileText, 
+  FileEdit, 
+  Calendar, 
   BarChart3, 
-  Settings,
-  Target,
-  Users,
   Search,
+  Target,
   LogOut
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
@@ -24,30 +22,26 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import CreditBalance from "@/components/CreditBalance"
 
 const navigationItems = [
   {
-    title: "Dashboard",
+    title: "Home",
     url: "/",
     icon: Home,
   },
   {
-    title: "Content Calendar",
+    title: "Content Writer",
+    url: "/article/new",
+    icon: FileEdit,
+  },
+  {
+    title: "Calendar",
     url: "/calendar",
     icon: Calendar,
-  },
-  {
-    title: "New Article",
-    url: "/article/new",
-    icon: PenTool,
-  },
-  {
-    title: "Articles",
-    url: "/articles",
-    icon: FileText,
   },
   {
     title: "Analytics",
@@ -61,25 +55,12 @@ const navigationItems = [
   },
 ]
 
-const settingsItems = [
-  {
-    title: "Team",
-    url: "/team",
-    icon: Users,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-]
-
 export function AppSidebar() {
   const location = useLocation()
   const { signOut } = useAuth()
 
   return (
-    <Sidebar className="border-r bg-gradient-to-b from-slate-50 to-white">
+    <Sidebar collapsible="icon" className="border-r bg-gradient-to-b from-slate-50 to-white">
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
@@ -100,7 +81,7 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sm font-semibold text-slate-600 mb-2">
-            Main Navigation
+            Favorites
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -110,30 +91,7 @@ export function AppSidebar() {
                     asChild 
                     isActive={location.pathname === item.url}
                     className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
-                  >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold text-slate-600 mb-2">
-            Management
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === item.url}
-                    className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
+                    tooltip={item.title}
                   >
                     <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="w-4 h-4" />
@@ -161,6 +119,7 @@ export function AppSidebar() {
           © 2024 Metakit.ai
         </div>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }
