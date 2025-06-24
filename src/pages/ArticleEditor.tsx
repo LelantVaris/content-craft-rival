@@ -134,7 +134,7 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
         <div className="space-y-6">
           <SEOScorePanel seoScore={seoScore} />
           <ArticleStatsPanel wordCount={wordCount} readingTime={readingTime} />
-          <PublishingPanel article={article} />
+          <PublishingPanel />
         </div>
       </div>
     </div>
