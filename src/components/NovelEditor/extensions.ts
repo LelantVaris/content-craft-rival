@@ -8,7 +8,7 @@ import {
   HorizontalRule,
   StarterKit,
   Placeholder,
-} from "novel/extensions";
+} from "novel";
 import { cx } from "class-variance-authority";
 
 // Placeholder configuration
