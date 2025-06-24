@@ -13,6 +13,14 @@ interface ContentEditorProps {
 }
 
 const ContentEditor = ({ content, setContent, wordCount, readingTime }: ContentEditorProps) => {
+  const handleContentChange = (newContent: string) => {
+    try {
+      setContent(newContent);
+    } catch (error) {
+      console.error("Content update error:", error);
+    }
+  };
+
   return (
     <Card className="border-0 bg-white/80 backdrop-blur">
       <CardHeader>
@@ -24,13 +32,13 @@ const ContentEditor = ({ content, setContent, wordCount, readingTime }: ContentE
           </div>
         </div>
         <CardDescription>
-          Write your content here. Use "/" for AI commands and rich text formatting.
+          Write your content here. Rich text formatting is available.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <NovelEditor
           content={content}
-          onChange={setContent}
+          onChange={handleContentChange}
           className="min-h-[600px]"
         />
         
@@ -38,7 +46,6 @@ const ContentEditor = ({ content, setContent, wordCount, readingTime }: ContentE
         <div className="flex items-center justify-between mt-4 pt-4 border-t">
           <div className="flex items-center gap-2">
             <Badge variant="outline">Rich Text</Badge>
-            <Badge variant="outline">AI-Powered</Badge>
             <Badge variant="outline">Auto-save enabled</Badge>
           </div>
           <Button variant="ghost" size="sm">
