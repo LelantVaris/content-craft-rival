@@ -62,7 +62,7 @@ export function useWebflowPublishing() {
         : JSON.parse(connection.credentials || '{}')
       
       const token = credentials.token
-      const targetSiteId = siteId || credentials.site_id || connection.site_id
+      const targetSiteId = siteId || credentials.site_id || (connection.site_id ? String(connection.site_id) : undefined)
 
       if (!token || !targetSiteId) {
         throw new Error('Missing token or site ID in connection')
