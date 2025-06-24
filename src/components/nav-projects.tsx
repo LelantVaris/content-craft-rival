@@ -1,25 +1,16 @@
 
 "use client"
 
-import { type LucideIcon, MoreHorizontal, Plus, Folder, Forward, Trash2 } from "lucide-react"
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
+import { type LucideIcon, Plus, Globe } from "lucide-react"
+import { 
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
+import { WebflowConnectionDialog } from "@/components/WebflowConnection/WebflowConnectionDialog"
+import { useWebflowConnections } from "@/hooks/useWebflowConnections"
 
 export function NavProjects({
   projects,
@@ -30,18 +21,31 @@ export function NavProjects({
     icon: LucideIcon
   }[]
 }) {
-  const { isMobile } = useSidebar()
+  const { connections, refreshConnections } = useWebflowConnections()
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>CMS Collections</SidebarGroupLabel>
       <SidebarMenu>
-        {/* Show empty state message */}
-        <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70" disabled>
-            <span>Connect CMS</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {connections.length > 0 ? (
+          <>
+            {connections.map((connection) => (
+              <SidebarMenuItem key={connection.id}>
+                <SidebarMenuButton>
+                  <Globe className="w-4 h-4" />
+                  <span>{connection.connection_name}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+            <SidebarMenuItem>
+              <WebflowConnectionDialog onConnectionAdded={refreshConnections} />
+            </SidebarMenuItem>
+          </>
+        ) : (
+          <SidebarMenuItem>
+            <WebflowConnectionDialog onConnectionAdded={refreshConnections} />
+          </SidebarMenuItem>
+        )}
       </SidebarMenu>
     </SidebarGroup>
   )
