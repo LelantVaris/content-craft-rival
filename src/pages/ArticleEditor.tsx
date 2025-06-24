@@ -19,9 +19,14 @@ import {
   Zap
 } from "lucide-react"
 
-const ArticleEditor = () => {
-  const [title, setTitle] = useState("10 Best Practices for Content Marketing in 2024")
-  const [content, setContent] = useState(`# Introduction
+interface ArticleEditorProps {
+  initialTitle?: string;
+  initialContent?: string;
+}
+
+const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}) => {
+  const [title, setTitle] = useState(initialTitle || "10 Best Practices for Content Marketing in 2024")
+  const [content, setContent] = useState(initialContent || `# Introduction
 
 Content marketing continues to evolve rapidly in 2024, with new technologies and changing consumer behaviors reshaping how brands connect with their audiences. In this comprehensive guide, we'll explore the most effective strategies that are driving results for businesses today.
 
