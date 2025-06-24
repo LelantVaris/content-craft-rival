@@ -29,7 +29,11 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Link, useLocation } from "react-router-dom"
 
 // This is sample data for the original template - we'll keep the structure but update content
 const data = {
@@ -57,94 +61,25 @@ const data = {
   ],
   navMain: [
     {
-      title: "Favorites",
+      title: "Recent Articles",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
-          title: "Dashboard",
-          url: "/",
-        },
-        {
-          title: "Content Writer",
-          url: "/article/new",
-        },
-        {
-          title: "Calendar",
-          url: "/calendar",
-        },
-        {
-          title: "Analytics",
-          url: "/analytics",
-        },
-        {
-          title: "Keyword Research",
-          url: "/keywords",
-        },
-      ],
-    },
-    {
-      title: "Platform",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
+          title: "Article 1",
           url: "#",
         },
         {
-          title: "Explorer",
+          title: "Article 2", 
           url: "#",
         },
         {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
+          title: "Article 3",
           url: "#",
         },
         {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
+          title: "Article 4",
           url: "#",
         },
       ],
@@ -152,31 +87,64 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
+      name: "Connect CMS",
       url: "#",
       icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 }
 
+// Top navigation items
+const topNavItems = [
+  {
+    title: "Search",
+    url: "/search",
+    icon: Search,
+  },
+  {
+    title: "Content Planner",
+    url: "#",
+    icon: Bot,
+  },
+  {
+    title: "Home", 
+    url: "/",
+    icon: Home,
+  },
+  {
+    title: "Article Writer",
+    url: "/article/new", 
+    icon: FileEdit,
+  },
+]
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const location = useLocation()
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
+        {/* Top Navigation Items */}
+        <SidebarMenu>
+          {topNavItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild isActive={location.pathname === item.url} tooltip={item.title}>
+                <Link to={item.url}>
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+        
+        {/* Recent Articles Section */}
         <NavMain items={data.navMain} />
+        
+        {/* CMS Collections Section */}
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>

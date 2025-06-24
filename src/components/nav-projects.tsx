@@ -1,3 +1,4 @@
+
 "use client"
 
 import { type LucideIcon, MoreHorizontal, Plus, Folder, Forward, Trash2 } from "lucide-react"
@@ -33,7 +34,7 @@ export function NavProjects({
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>CMS Collections</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
