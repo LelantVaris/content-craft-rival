@@ -9,7 +9,6 @@ import {
   type JSONContent 
 } from "novel";
 import { useState, useEffect } from "react";
-import { handleCommandNavigation } from "novel/extensions";
 import { defaultExtensions } from "./NovelEditor/extensions";
 import { slashCommand } from "./NovelEditor/slashCommand";
 import { suggestionItems } from "./NovelEditor/suggestionItems";
@@ -91,9 +90,6 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
           onUpdate={handleUpdate}
           className="min-h-[600px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
           editorProps={{
-            handleDOMEvents: {
-              keydown: (_view, event) => handleCommandNavigation(event),
-            },
             attributes: {
               class: "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full min-h-[600px] p-4",
             },
