@@ -8,9 +8,11 @@ import {
   Settings,
   Target,
   Users,
-  Search
+  Search,
+  LogOut
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 import {
   Sidebar,
@@ -24,6 +26,8 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { CreditBalance } from "@/components/CreditBalance"
 
 const navigationItems = [
   {
@@ -56,11 +60,6 @@ const navigationItems = [
     url: "/keywords",
     icon: Search,
   },
-  {
-    title: "Competitors",
-    url: "/competitors",
-    icon: Target,
-  },
 ]
 
 const settingsItems = [
@@ -78,6 +77,7 @@ const settingsItems = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const { signOut } = useAuth()
 
   return (
     <Sidebar className="border-r bg-gradient-to-b from-slate-50 to-white">
@@ -87,12 +87,18 @@ export function AppSidebar() {
             <Target className="w-5 h-5 text-white" />
           </div>
           <span className="font-bold text-xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            ContentRank
+            Metakit.ai
           </span>
         </div>
       </SidebarHeader>
       
       <SidebarContent>
+        <SidebarGroup>
+          <div className="px-3 mb-4">
+            <CreditBalance />
+          </div>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel className="text-sm font-semibold text-slate-600 mb-2">
             Main Navigation
@@ -143,8 +149,17 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <div className="text-xs text-slate-500">
-          © 2024 ContentRank Pro
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={signOut}
+          className="w-full flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </Button>
+        <div className="text-xs text-slate-500 mt-2 text-center">
+          © 2024 Metakit.ai
         </div>
       </SidebarFooter>
     </Sidebar>
