@@ -61,8 +61,8 @@ export function useWebflowPublishing() {
         ? connection.credentials 
         : JSON.parse(connection.credentials || '{}')
       
-      const token = credentials.token
-      const targetSiteId = siteId || credentials.site_id || (connection.site_id ? String(connection.site_id) : undefined)
+      const token = String(credentials.token || '')
+      const targetSiteId = siteId || String(credentials.site_id || '') || (connection.site_id ? String(connection.site_id) : '')
 
       if (!token || !targetSiteId) {
         throw new Error('Missing token or site ID in connection')
@@ -151,7 +151,7 @@ export function useWebflowPublishing() {
 
       const response = await supabase.functions.invoke('publish-to-webflow', {
         body: {
-          token: credentials.token,
+          token: String(credentials.token || ''),
           collectionId: state.selectedCollection.id,
           article,
           fieldMapping: state.fieldMapping,
