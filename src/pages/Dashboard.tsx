@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import BlogWriterWizard from "@/components/BlogWriterWizard";
 import { useProfile } from "@/hooks/useProfile";
 import { 
   PenTool, 
@@ -89,8 +88,40 @@ const Dashboard = () => {
         })}
       </div>
 
-      {/* Blog Writer Workflow */}
-      <BlogWriterWizard />
+      {/* Enhanced Article Creator CTA */}
+      <Card className="border-2 border-purple-100 bg-gradient-to-r from-purple-50 to-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <PenTool className="w-7 h-7 text-purple-600" />
+            AI Article Creator
+          </CardTitle>
+          <CardDescription className="text-base">
+            Create engaging, SEO-optimized content with our enhanced AI-powered workflow
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-8 mb-6">
+            <div className="flex items-center gap-2 text-purple-600">
+              <CheckCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">AI Title Generation</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-600">
+              <CheckCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">Smart Outline Creation</span>
+            </div>
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">Automated Content Generation</span>
+            </div>
+          </div>
+          <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-lg py-6">
+            <Link to="/article/new">
+              <PenTool className="w-5 h-5 mr-2" />
+              Start Creating Your Article
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Standalone Tools */}
       <Card>
@@ -162,7 +193,7 @@ const Dashboard = () => {
             <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-blue-600">
               <Link to="/article/new">
                 <PenTool className="w-4 h-4 mr-2" />
-                Start Blog Writer Workflow
+                Start Enhanced Article Workflow
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
