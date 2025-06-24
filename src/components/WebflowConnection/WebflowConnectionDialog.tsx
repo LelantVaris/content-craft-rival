@@ -12,14 +12,26 @@ import { useToast } from "@/hooks/use-toast"
 
 interface WebflowConnectionDialogProps {
   onConnectionAdded?: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  children?: React.ReactNode
 }
 
-export function WebflowConnectionDialog({ onConnectionAdded }: WebflowConnectionDialogProps) {
-  const [open, setOpen] = useState(false)
+export function WebflowConnectionDialog({ 
+  onConnectionAdded, 
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  children 
+}: WebflowConnectionDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [siteToken, setSiteToken] = useState("")
   const [connectionName, setConnectionName] = useState("")
   const { toast } = useToast()
+
+  // Use controlled props if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setOpen = controlledOnOpenChange || setInternalOpen
 
   const handleSiteTokenConnection = async () => {
     if (!siteToken.trim() || !connectionName.trim()) {
@@ -102,6 +114,101 @@ export function WebflowConnectionDialog({ onConnectionAdded }: WebflowConnection
     }
   }
 
+  const dialogContent = (
+    <DialogContent className="sm:max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle>Connect Webflow Account</DialogTitle>
+        <DialogDescription>
+          Choose how you'd like to connect your Webflow account to publish articles.
+        </DialogDescription>
+      </DialogHeader>
+
+      <Tabs defaultValue="site-token" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="site-token">Site Token</TabsTrigger>
+          <TabsTrigger value="oauth">OAuth</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="site-token" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                Site Token Authentication
+              </CardTitle>
+              <CardDescription>
+                Best for single-site integrations. Get your token from Webflow Site Settings → Apps & Integrations → API Access.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="connection-name">Connection Name</Label>
+                <Input
+                  id="connection-name"
+                  placeholder="My Webflow Site"
+                  value={connectionName}
+                  onChange={(e) => setConnectionName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="site-token">Site Token</Label>
+                <Input
+                  id="site-token"
+                  type="password"
+                  placeholder="Enter your Webflow site token"
+                  value={siteToken}
+                  onChange={(e) => setSiteToken(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={handleSiteTokenConnection} 
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "Connecting..." : "Connect Site"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="oauth" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                OAuth Authentication
+              </CardTitle>
+              <CardDescription>
+                Secure access to multiple sites. Recommended for most users.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleOAuthConnection} 
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "Redirecting..." : "Connect with OAuth"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </DialogContent>
+  )
+
+  // If children are provided, use them as trigger, otherwise provide default trigger
+  if (children) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        {dialogContent}
+      </Dialog>
+    )
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -110,86 +217,7 @@ export function WebflowConnectionDialog({ onConnectionAdded }: WebflowConnection
           Connect CMS
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Connect Webflow Account</DialogTitle>
-          <DialogDescription>
-            Choose how you'd like to connect your Webflow account to publish articles.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Tabs defaultValue="site-token" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="site-token">Site Token</TabsTrigger>
-            <TabsTrigger value="oauth">OAuth</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="site-token" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="w-4 h-4" />
-                  Site Token Authentication
-                </CardTitle>
-                <CardDescription>
-                  Best for single-site integrations. Get your token from Webflow Site Settings → Apps & Integrations → API Access.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="connection-name">Connection Name</Label>
-                  <Input
-                    id="connection-name"
-                    placeholder="My Webflow Site"
-                    value={connectionName}
-                    onChange={(e) => setConnectionName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="site-token">Site Token</Label>
-                  <Input
-                    id="site-token"
-                    type="password"
-                    placeholder="Enter your Webflow site token"
-                    value={siteToken}
-                    onChange={(e) => setSiteToken(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  onClick={handleSiteTokenConnection} 
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? "Connecting..." : "Connect Site"}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="oauth" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  OAuth Authentication
-                </CardTitle>
-                <CardDescription>
-                  Secure access to multiple sites. Recommended for most users.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={handleOAuthConnection} 
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? "Redirecting..." : "Connect with OAuth"}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
+      {dialogContent}
     </Dialog>
   )
 }

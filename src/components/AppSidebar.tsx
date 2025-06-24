@@ -20,7 +20,6 @@ import {
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
@@ -42,23 +41,6 @@ const data = {
     email: "user@metakit.ai",
     avatar: "/avatars/shadcn.jpg",
   },
-  teams: [
-    {
-      name: "Metakit.ai",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
       title: "Recent Articles",
@@ -83,13 +65,6 @@ const data = {
           url: "#",
         },
       ],
-    },
-  ],
-  projects: [
-    {
-      name: "Connect CMS",
-      url: "#",
-      icon: Frame,
     },
   ],
 }
@@ -124,7 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
         {/* Top Navigation Items */}
@@ -143,9 +118,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         
         {/* Recent Articles Section */}
         <NavMain items={data.navMain} />
-        
-        {/* CMS Collections Section */}
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
