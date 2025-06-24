@@ -1,4 +1,3 @@
-
 import { 
   Calendar, 
   Home, 
@@ -27,7 +26,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { CreditBalance } from "@/components/CreditBalance"
+import CreditBalance from "@/components/CreditBalance"
 
 const navigationItems = [
   {

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BlogWriterWizard } from "@/components/BlogWriterWizard";
+import BlogWriterWizard from "@/components/BlogWriterWizard";
 
 const ArticleForm = () => {
   return (
