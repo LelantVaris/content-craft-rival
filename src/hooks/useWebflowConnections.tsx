@@ -1,19 +1,10 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
+import { Tables } from "@/integrations/supabase/types"
 
-interface WebflowConnection {
-  id: string
-  connection_name: string
-  cms_type: string
-  site_id?: string
-  is_active: boolean
-  created_at: string
-  credentials: {
-    type: 'site_token' | 'oauth'
-    site_name?: string
-  }
-}
+// Use the actual database type from Supabase
+type WebflowConnection = Tables<'cms_connections'>
 
 export function useWebflowConnections() {
   const [connections, setConnections] = useState<WebflowConnection[]>([])

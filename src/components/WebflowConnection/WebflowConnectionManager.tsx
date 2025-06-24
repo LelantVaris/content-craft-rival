@@ -7,19 +7,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Globe, Trash2, ExternalLink } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { Tables } from "@/integrations/supabase/types"
 
-interface WebflowConnection {
-  id: string
-  connection_name: string
-  cms_type: string
-  site_id?: string
-  is_active: boolean
-  created_at: string
-  credentials: {
-    type: 'site_token' | 'oauth'
-    site_name?: string
-  }
-}
+// Use the actual database type from Supabase
+type WebflowConnection = Tables<'cms_connections'>
 
 export function WebflowConnectionManager() {
   const [connections, setConnections] = useState<WebflowConnection[]>([])
@@ -76,6 +67,21 @@ export function WebflowConnectionManager() {
     }
   }
 
+  // Helper function to get credentials info safely
+  const getCredentialsInfo = (credentials: any) => {
+    try {
+      if (typeof credentials === 'object' && credentials !== null) {
+        return {
+          type: credentials.type || 'site_token',
+          site_name: credentials.site_name || null
+        }
+      }
+      return { type: 'site_token', site_name: null }
+    } catch {
+      return { type: 'site_token', site_name: null }
+    }
+  }
+
   useEffect(() => {
     fetchConnections()
   }, [])
@@ -103,63 +109,66 @@ export function WebflowConnectionManager() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {connections.map((connection) => (
-            <Card key={connection.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    {connection.connection_name}
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={connection.is_active ? "default" : "secondary"}>
-                      {connection.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                    <Badge variant="outline">
-                      {connection.credentials.type === 'oauth' ? 'OAuth' : 'Site Token'}
-                    </Badge>
+          {connections.map((connection) => {
+            const credentialsInfo = getCredentialsInfo(connection.credentials)
+            return (
+              <Card key={connection.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      {connection.connection_name}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={connection.is_active ? "default" : "secondary"}>
+                        {connection.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge variant="outline">
+                        {credentialsInfo.type === 'oauth' ? 'OAuth' : 'Site Token'}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-                <CardDescription>
-                  Connected on {new Date(connection.created_at).toLocaleDateString()}
-                  {connection.credentials.site_name && (
-                    <span> • {connection.credentials.site_name}</span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Test Connection
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Remove
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remove Webflow Connection</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to remove the connection to "{connection.connection_name}"? 
-                          This action cannot be undone and you'll need to reconnect to publish to this site.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteConnection(connection.id)}>
-                          Remove Connection
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <CardDescription>
+                    Connected on {connection.created_at ? new Date(connection.created_at).toLocaleDateString() : 'Unknown'}
+                    {credentialsInfo.site_name && (
+                      <span> • {credentialsInfo.site_name}</span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Test Connection
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remove Webflow Connection</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to remove the connection to "{connection.connection_name}"? 
+                            This action cannot be undone and you'll need to reconnect to publish to this site.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteConnection(connection.id)}>
+                            Remove Connection
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
