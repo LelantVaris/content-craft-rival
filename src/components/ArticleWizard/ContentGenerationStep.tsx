@@ -12,9 +12,11 @@ import {
   Clock,
   Sparkles,
   Eye,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 import { ArticleData } from './EnhancedArticleWizard';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContentGenerationStepProps {
   articleData: ArticleData;
@@ -31,11 +33,12 @@ const ContentGenerationStep: React.FC<ContentGenerationStepProps> = ({
   const [generationProgress, setGenerationProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const generationPhases = [
     { phase: 'Analyzing your outline...', duration: 1000 },
-    { phase: 'Searching the web for latest insights...', duration: 2000 },
-    { phase: 'Gathering relevant information...', duration: 1500 },
+    { phase: 'Researching latest insights...', duration: 2000 },
+    { phase: 'Structuring content flow...', duration: 1500 },
     { phase: 'Writing introduction...', duration: 1200 },
     { phase: 'Generating main content...', duration: 3000 },
     { phase: 'Creating conclusion...', duration: 1000 },
@@ -50,143 +53,105 @@ const ContentGenerationStep: React.FC<ContentGenerationStepProps> = ({
   }, []);
 
   const generateContent = async () => {
-    setIsGenerating(true);
-    setGenerationProgress(0);
-    
-    let totalProgress = 0;
-    
-    for (let i = 0; i < generationPhases.length; i++) {
-      const phase = generationPhases[i];
-      setCurrentPhase(phase.phase);
-      
-      await new Promise(resolve => setTimeout(resolve, phase.duration));
-      
-      totalProgress = ((i + 1) / generationPhases.length) * 100;
-      setGenerationProgress(totalProgress);
+    const title = articleData.customTitle || articleData.selectedTitle;
+    if (!title || !articleData.outline || articleData.outline.length === 0) {
+      setError('Title and outline are required for content generation');
+      return;
     }
 
-    // Generate sample content based on the outline
-    const sampleContent = generateSampleContent();
-    onUpdate({ generatedContent: sampleContent });
+    setIsGenerating(true);
+    setGenerationProgress(0);
+    setError(null);
     
-    setIsGenerating(false);
-    setCurrentPhase('Content generation complete!');
+    // Simulate progress phases
+    let totalProgress = 0;
+    const progressInterval = setInterval(() => {
+      if (totalProgress < 90) {
+        totalProgress += Math.random() * 10;
+        setGenerationProgress(Math.min(totalProgress, 90));
+        
+        // Update phase based on progress
+        const phaseIndex = Math.floor((totalProgress / 90) * generationPhases.length);
+        if (phaseIndex < generationPhases.length) {
+          setCurrentPhase(generationPhases[phaseIndex].phase);
+        }
+      }
+    }, 500);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
+          title,
+          outline: articleData.outline,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      clearInterval(progressInterval);
+
+      if (error) throw error;
+
+      if (data?.content) {
+        onUpdate({ generatedContent: data.content });
+        setGenerationProgress(100);
+        setCurrentPhase('Content generation complete!');
+      } else {
+        throw new Error('Invalid response format from AI service');
+      }
+    } catch (err: any) {
+      clearInterval(progressInterval);
+      console.error('Error generating content:', err);
+      setError(err.message || 'Failed to generate content. Please try again.');
+      
+      // Fallback to sample content on error
+      const sampleContent = generateFallbackContent(title);
+      onUpdate({ generatedContent: sampleContent });
+      setGenerationProgress(100);
+      setCurrentPhase('Content generation complete (using fallback)');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const generateSampleContent = () => {
-    const title = articleData.customTitle || articleData.selectedTitle;
-    
+  const generateFallbackContent = (title: string) => {
     return `# ${title}
 
 ## Introduction
 
-Content marketing has become the cornerstone of successful digital strategies in 2024. As businesses compete for attention in an increasingly crowded digital landscape, the need for high-quality, engaging content has never been more critical. This comprehensive guide will walk you through the essential strategies and techniques that are driving real results for businesses today.
+This is a comprehensive guide that will help you understand the key concepts and strategies outlined in this article. The content has been structured to provide you with actionable insights and practical advice.
 
-## Understanding Content Marketing Fundamentals
+## Main Content
 
-Content marketing is more than just creating blog posts and social media updates. It's a strategic approach focused on creating and distributing valuable, relevant, and consistent content to attract and retain a clearly defined audience. The goal is to drive profitable customer action through content that educates, entertains, or inspires.
+The following sections will dive deep into the topic, providing you with detailed information and step-by-step guidance.
 
-### Key Principles of Modern Content Marketing
+### Key Points
 
-1. **Audience-First Approach**: Understanding your audience's needs, challenges, and preferences
-2. **Value Creation**: Providing genuine value before asking for anything in return
-3. **Consistency**: Maintaining regular publishing schedules and brand voice
-4. **Multi-Channel Distribution**: Leveraging various platforms and formats
+- Important concept #1 with detailed explanation
+- Important concept #2 with practical examples
+- Important concept #3 with actionable steps
 
-## Strategy Development
+### Implementation Strategy
 
-Creating a successful content marketing strategy requires careful planning and execution. Here's a step-by-step approach:
+Here's how you can apply these concepts in practice:
 
-### 1. Define Your Goals
-- Brand awareness
-- Lead generation
-- Customer retention
-- Thought leadership
+1. **Step One**: Begin by understanding the fundamentals
+2. **Step Two**: Apply the strategies in a controlled environment
+3. **Step Three**: Scale your implementation based on results
 
-### 2. Identify Your Target Audience
-- Demographics and psychographics
-- Pain points and challenges
-- Content consumption preferences
-- Buyer journey mapping
+## Best Practices
 
-### 3. Content Planning and Calendar
-- Editorial calendar development
-- Content themes and topics
-- Format diversity (blog posts, videos, infographics, podcasts)
-- Publishing frequency
+To ensure success with these strategies, consider the following best practices:
 
-## Content Creation Best Practices
+- Always test your approach before full implementation
+- Monitor results and adjust as needed
+- Stay updated with the latest trends and developments
 
-Quality content is the foundation of successful content marketing. Here are proven techniques for creating content that resonates:
+## Conclusion
 
-### Writing Compelling Headlines
-- Use numbers and statistics
-- Include power words
-- Address specific pain points
-- Keep it concise and clear
+This guide has provided you with the essential knowledge and tools needed to succeed. Remember to take action on what you've learned and continue to refine your approach based on your results.
 
-### Structuring Your Content
-- Use clear headings and subheadings
-- Include bullet points and lists
-- Add visual elements
-- Maintain scannable formatting
-
-### Optimizing for SEO
-- Keyword research and integration
-- Meta descriptions and title tags
-- Internal and external linking
-- Image optimization
-
-## Distribution and Promotion
-
-Creating great content is only half the battle. Effective distribution ensures your content reaches the right audience:
-
-### Owned Media Channels
-- Company blog
-- Email newsletters
-- Website pages
-- Mobile apps
-
-### Earned Media
-- Social media shares
-- Guest posting
-- Influencer partnerships
-- PR and media coverage
-
-### Paid Media
-- Social media advertising
-- Content promotion
-- Native advertising
-- PPC campaigns
-
-## Measuring Success and ROI
-
-To optimize your content marketing efforts, you need to track the right metrics:
-
-### Key Performance Indicators
-- Website traffic and engagement
-- Lead generation and conversion rates
-- Social media metrics
-- Brand awareness measures
-
-### Tools for Measurement
-- Google Analytics
-- Social media analytics
-- Email marketing platforms
-- CRM systems
-
-## Conclusion and Next Steps
-
-Content marketing success requires a strategic approach, consistent execution, and continuous optimization. By following the strategies outlined in this guide, you'll be well-equipped to create content that not only engages your audience but also drives meaningful business results.
-
-### Immediate Action Steps:
-1. Audit your current content marketing efforts
-2. Define clear goals and KPIs
-3. Create a content calendar for the next quarter
-4. Implement measurement and tracking systems
-5. Start creating valuable content consistently
-
-Remember, content marketing is a long-term strategy that requires patience and persistence. Stay focused on providing value to your audience, and the results will follow.`;
+The key to success is consistent application of these principles combined with continuous learning and adaptation.`;
   };
 
   const wordCount = articleData.generatedContent ? articleData.generatedContent.split(' ').length : 0;
@@ -273,6 +238,13 @@ Remember, content marketing is a long-term strategy that requires patience and p
           </div>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           {isGenerating ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">

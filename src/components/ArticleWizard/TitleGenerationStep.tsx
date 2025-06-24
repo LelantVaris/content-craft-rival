@@ -12,9 +12,11 @@ import {
   PenTool, 
   Target,
   Clock,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { ArticleData } from './EnhancedArticleWizard';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TitleGenerationStepProps {
   articleData: ArticleData;
@@ -25,15 +27,7 @@ const TitleGenerationStep: React.FC<TitleGenerationStepProps> = ({ articleData, 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [showCustomTitle, setShowCustomTitle] = useState(false);
-
-  // Sample generated titles for demo
-  const sampleTitles = [
-    "10 Essential Strategies to Boost Your Content Marketing ROI in 2024",
-    "The Complete Guide to Content Marketing: From Strategy to Success",
-    "How to Create High-Converting Content That Drives Real Results",
-    "Content Marketing Mastery: Proven Techniques for Modern Businesses",
-    "Transform Your Content Strategy: Expert Tips for Maximum Impact"
-  ];
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (articleData.topic && generatedTitles.length === 0) {
@@ -42,20 +36,48 @@ const TitleGenerationStep: React.FC<TitleGenerationStepProps> = ({ articleData, 
   }, [articleData.topic]);
 
   const generateTitles = async () => {
-    setIsGenerating(true);
+    if (!articleData.topic.trim()) return;
     
-    // Simulate AI generation delay
-    setTimeout(() => {
-      setGeneratedTitles(sampleTitles);
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-titles', {
+        body: {
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.titles && Array.isArray(data.titles)) {
+        setGeneratedTitles(data.titles);
+      } else {
+        throw new Error('Invalid response format from AI service');
+      }
+    } catch (err: any) {
+      console.error('Error generating titles:', err);
+      setError(err.message || 'Failed to generate titles. Please try again.');
+      // Fallback to sample titles on error
+      setGeneratedTitles([
+        "10 Essential Strategies to Boost Your Content Marketing ROI in 2024",
+        "The Complete Guide to Content Marketing: From Strategy to Success",
+        "How to Create High-Converting Content That Drives Real Results",
+        "Content Marketing Mastery: Proven Techniques for Modern Businesses",
+        "Transform Your Content Strategy: Expert Tips for Maximum Impact"
+      ]);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleTopicChange = (topic: string) => {
     onUpdate({ topic });
     if (topic.trim()) {
       setGeneratedTitles([]);
-      generateTitles();
+      setError(null);
     }
   };
 
@@ -149,6 +171,13 @@ const TitleGenerationStep: React.FC<TitleGenerationStepProps> = ({ articleData, 
             </div>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+                <AlertCircle className="w-4 h-4 text-red-600" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
             {isGenerating ? (
               <div className="flex items-center justify-center p-8">
                 <div className="text-center">

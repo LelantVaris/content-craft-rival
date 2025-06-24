@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +12,11 @@ import {
   ChevronRight,
   Sparkles,
   GripVertical,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { ArticleData, OutlineSection } from './EnhancedArticleWizard';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OutlineCreationStepProps {
   articleData: ArticleData;
@@ -24,6 +25,7 @@ interface OutlineCreationStepProps {
 
 const OutlineCreationStep: React.FC<OutlineCreationStepProps> = ({ articleData, onUpdate }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (articleData.outline.length === 0) {
@@ -32,65 +34,83 @@ const OutlineCreationStep: React.FC<OutlineCreationStepProps> = ({ articleData, 
   }, []);
 
   const generateOutline = async () => {
-    setIsGenerating(true);
+    const title = articleData.customTitle || articleData.selectedTitle;
+    if (!title && !articleData.topic) return;
     
-    // Simulate AI generation delay
-    setTimeout(() => {
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-outline', {
+        body: {
+          title: title || articleData.topic,
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.sections && Array.isArray(data.sections)) {
+        onUpdate({ outline: data.sections });
+      } else {
+        throw new Error('Invalid response format from AI service');
+      }
+    } catch (err: any) {
+      console.error('Error generating outline:', err);
+      setError(err.message || 'Failed to generate outline. Please try again.');
+      
+      // Fallback to sample outline on error
       const sampleOutline: OutlineSection[] = [
         {
           id: '1',
           title: 'Introduction',
-          content: 'Hook readers with a compelling opening that highlights the importance of content marketing in today\'s digital landscape.',
-          characterCount: 125,
+          content: 'Hook readers with a compelling opening that highlights the importance of the topic.',
+          characterCount: 85,
           expanded: false
         },
         {
           id: '2',
-          title: 'Understanding Content Marketing Fundamentals',
-          content: 'Define content marketing and explain its core principles. Cover the difference between traditional and modern approaches.',
-          characterCount: 142,
+          title: 'Understanding the Fundamentals',
+          content: 'Define key concepts and explain core principles that readers need to know.',
+          characterCount: 82,
           expanded: false
         },
         {
           id: '3',
-          title: 'Strategy Development',
-          content: 'Step-by-step guide to creating a content marketing strategy, including audience research, goal setting, and content planning.',
-          characterCount: 138,
+          title: 'Step-by-Step Implementation',
+          content: 'Detailed guide on how to implement the strategies discussed in the article.',
+          characterCount: 87,
           expanded: false
         },
         {
           id: '4',
-          title: 'Content Creation Best Practices',
-          content: 'Detailed tips for creating high-quality content that engages audiences and drives conversions.',
-          characterCount: 108,
+          title: 'Best Practices and Tips',
+          content: 'Expert advice and proven techniques for getting the best results.',
+          characterCount: 72,
           expanded: false
         },
         {
           id: '5',
-          title: 'Distribution and Promotion',
-          content: 'How to effectively distribute and promote your content across multiple channels for maximum reach.',
-          characterCount: 112,
+          title: 'Common Mistakes to Avoid',
+          content: 'Highlight pitfalls and challenges that readers should be aware of.',
+          characterCount: 70,
           expanded: false
         },
         {
           id: '6',
-          title: 'Measuring Success and ROI',
-          content: 'Key metrics to track, tools to use, and how to calculate the return on investment of your content marketing efforts.',
-          characterCount: 134,
-          expanded: false
-        },
-        {
-          id: '7',
           title: 'Conclusion and Next Steps',
-          content: 'Summarize key takeaways and provide actionable next steps for readers to implement their content marketing strategy.',
-          characterCount: 136,
+          content: 'Summarize key takeaways and provide actionable next steps for readers.',
+          characterCount: 78,
           expanded: false
         }
       ];
       
       onUpdate({ outline: sampleOutline });
+    } finally {
       setIsGenerating(false);
-    }, 2500);
+    }
   };
 
   const addSection = () => {
@@ -187,6 +207,13 @@ const OutlineCreationStep: React.FC<OutlineCreationStepProps> = ({ articleData, 
           </div>
         </CardContent>
       </Card>
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-red-600" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
 
       {/* Outline Sections */}
       {isGenerating ? (
