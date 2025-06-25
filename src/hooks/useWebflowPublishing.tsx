@@ -1,46 +1,18 @@
 
 import { useState, useCallback } from 'react'
-import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-import { Tables } from '@/integrations/supabase/types'
-
-type Article = Tables<'articles'>
-type WebflowConnection = Tables<'cms_connections'>
-
-export interface WebflowCollection {
-  id: string
-  displayName: string
-  singularName: string
-  slug: string
-  fields: WebflowField[]
-}
-
-export interface WebflowField {
-  id: string
-  displayName: string
-  slug: string
-  type: string
-  required?: boolean
-  isTitle?: boolean
-  isContent?: boolean
-  isDescription?: boolean
-}
-
-export interface FieldMapping {
-  title?: string
-  content?: string
-  description?: string
-  keywords?: string
-}
-
-export interface PublishingState {
-  isLoading: boolean
-  isPublishing: boolean
-  collections: WebflowCollection[]
-  selectedCollection: WebflowCollection | null
-  fieldMapping: FieldMapping
-  publishingProgress: number
-}
+import { 
+  Article, 
+  WebflowConnection, 
+  WebflowCollection, 
+  FieldMapping, 
+  PublishingState 
+} from '@/types/webflow'
+import { 
+  discoverWebflowCollections, 
+  publishArticleToWebflow 
+} from '@/utils/webflowApi'
+import { generateAutoFieldMapping } from '@/utils/webflowFieldMapping'
 
 export function useWebflowPublishing() {
   const [state, setState] = useState<PublishingState>({
@@ -57,26 +29,7 @@ export function useWebflowPublishing() {
     setState(prev => ({ ...prev, isLoading: true, collections: [] }))
     
     try {
-      const credentials = typeof connection.credentials === 'object' 
-        ? connection.credentials 
-        : JSON.parse(connection.credentials || '{}')
-      
-      const token = String(credentials.token || '')
-      const targetSiteId = siteId || String(credentials.site_id || '') || (connection.site_id ? String(connection.site_id) : '')
-
-      if (!token || !targetSiteId) {
-        throw new Error('Missing token or site ID in connection')
-      }
-
-      const response = await supabase.functions.invoke('discover-webflow-collections', {
-        body: { token, siteId: targetSiteId }
-      })
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to discover collections')
-      }
-
-      const collections = response.data?.collections || []
+      const collections = await discoverWebflowCollections(connection, siteId)
       console.log('Discovered collections:', collections)
 
       setState(prev => ({ 
@@ -105,28 +58,7 @@ export function useWebflowPublishing() {
   }, [toast])
 
   const generateFieldMapping = useCallback((collection: WebflowCollection) => {
-    const mapping: FieldMapping = {}
-
-    // Find title field (Name field or first required text field)
-    const titleField = collection.fields.find(f => f.isTitle || f.slug === 'name') ||
-                     collection.fields.find(f => f.required && f.type === 'PlainText')
-    if (titleField) mapping.title = titleField.slug
-
-    // Find content field (first RichText field)
-    const contentField = collection.fields.find(f => f.type === 'RichText')
-    if (contentField) mapping.content = contentField.slug
-
-    // Find description field
-    const descField = collection.fields.find(f => f.isDescription) ||
-                     collection.fields.find(f => f.type === 'PlainText' && f.slug !== mapping.title)
-    if (descField) mapping.description = descField.slug
-
-    // Find keywords field
-    const keywordsField = collection.fields.find(f => 
-      f.slug.includes('keyword') || f.slug.includes('tag')
-    )
-    if (keywordsField) mapping.keywords = keywordsField.slug
-
+    const mapping = generateAutoFieldMapping(collection)
     setState(prev => ({ ...prev, fieldMapping: mapping }))
     console.log('Generated field mapping:', mapping)
   }, [])
@@ -143,30 +75,17 @@ export function useWebflowPublishing() {
     setState(prev => ({ ...prev, isPublishing: true, publishingProgress: 0 }))
 
     try {
-      const credentials = typeof connection.credentials === 'object' 
-        ? connection.credentials 
-        : JSON.parse(connection.credentials || '{}')
-
       setState(prev => ({ ...prev, publishingProgress: 25 }))
 
-      const response = await supabase.functions.invoke('publish-to-webflow', {
-        body: {
-          token: String(credentials.token || ''),
-          collectionId: state.selectedCollection.id,
-          article,
-          fieldMapping: state.fieldMapping,
-          publishLive: options.publishLive || false,
-          connectionId: connection.id,
-          userId: (await supabase.auth.getUser()).data.user?.id
-        }
-      })
+      const result = await publishArticleToWebflow(
+        article,
+        connection,
+        state.selectedCollection.id,
+        state.fieldMapping,
+        options
+      )
 
       setState(prev => ({ ...prev, publishingProgress: 75 }))
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Publishing failed')
-      }
-
       setState(prev => ({ ...prev, publishingProgress: 100 }))
 
       toast({
@@ -175,7 +94,7 @@ export function useWebflowPublishing() {
         variant: "default"
       })
 
-      return response.data
+      return result
     } catch (error) {
       console.error('Publishing error:', error)
       toast({
