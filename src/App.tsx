@@ -36,6 +36,7 @@ function App() {
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                       <Route path="/article/new" element={<ProtectedRoute><ArticleForm /></ProtectedRoute>} />
+                      <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
                       <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
                       <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
                       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
