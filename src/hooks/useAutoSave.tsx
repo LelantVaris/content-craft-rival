@@ -10,7 +10,7 @@ interface UseAutoSaveProps {
 }
 
 export function useAutoSave({ data, onSave, delay = 30000, enabled = true }: UseAutoSaveProps) {
-  const debouncedData = useDebounce(data, 2000) // 2 second debounce for typing
+  const debouncedData = useDebounce(data, 3000) // Increased to 3 seconds for less aggressive saving
   const lastSavedData = useRef<any>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -38,23 +38,27 @@ export function useAutoSave({ data, onSave, delay = 30000, enabled = true }: Use
     }
   }, [debouncedData, performSave, enabled])
 
-  // Periodic auto-save every 30 seconds
+  // Periodic auto-save every 30 seconds (only if enabled and content exists)
   useEffect(() => {
     if (!enabled) return
 
-    intervalRef.current = setInterval(performSave, delay)
+    intervalRef.current = setInterval(() => {
+      if (data && JSON.stringify(data) !== JSON.stringify(lastSavedData.current)) {
+        performSave()
+      }
+    }, delay)
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [performSave, delay, enabled])
+  }, [performSave, delay, enabled, data])
 
-  // Save on component unmount
+  // Save on component unmount (only if there are changes)
   useEffect(() => {
     return () => {
-      if (enabled && data) {
+      if (enabled && data && JSON.stringify(data) !== JSON.stringify(lastSavedData.current)) {
         performSave()
       }
     }

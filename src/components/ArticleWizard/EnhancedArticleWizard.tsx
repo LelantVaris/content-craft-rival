@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,7 +71,7 @@ const EnhancedArticleWizard = () => {
     seoNotes: ''
   });
   const navigate = useNavigate();
-  const { saveArticle } = useArticles();
+  const { saveArticle, refreshArticles } = useArticles();
 
   const progress = (currentStep / STEPS.length) * 100;
 
@@ -92,6 +91,12 @@ const EnhancedArticleWizard = () => {
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
     const finalContent = articleData.generatedContent || `# ${finalTitle}\n\nStart writing your article here...`;
     
+    // Don't save if we don't have meaningful content
+    if (!finalTitle || finalTitle === 'Untitled Article') {
+      toast.error('Please select or enter a title for your article');
+      return;
+    }
+    
     try {
       // Save the article to the database
       const savedArticle = await saveArticle({
@@ -106,18 +111,14 @@ const EnhancedArticleWizard = () => {
 
       toast.success('Article created successfully!');
       
+      // Refresh articles list to ensure it shows up in sidebar
+      await refreshArticles();
+      
       // Navigate to the editor with the saved article
       navigate(`/article/${savedArticle.id}/edit`);
     } catch (error) {
       console.error('Error saving article:', error);
-      // Fallback to the old behavior if saving fails
-      navigate('/article/editor', { 
-        state: { 
-          title: finalTitle,
-          content: finalContent,
-          outline: articleData.outline
-        }
-      });
+      toast.error('Failed to create article. Please try again.');
     }
   };
 

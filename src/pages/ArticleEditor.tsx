@@ -25,7 +25,7 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
   const navigate = useNavigate()
   const location = useLocation()
   const { id: urlArticleId } = useParams()
-  const { saveArticle, updateArticle, articles } = useArticles()
+  const { saveArticle, updateArticle, articles, refreshArticles } = useArticles()
   
   // Get article data from location state or find by ID
   const locationArticle = location.state as { title?: string; content?: string; article?: Article }
@@ -40,6 +40,7 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
   )
   const [isNew, setIsNew] = useState(!existingArticle && !urlArticleId)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!urlArticleId && !existingArticle)
 
   const [wordCount, setWordCount] = useState(0)
   const [readingTime, setReadingTime] = useState(0)
@@ -54,13 +55,31 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
         setTitle(foundArticle.title)
         setContent(foundArticle.content || "")
         setIsNew(false)
+        setIsLoading(false)
+      } else if (!foundArticle && articles.length > 0) {
+        // Article not found, might be a new article that hasn't loaded yet
+        setIsLoading(false)
       }
     }
   }, [urlArticleId, articles])
 
-  // Auto-save functionality
+  // Check if content is meaningful enough to save
+  const hasMeaningfulContent = (titleToCheck: string, contentToCheck: string) => {
+    const hasCustomTitle = titleToCheck.trim() !== '' && titleToCheck !== 'Untitled Article'
+    const hasContent = contentToCheck.trim() !== ''
+    const hasSubstantialContent = contentToCheck.trim().length > 10
+    
+    return (hasCustomTitle && hasContent) || hasSubstantialContent
+  }
+
+  // Auto-save functionality with validation
   const saveData = async (data: { title: string; content: string }) => {
     if (isSaving) return
+    
+    // Don't save if content isn't meaningful
+    if (!hasMeaningfulContent(data.title, data.content)) {
+      return
+    }
     
     setIsSaving(true)
     try {
@@ -78,6 +97,9 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
         
         // Update URL to reflect that we now have an article ID
         navigate(`/article/${newArticle.id}/edit`, { replace: true })
+        
+        // Refresh articles list to show in sidebar
+        await refreshArticles()
       } else {
         // Update existing article
         const updatedArticle = await updateArticle(article.id, {
@@ -94,20 +116,35 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
   useAutoSave({
     data: { title, content },
     onSave: saveData,
-    enabled: title.trim() !== '' || content.trim() !== '',
+    enabled: hasMeaningfulContent(title, content),
   })
 
   // Manual save function
   const handleSave = async () => {
+    if (!hasMeaningfulContent(title, content)) {
+      toast.error('Please add a title and some content before saving')
+      return
+    }
+    
     await saveData({ title, content })
     toast.success('Article saved successfully')
   }
 
   useEffect(() => {
-    const words = content.trim().split(/\s+/).length
+    const words = content.trim().split(/\s+/).filter(word => word.length > 0).length
     setWordCount(words)
     setReadingTime(Math.ceil(words / 200)) // Average reading speed
   }, [content])
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
+        <div className="flex items-center justify-center">
+          <div className="text-lg">Loading article...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
