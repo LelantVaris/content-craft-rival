@@ -1,121 +1,114 @@
-
-import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Globe, Key } from "lucide-react"
-import { supabase } from "@/integrations/supabase/client"
-import { useToast } from "@/hooks/use-toast"
-
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Globe, Key } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 interface WebflowConnectionDialogProps {
-  onConnectionAdded?: () => void
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  children?: React.ReactNode
+  onConnectionAdded?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: React.ReactNode;
 }
-
-export function WebflowConnectionDialog({ 
-  onConnectionAdded, 
+export function WebflowConnectionDialog({
+  onConnectionAdded,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
-  children 
+  children
 }: WebflowConnectionDialogProps) {
-  const [internalOpen, setInternalOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [siteToken, setSiteToken] = useState("")
-  const [connectionName, setConnectionName] = useState("")
-  const { toast } = useToast()
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [siteToken, setSiteToken] = useState("");
+  const [connectionName, setConnectionName] = useState("");
+  const {
+    toast
+  } = useToast();
 
   // Use controlled props if provided, otherwise use internal state
-  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
-  const setOpen = controlledOnOpenChange || setInternalOpen
-
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
   const handleSiteTokenConnection = async () => {
     if (!siteToken.trim() || !connectionName.trim()) {
       toast({
         title: "Missing Information",
         description: "Please provide both connection name and site token.",
         variant: "destructive"
-      })
-      return
+      });
+      return;
     }
-
-    setLoading(true)
+    setLoading(true);
     try {
-      const { data: user } = await supabase.auth.getUser()
-      if (!user.user) throw new Error("Not authenticated")
+      const {
+        data: user
+      } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
 
       // Validate token by testing it against Webflow API
       const response = await supabase.functions.invoke('validate-webflow-token', {
-        body: { token: siteToken }
-      })
-
+        body: {
+          token: siteToken
+        }
+      });
       if (response.error) {
-        throw new Error("Invalid Webflow token")
+        throw new Error("Invalid Webflow token");
       }
 
       // Store the connection
-      const { error } = await supabase
-        .from('cms_connections')
-        .insert({
-          user_id: user.user.id,
-          cms_type: 'webflow',
-          connection_name: connectionName,
-          credentials: { 
-            token: siteToken,
-            type: 'site_token'
-          }
-        })
-
-      if (error) throw error
-
+      const {
+        error
+      } = await supabase.from('cms_connections').insert({
+        user_id: user.user.id,
+        cms_type: 'webflow',
+        connection_name: connectionName,
+        credentials: {
+          token: siteToken,
+          type: 'site_token'
+        }
+      });
+      if (error) throw error;
       toast({
         title: "Connection Added",
         description: "Webflow site token connected successfully."
-      })
-
-      setSiteToken("")
-      setConnectionName("")
-      setOpen(false)
-      onConnectionAdded?.()
-
+      });
+      setSiteToken("");
+      setConnectionName("");
+      setOpen(false);
+      onConnectionAdded?.();
     } catch (error) {
-      console.error('Connection error:', error)
+      console.error('Connection error:', error);
       toast({
         title: "Connection Failed",
         description: error instanceof Error ? error.message : "Failed to connect to Webflow",
         variant: "destructive"
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
+  };
   const handleOAuthConnection = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Redirect to OAuth flow
-      const response = await supabase.functions.invoke('webflow-oauth-init')
+      const response = await supabase.functions.invoke('webflow-oauth-init');
       if (response.data?.authUrl) {
-        window.location.href = response.data.authUrl
+        window.location.href = response.data.authUrl;
       }
     } catch (error) {
-      console.error('OAuth error:', error)
+      console.error('OAuth error:', error);
       toast({
         title: "OAuth Failed",
         description: "Failed to initiate OAuth flow",
         variant: "destructive"
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  const dialogContent = (
-    <DialogContent className="sm:max-w-[500px]">
+  };
+  const dialogContent = <DialogContent className="sm:max-w-[500px]">
       <DialogHeader>
         <DialogTitle>Connect Webflow Account</DialogTitle>
         <DialogDescription>
@@ -143,28 +136,13 @@ export function WebflowConnectionDialog({
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="connection-name">Connection Name</Label>
-                <Input
-                  id="connection-name"
-                  placeholder="My Webflow Site"
-                  value={connectionName}
-                  onChange={(e) => setConnectionName(e.target.value)}
-                />
+                <Input id="connection-name" placeholder="My Webflow Site" value={connectionName} onChange={e => setConnectionName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="site-token">Site Token</Label>
-                <Input
-                  id="site-token"
-                  type="password"
-                  placeholder="Enter your Webflow site token"
-                  value={siteToken}
-                  onChange={(e) => setSiteToken(e.target.value)}
-                />
+                <Input id="site-token" type="password" placeholder="Enter your Webflow site token" value={siteToken} onChange={e => setSiteToken(e.target.value)} />
               </div>
-              <Button 
-                onClick={handleSiteTokenConnection} 
-                disabled={loading}
-                className="w-full"
-              >
+              <Button onClick={handleSiteTokenConnection} disabled={loading} className="w-full">
                 {loading ? "Connecting..." : "Connect Site"}
               </Button>
             </CardContent>
@@ -183,41 +161,28 @@ export function WebflowConnectionDialog({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={handleOAuthConnection} 
-                disabled={loading}
-                className="w-full"
-              >
+              <Button onClick={handleOAuthConnection} disabled={loading} className="w-full">
                 {loading ? "Redirecting..." : "Connect with OAuth"}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </DialogContent>
-  )
+    </DialogContent>;
 
   // If children are provided, use them as trigger, otherwise provide default trigger
   if (children) {
-    return (
-      <Dialog open={open} onOpenChange={setOpen}>
+    return <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           {children}
         </DialogTrigger>
         {dialogContent}
-      </Dialog>
-    )
+      </Dialog>;
   }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
+  return <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground">
-          <Plus className="w-4 h-4 mr-2" />
-          Connect CMS
-        </Button>
+        
       </DialogTrigger>
       {dialogContent}
-    </Dialog>
-  )
+    </Dialog>;
 }
