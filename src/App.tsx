@@ -9,6 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ArticleForm from "./pages/ArticleForm";
+import ArticleStudio from "./pages/ArticleStudio";
 import ArticleEditor from "./pages/ArticleEditor";
 import ArticleEditorRoute from "./pages/ArticleEditorRoute";
 import Calendar from "./pages/Calendar";

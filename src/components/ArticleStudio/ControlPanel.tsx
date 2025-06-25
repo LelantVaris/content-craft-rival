@@ -1,0 +1,79 @@
+
+import React from 'react';
+import { ArticleStudioData } from '@/hooks/useArticleStudio';
+import { TitleGenerationPanel } from './TitleGenerationPanel';
+import { OutlineCreationPanel } from './OutlineCreationPanel';
+import { ContentGenerationPanel } from './ContentGenerationPanel';
+import { StepNavigation } from './StepNavigation';
+
+interface ControlPanelProps {
+  articleData: ArticleStudioData;
+  updateArticleData: (updates: Partial<ArticleStudioData>) => void;
+  nextStep: () => void;
+  prevStep: () => void;
+  canProceed: () => boolean;
+  saveAndComplete: () => Promise<void>;
+  isGenerating: boolean;
+  setStreamingContent: (content: string) => void;
+  setIsGenerating: (generating: boolean) => void;
+}
+
+export const ControlPanel: React.FC<ControlPanelProps> = ({
+  articleData,
+  updateArticleData,
+  nextStep,
+  prevStep,
+  canProceed,
+  saveAndComplete,
+  isGenerating,
+  setStreamingContent,
+  setIsGenerating
+}) => {
+  const renderStepContent = () => {
+    switch (articleData.currentStep) {
+      case 1:
+        return (
+          <TitleGenerationPanel
+            articleData={articleData}
+            onUpdate={updateArticleData}
+          />
+        );
+      case 2:
+        return (
+          <OutlineCreationPanel
+            articleData={articleData}
+            onUpdate={updateArticleData}
+          />
+        );
+      case 3:
+        return (
+          <ContentGenerationPanel
+            articleData={articleData}
+            onUpdate={updateArticleData}
+            onComplete={saveAndComplete}
+            setStreamingContent={setStreamingContent}
+            setIsGenerating={setIsGenerating}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <StepNavigation
+        currentStep={articleData.currentStep}
+        onNext={nextStep}
+        onPrev={prevStep}
+        canProceed={canProceed()}
+        onComplete={saveAndComplete}
+        isGenerating={isGenerating}
+      />
+      
+      <div className="min-h-[400px]">
+        {renderStepContent()}
+      </div>
+    </div>
+  );
+};
