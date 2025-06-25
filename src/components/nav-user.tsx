@@ -47,7 +47,7 @@ export function NavUser({
 
   return (
     <SidebarMenu>
-      <div className="px-3 mb-4">
+      <div className="px-3 mb-4 group-data-[collapsible=icon]:hidden">
         <CreditBalance />
       </div>
       <SidebarMenuItem>

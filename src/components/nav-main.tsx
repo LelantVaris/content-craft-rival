@@ -41,7 +41,7 @@ export function NavMain({
   const recentArticles = articles.slice(0, 5)
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Recent Articles</SidebarGroupLabel>
       <SidebarMenu>
         {loading ? (
