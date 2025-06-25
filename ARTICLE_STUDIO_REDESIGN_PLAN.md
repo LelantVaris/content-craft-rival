@@ -2,7 +2,7 @@
 # Article Studio Redesign Implementation Plan
 
 ## Overview
-Complete redesign of the Article Studio to implement a 4-step workflow with enhanced UX, SEO features, and real-time article generation using Novel WYSIWYG editor.
+Complete redesign of the Article Studio to implement a 4-step workflow with enhanced UX, SEO features, and real-time article generation using Novel WYSIWYG editor with simultaneous editing capability.
 
 ## Layout Architecture
 
@@ -10,6 +10,25 @@ Complete redesign of the Article Studio to implement a 4-step workflow with enha
 - **Left Panel (40%)**: Step-based controls and forms
 - **Right Panel (60%)**: Dynamic content preview area
 - **Technology**: Continue using `react-resizable-panels` for the resizable layout
+
+## Updated Requirements Based on User Feedback
+
+### Web Search Integration
+- **Primary Choice**: Firecrawl for web research
+- **Fallback Options**: Tavily or raw OpenAI
+- **Goal**: Simplest MVP implementation
+- **Usage**: Each outline section will use dedicated web search before content generation
+
+### Novel Editor Integration
+- **Simultaneous Editing**: Enable users to edit while content streams
+- **AI Features**: Leverage Novel's built-in AI capabilities (slash commands, bubble menu)
+- **Implementation**: Use editor JSON structure for precise content insertion
+- **Streaming**: Insert generated content at specific positions without conflicts
+
+### SEO Data Persistence
+- **Storage**: Save SEO settings to database for user preferences
+- **Restart Capability**: Users can restart with saved preferences
+- **Session Management**: Maintain settings across sessions
 
 ## Step-by-Step Implementation Plan
 
@@ -79,9 +98,11 @@ Complete redesign of the Article Studio to implement a 4-step workflow with enha
 
 #### Right Panel:
 - **Novel WYSIWYG Editor Integration**
-  - Real-time streaming content display
+  - Real-time streaming content display with simultaneous editing
   - Full editing capabilities during and after generation
   - Section-by-section generation with progress indicators
+  - Leverage Novel's built-in AI features
+  - Web search indicators: "Searching with Firecrawl for latest insights on [topic]..."
 
 ## Technical Requirements
 
@@ -96,36 +117,46 @@ Complete redesign of the Article Studio to implement a 4-step workflow with enha
 8. `EmptyStateDisplay.tsx` - Right panel empty state
 9. `TitleGenerationControls.tsx` - Number selector and generate button
 10. `OutlineEditor.tsx` - Drag-and-drop outline interface
-11. `RealTimeArticleEditor.tsx` - Novel editor with streaming
+11. `EnhancedNovelEditor.tsx` - Novel editor with streaming capabilities
 
 ### Enhanced Hooks:
 1. `useArticleStudioWorkflow.ts` - Manage 4-step state machine
-2. `useStreamingGeneration.ts` - Handle section-by-section generation
-3. `useSEOConfiguration.ts` - Manage SEO pro mode settings
+2. `useStreamingGeneration.ts` - Handle section-by-section generation with Firecrawl
+3. `useSEOConfiguration.ts` - Manage SEO pro mode settings with persistence
 4. `useOutlineManagement.ts` - Handle outline CRUD operations
 
 ### API Integration:
 1. **Title Generation**: Existing `generate-titles` function (enhance with SEO params)
 2. **Outline Generation**: Existing `generate-outline` function (enhance with more detail)
 3. **Article Generation**: Enhance `generate-content` function for section-by-section streaming
-4. **Section Research**: New function for individual section research/generation
+4. **Web Research**: New Firecrawl integration for section research
+5. **SEO Settings**: Database storage for user preferences
 
-## Novel Editor Integration
+## Novel Editor Streaming Implementation
 
 ### Requirements:
 - Use existing `NovelEditor` component from `src/components/NovelEditor.tsx`
-- Implement real-time streaming content updates
-- Maintain full WYSIWYG editing capabilities
-- Handle section-by-section content insertion
+- Implement real-time streaming content updates without blocking user edits
+- Maintain full WYSIWYG editing capabilities during generation
+- Handle section-by-section content insertion with progress indicators
 
-### Implementation Details:
-- Stream content directly into editor
-- Use editor's JSON content structure for precise section placement
-- Implement progress indicators within the editor interface
+### Implementation Strategy:
+1. **JSON Content Structure**: Use editor's JSON format for precise content placement
+2. **Transaction-based Updates**: Insert content using editor transactions
+3. **Progress Indicators**: Show search/generation status within editor
+4. **Conflict Resolution**: Handle simultaneous user edits and AI content insertion
+5. **AI Feature Integration**: Leverage Novel's slash commands and bubble menu
+
+### Web Search Integration Flow:
+1. **Section Analysis**: Analyze outline section for research needs
+2. **Firecrawl Search**: Search for latest information on section topic
+3. **Content Synthesis**: Generate section content based on research
+4. **Streaming Insertion**: Insert content into specific editor positions
+5. **User Notification**: Show "Researching [topic]..." indicators
 
 ## Data Flow & State Management
 
-### State Structure:
+### Enhanced State Structure:
 ```typescript
 interface ArticleStudioState {
   currentStep: 1 | 2 | 3 | 4;
@@ -136,6 +167,7 @@ interface ArticleStudioState {
     keywords: string[];
     tone: string;
     length: string;
+    savedToDatabase: boolean;
   };
   titleCount: number;
   generatedTitles: string[];
@@ -145,97 +177,108 @@ interface ArticleStudioState {
     currentSection: number;
     isGenerating: boolean;
     sectionStatus: SectionStatus[];
+    researchPhase: 'idle' | 'searching' | 'generating' | 'complete';
   };
-  articleContent: string;
+  articleContent: JSONContent; // Novel editor format
+  simultaneousEditing: boolean;
 }
 ```
 
-## Key Questions for Decision Making:
+### Database Schema Requirements:
+```sql
+-- SEO Settings table for persistence
+CREATE TABLE user_seo_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  target_audience TEXT,
+  preferred_keywords TEXT[],
+  default_tone TEXT,
+  default_length TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
 
-### 1. Title Generation Enhancement:
-- Should we modify the existing `generate-titles` function to accept SEO parameters?
-- Do you want to store SEO settings in the database for future reference?
+## Implementation Phases
 
-### 2. Outline Management:
-- Should outline sections have character/word count targets?
-- Do you want templates for common article structures (How-to, Listicle, etc.)?
-
-### 3. Section-by-Section Generation:
-- Should each section use a separate OpenAI call with specific research?
-- Do you want to implement web search integration for section research?
-- Should users be able to regenerate individual sections?
-
-### 4. Novel Editor Integration:
-- Should the editor be read-only during generation or allow simultaneous editing?
-- Do you want to preserve editing history/versions?
-- Should we implement auto-save during generation?
-
-### 5. Error Handling & UX:
-- How should we handle generation failures for individual sections?
-- Should users be able to retry failed sections independently?
-- Do you want offline draft saving capabilities?
-
-### 6. Performance Considerations:
-- Should we implement request queuing for large outlines?
-- Do you want to add rate limiting for title generation requests?
-
-## Implementation Phases:
-
-### Phase 1: Layout & Step 1 (Title Input)
-- Implement new layout structure
-- Create title input form with SEO Pro mode
+### Phase 1: Layout & Step 1 (Title Input) - PRIORITY
+- Implement new layout structure with resizable panels
+- Create title input form with SEO Pro mode toggle
 - Add example topics functionality
 - Implement empty state
+- Set up SEO settings persistence
 
 ### Phase 2: Title Generation & Selection (Step 2)
 - Enhance title generation with SEO parameters
-- Implement title selection interface
+- Implement title selection interface with auto-selection
 - Add custom title option
+- Integrate Firecrawl for title research (if applicable)
 
 ### Phase 3: Outline Creation (Step 3)
 - Build outline editor with drag-and-drop
 - Implement outline generation and management
 - Add section estimation features
+- Create outline preview interface
 
 ### Phase 4: Article Generation (Step 4)
-- Integrate Novel editor
-- Implement streaming generation
-- Add section-by-section progress tracking
-- Implement research and generation pipeline
+- Integrate Enhanced Novel editor with streaming
+- Implement Firecrawl research for each section
+- Add real-time content generation with progress tracking
+- Enable simultaneous editing capabilities
+- Add section-by-section generation pipeline
 
 ### Phase 5: Polish & Enhancement
 - Add animations and transitions
 - Implement comprehensive error handling
 - Add accessibility features
 - Performance optimization
+- User testing and refinement
 
-## Dependencies & Considerations:
+## Firecrawl Integration Details
 
-### Existing Components to Modify:
-- `useArticleStudio.ts` hook (major restructure needed)
-- Existing edge functions (enhance for new features)
+### Setup Requirements:
+- Firecrawl API key configuration
+- Rate limiting and error handling
+- Search query optimization for article sections
+
+### Research Flow per Section:
+1. **Query Generation**: Create search query based on section title and context
+2. **Firecrawl Search**: Execute web search for latest information
+3. **Content Extraction**: Process and summarize research results
+4. **AI Generation**: Generate section content using research data
+5. **Editor Insertion**: Stream content into Novel editor at specific position
+
+### Search Query Strategy:
+- Section title + article context
+- Include target keywords when relevant
+- Focus on recent, authoritative sources
+- Limit search scope to avoid information overload
+
+## Technical Dependencies
 
 ### New Dependencies Needed:
-- None (all required packages already installed)
+- Firecrawl API integration
+- Enhanced drag-and-drop library (if current implementation insufficient)
 
-### Database Schema Considerations:
-- May need to store SEO settings and outline structures
-- Consider adding generation progress tracking
+### Database Modifications:
+- User SEO preferences table
+- Article generation session tracking
+- Research cache for performance optimization
 
-## Questions Before Proceeding:
+## Success Metrics & Goals
 
-1. **Priority Features**: Which features are must-have vs. nice-to-have for the initial implementation?
+1. **User Experience**: Seamless workflow completion in under 5 minutes
+2. **Content Quality**: Research-backed sections with up-to-date information
+3. **Editor Performance**: Smooth simultaneous editing during content generation
+4. **SEO Optimization**: Automatic keyword integration and optimization
+5. **User Retention**: Saved preferences leading to faster subsequent usage
 
-2. **Section Research**: Do you want actual web search integration for section research, or should we focus on AI-generated content based on the outline?
+## Risk Mitigation
 
-3. **User Testing**: Should we implement analytics/tracking to understand user behavior in the new workflow?
+1. **Firecrawl API Limitations**: Implement fallback to raw OpenAI if search fails
+2. **Editor Conflicts**: Robust conflict resolution for simultaneous editing
+3. **Generation Performance**: Progressive enhancement and caching strategies
+4. **User Adoption**: Comprehensive onboarding and help documentation
+5. **Content Accuracy**: Source attribution and fact-checking reminders
 
-4. **Backwards Compatibility**: Do we need to maintain any compatibility with the current Article Studio workflow?
-
-5. **Content Limits**: What are the maximum limits for titles, outline sections, and article length?
-
-Please review this plan and let me know:
-- Which questions you'd like to address first
-- Any modifications to the proposed approach
-- Which phase you'd like to start with
-- Any additional features or considerations I should include
+This comprehensive plan addresses all requirements for a modern, AI-powered article creation workflow with real-time collaboration capabilities and research-backed content generation.
