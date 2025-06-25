@@ -1,7 +1,15 @@
 
 import React from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { PenTool, Sparkles, Target, Monitor } from 'lucide-react';
+import { PenTool, Sparkles, Target } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
 import { ControlPanel } from '@/components/ArticleStudio/ControlPanel';
 import { PreviewPanel } from '@/components/ArticleStudio/PreviewPanel';
 import { useArticleStudio } from '@/hooks/useArticleStudio';
@@ -13,9 +21,9 @@ const ArticleStudio = () => {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-4 h-full">
         <div className="bg-white rounded-lg p-8 max-w-md w-full text-center shadow-xl">
-          <Monitor className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <div className="text-6xl mb-4">💻</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Desktop Only
           </h2>
@@ -31,41 +39,47 @@ const ArticleStudio = () => {
   }
 
   return (
-    <div className="h-screen bg-white w-full flex flex-col">
-      <div className="border-b bg-white">
-        <div className="py-2">
-          <div className="text-center">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1">
-              Article Studio
-            </h1>
-            <p className="text-gray-600 text-xs mb-2">
-              Create engaging, SEO-optimized content with real-time AI assistance
-            </p>
-            
-            <div className="flex justify-center gap-4">
-              <div className="flex items-center gap-1 text-purple-600">
-                <Sparkles className="w-3 h-3" />
-                <span className="text-xs font-medium">AI-Powered</span>
-              </div>
-              <div className="flex items-center gap-1 text-blue-600">
-                <Target className="w-3 h-3" />
-                <span className="text-xs font-medium">SEO Optimized</span>
-              </div>
-              <div className="flex items-center gap-1 text-green-600">
-                <PenTool className="w-3 h-3" />
-                <span className="text-xs font-medium">Real-time Preview</span>
-              </div>
+    <>
+      {/* Header with SidebarTrigger and Breadcrumbs */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-white">
+        <div className="flex flex-1 items-center gap-2 px-4">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="line-clamp-1">
+                  Article Studio
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        <div className="ml-auto px-4">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-purple-600" />
+              <span>AI-Powered</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Target className="w-3 h-3 text-blue-600" />
+              <span>SEO Optimized</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <PenTool className="w-3 h-3 text-green-600" />
+              <span>Real-time Preview</span>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="flex-1 w-full">
-        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-          <ResizablePanel defaultSize={40} minSize={30} maxSize={60} className="h-full">
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col">
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
             <div className="h-full flex flex-col">
-              <div className="py-2 border-b bg-gray-50/50">
-                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900 text-sm">
+              <div className="py-3 px-4 border-b bg-gray-50/50">
+                <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
                   <PenTool className="w-4 h-4 text-purple-600" />
                   Control Panel
                 </h2>
@@ -78,10 +92,10 @@ const ArticleStudio = () => {
           
           <ResizableHandle withHandle className="bg-gray-200 hover:bg-gray-300 transition-colors" />
           
-          <ResizablePanel defaultSize={60} minSize={40} className="h-full">
+          <ResizablePanel defaultSize={60} minSize={40}>
             <div className="h-full flex flex-col">
-              <div className="py-2 border-b bg-gray-50/50">
-                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900 text-sm">
+              <div className="py-3 px-4 border-b bg-gray-50/50">
+                <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
                   <Sparkles className="w-4 h-4 text-blue-600" />
                   Live Preview
                 </h2>
@@ -93,7 +107,7 @@ const ArticleStudio = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-    </div>
+    </>
   );
 };
 
