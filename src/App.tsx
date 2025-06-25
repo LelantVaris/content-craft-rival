@@ -21,36 +21,40 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <WebsiteProvider>
-          <TooltipProvider>
-            <Toaster />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/*" element={
-                  <SidebarProvider>
-                    <AppSidebar />
-                    <SidebarInset>
-                      <Routes>
-                        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                        <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                        <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                        <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
-                        <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
-                        <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </SidebarInset>
-                  </SidebarProvider>
-                } />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </WebsiteProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <div className="min-h-screen w-full">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <WebsiteProvider>
+            <TooltipProvider>
+              <Toaster />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/*" element={
+                    <SidebarProvider>
+                      <div className="flex min-h-screen w-full">
+                        <AppSidebar />
+                        <SidebarInset className="flex-1">
+                          <Routes>
+                            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                            <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                            <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                            <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
+                            <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
+                            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </SidebarInset>
+                      </div>
+                    </SidebarProvider>
+                  } />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </WebsiteProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </div>
   );
 }
 
