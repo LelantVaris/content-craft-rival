@@ -64,7 +64,7 @@ export function useArticleStudio() {
   const canProceed = useCallback(() => {
     switch (articleData.currentStep) {
       case 1:
-        return articleData.selectedTitle || articleData.customTitle;
+        return !!(articleData.selectedTitle || articleData.customTitle);
       case 2:
         return articleData.outline.length > 0;
       case 3:
