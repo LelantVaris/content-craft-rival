@@ -31,28 +31,28 @@ const ArticleStudio = () => {
   }
 
   return (
-    <div className="h-screen bg-white w-full">
+    <div className="h-screen bg-white w-full flex flex-col">
       <div className="border-b bg-white">
-        <div className="py-3">
+        <div className="py-2">
           <div className="text-center">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1">
               Article Studio
             </h1>
-            <p className="text-gray-600 text-sm mb-3">
+            <p className="text-gray-600 text-xs mb-2">
               Create engaging, SEO-optimized content with real-time AI assistance
             </p>
             
-            <div className="flex justify-center gap-6">
-              <div className="flex items-center gap-2 text-purple-600">
-                <Sparkles className="w-4 h-4" />
+            <div className="flex justify-center gap-4">
+              <div className="flex items-center gap-1 text-purple-600">
+                <Sparkles className="w-3 h-3" />
                 <span className="text-xs font-medium">AI-Powered</span>
               </div>
-              <div className="flex items-center gap-2 text-blue-600">
-                <Target className="w-4 h-4" />
+              <div className="flex items-center gap-1 text-blue-600">
+                <Target className="w-3 h-3" />
                 <span className="text-xs font-medium">SEO Optimized</span>
               </div>
-              <div className="flex items-center gap-2 text-green-600">
-                <PenTool className="w-4 h-4" />
+              <div className="flex items-center gap-1 text-green-600">
+                <PenTool className="w-3 h-3" />
                 <span className="text-xs font-medium">Real-time Preview</span>
               </div>
             </div>
@@ -60,12 +60,12 @@ const ArticleStudio = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-80px)] w-full">
+      <div className="flex-1 w-full">
         <ResizablePanelGroup direction="horizontal" className="h-full w-full">
           <ResizablePanel defaultSize={40} minSize={30} maxSize={60} className="h-full">
             <div className="h-full flex flex-col">
-              <div className="py-3 border-b bg-gray-50/50">
-                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900">
+              <div className="py-2 border-b bg-gray-50/50">
+                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900 text-sm">
                   <PenTool className="w-4 h-4 text-purple-600" />
                   Control Panel
                 </h2>
@@ -80,8 +80,8 @@ const ArticleStudio = () => {
           
           <ResizablePanel defaultSize={60} minSize={40} className="h-full">
             <div className="h-full flex flex-col">
-              <div className="py-3 border-b bg-gray-50/50">
-                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900">
+              <div className="py-2 border-b bg-gray-50/50">
+                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900 text-sm">
                   <Sparkles className="w-4 h-4 text-blue-600" />
                   Live Preview
                 </h2>

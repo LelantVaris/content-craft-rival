@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ArticleStudio from "./pages/ArticleStudio";
@@ -27,23 +27,27 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <BrowserRouter>
-              <SidebarProvider>
-                <div className="min-h-screen flex w-full">
-                  <AppSidebar />
-                  <main className="flex-1">
-                    <Routes>
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                      <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                      <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                      <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
-                      <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
-                      <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                </div>
-              </SidebarProvider>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/*" element={
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <SidebarInset className="flex-1">
+                        <Routes>
+                          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                          <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                          <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                          <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
+                          <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
+                          <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </SidebarInset>
+                    </div>
+                  </SidebarProvider>
+                } />
+              </Routes>
             </BrowserRouter>
           </TooltipProvider>
         </WebsiteProvider>
