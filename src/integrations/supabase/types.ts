@@ -281,6 +281,39 @@ export type Database = {
           },
         ]
       }
+      user_seo_preferences: {
+        Row: {
+          created_at: string | null
+          default_audience: string | null
+          default_keywords: string[] | null
+          default_tone: string | null
+          id: string
+          preferred_article_length: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          default_audience?: string | null
+          default_keywords?: string[] | null
+          default_tone?: string | null
+          id?: string
+          preferred_article_length?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          default_audience?: string | null
+          default_keywords?: string[] | null
+          default_tone?: string | null
+          id?: string
+          preferred_article_length?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -294,6 +327,24 @@ export type Database = {
           p_description?: string
         }
         Returns: boolean
+      }
+      upsert_seo_preferences: {
+        Args: {
+          p_tone?: string
+          p_article_length?: number
+          p_keywords?: string[]
+          p_audience?: string
+        }
+        Returns: {
+          created_at: string | null
+          default_audience: string | null
+          default_keywords: string[] | null
+          default_tone: string | null
+          id: string
+          preferred_article_length: number | null
+          updated_at: string | null
+          user_id: string
+        }
       }
     }
     Enums: {
