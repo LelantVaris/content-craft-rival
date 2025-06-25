@@ -10,8 +10,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
-import { ControlPanel } from '@/components/ArticleStudio/ControlPanel';
-import { PreviewPanel } from '@/components/ArticleStudio/PreviewPanel';
+import { UnifiedControlPanel } from '@/components/ArticleStudio/UnifiedControlPanel';
+import { LivePreviewPanel } from '@/components/ArticleStudio/LivePreviewPanel';
 import { useArticleStudio } from '@/hooks/useArticleStudio';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -73,7 +73,7 @@ const ArticleStudio = () => {
         </div>
       </header>
 
-      {/* Main Content Area - Full width resizable panels */}
+      {/* Main Content Area - Unified Layout */}
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
@@ -85,7 +85,7 @@ const ArticleStudio = () => {
                 </h2>
               </div>
               <div className="flex-1 overflow-auto">
-                <ControlPanel {...articleStudio} />
+                <UnifiedControlPanel {...articleStudio} />
               </div>
             </div>
           </ResizablePanel>
@@ -101,7 +101,7 @@ const ArticleStudio = () => {
                 </h2>
               </div>
               <div className="flex-1 overflow-auto">
-                <PreviewPanel {...articleStudio} />
+                <LivePreviewPanel {...articleStudio} />
               </div>
             </div>
           </ResizablePanel>

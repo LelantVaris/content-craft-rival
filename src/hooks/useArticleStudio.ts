@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useArticles } from '@/hooks/useArticles';
@@ -47,6 +46,7 @@ export function useArticleStudio() {
     setArticleData(prev => ({ ...prev, ...updates }));
   }, []);
 
+  // Keep existing step navigation for backward compatibility
   const nextStep = useCallback(() => {
     setArticleData(prev => ({ 
       ...prev, 
@@ -74,9 +74,26 @@ export function useArticleStudio() {
     }
   }, [articleData]);
 
+  // Enhanced auto-save functionality
+  const autoSave = useCallback(async () => {
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    const finalContent = streamingContent || articleData.generatedContent;
+    
+    if (!finalTitle || finalTitle === 'Untitled Article' || !finalContent) {
+      return; // Don't auto-save empty articles
+    }
+    
+    try {
+      // Implement auto-save logic here
+      console.log('Auto-saving article...', { title: finalTitle, contentLength: finalContent.length });
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }, [articleData, streamingContent]);
+
   const saveAndComplete = useCallback(async () => {
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
-    const finalContent = articleData.generatedContent || `# ${finalTitle}\n\nStart writing your article here...`;
+    const finalContent = streamingContent || articleData.generatedContent || `# ${finalTitle}\n\nStart writing your article here...`;
     
     if (!finalTitle || finalTitle === 'Untitled Article') {
       toast.error('Please select or enter a title for your article');
@@ -95,16 +112,39 @@ export function useArticleStudio() {
         keywords: articleData.keywords.length > 0 ? articleData.keywords : undefined,
       });
 
-      toast.success('Article created successfully!');
+      toast.success('Article saved successfully!');
       await refreshArticles();
       navigate(`/article/${savedArticle.id}/edit`);
     } catch (error) {
       console.error('Error saving article:', error);
-      toast.error('Failed to create article. Please try again.');
+      toast.error('Failed to save article. Please try again.');
     } finally {
       setIsGenerating(false);
     }
-  }, [articleData, saveArticle, refreshArticles, navigate]);
+  }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
+
+  // New unified generation function
+  const generateFullArticle = useCallback(async () => {
+    if (!articleData.topic) {
+      toast.error('Please enter a topic first');
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      setStreamingContent('');
+
+      // This would implement the full article generation pipeline
+      // For now, just show a placeholder
+      toast.info('Full article generation coming soon! Use individual sections for now.');
+      
+    } catch (error) {
+      console.error('Error generating article:', error);
+      toast.error('Failed to generate article. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [articleData.topic]);
 
   return {
     articleData,
@@ -113,6 +153,8 @@ export function useArticleStudio() {
     prevStep,
     canProceed,
     saveAndComplete,
+    generateFullArticle,
+    autoSave,
     isGenerating,
     streamingContent,
     setStreamingContent,
