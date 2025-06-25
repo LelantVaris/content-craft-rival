@@ -3,8 +3,13 @@ import ArticlesDashboard from "@/components/ArticlesDashboard"
 
 const Index = () => {
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
-      <ArticlesDashboard />
+    <div className="flex h-full flex-col">
+      {/* Header could go here if needed */}
+      
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto p-6">
+        <ArticlesDashboard />
+      </div>
     </div>
   )
 }
