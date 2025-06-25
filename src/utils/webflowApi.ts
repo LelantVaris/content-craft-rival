@@ -7,7 +7,7 @@ export const parseWebflowCredentials = (connection: WebflowConnection) => {
     ? connection.credentials as any
     : JSON.parse(connection.credentials || '{}')
   
-  const convertToString = (value: any): string => {
+  const convertToString = (value: string | number | boolean | null | undefined): string => {
     if (value === undefined || value === null) return ''
     return String(value)
   }
