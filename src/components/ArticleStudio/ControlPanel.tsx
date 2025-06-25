@@ -61,7 +61,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 space-y-4 h-full">
       <StepNavigation
         currentStep={articleData.currentStep}
         onNext={nextStep}
