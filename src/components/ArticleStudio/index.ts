@@ -1,3 +1,4 @@
+
 export { ControlPanel } from './ControlPanel';
 export { PreviewPanel } from './PreviewPanel';
 export { StepNavigation } from './StepNavigation';
@@ -7,8 +8,3 @@ export { ContentGenerationPanel } from './ContentGenerationPanel';
 export { ArticlePreview } from './ArticlePreview';
 export { ArticleStats } from './ArticleStats';
 export { PublishingOptions } from './PublishingOptions';
-export { TopProgressBar } from './TopProgressBar';
-export { StudioSidebar } from './StudioSidebar';
-export { TitleStepContent } from './TitleStepContent';
-export { OutlineStepContent } from './OutlineStepContent';
-export { ArticleStepContent } from './ArticleStepContent';
