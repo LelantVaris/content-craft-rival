@@ -8,9 +8,9 @@ export const parseWebflowCredentials = (connection: WebflowConnection) => {
     : JSON.parse(connection.credentials || '{}')
   
   return {
-    token: String(credentials.token || ''),
-    siteId: String(credentials.site_id || '') || (connection.site_id ? String(connection.site_id) : ''),
-    siteName: String(credentials.site_name || '')
+    token: credentials.token ? String(credentials.token) : '',
+    siteId: credentials.site_id ? String(credentials.site_id) : (connection.site_id ? String(connection.site_id) : ''),
+    siteName: credentials.site_name ? String(credentials.site_name) : ''
   }
 }
 
