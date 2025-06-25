@@ -45,8 +45,26 @@
 
 ## Implementation Phases
 
-### Phase 1: Database Setup & Core Layout 🔄 NEXT
+### Phase 0: Layout Foundation Fix 🔄 NEXT
 **Status**: Ready to Start  
+**Priority**: Critical - Foundation for all other work
+
+**Issue**: Current ArticleStudio layout doesn't integrate properly with SidebarInset, causing:
+- Content constrained to max-width 1280px instead of full available space
+- Layout conflicts with Shadcn sidebar pattern
+- Responsive resizing not working correctly
+
+**Layout Changes**:
+- [ ] Update `ArticleStudio.tsx` to use `SidebarInset` pattern
+- [ ] Remove custom full-screen layout wrapper
+- [ ] Add proper header with `SidebarTrigger` and breadcrumbs
+- [ ] Integrate with existing sidebar collapse/expand functionality
+- [ ] Ensure content fills available space dynamically
+
+**Expected Outcome**: Content area properly resizes when sidebar collapses/expands and fills full available width
+
+### Phase 1: Database Setup & Core Layout 🔲 PENDING
+**Status**: Awaiting Phase 0 completion  
 **Database Changes**:
 - [ ] Create `user_seo_preferences` table
 - [ ] Update existing hooks for persistence
@@ -216,6 +234,7 @@ See individual phase checklists above
 5. **SEO Persistence**: Database storage for user preferences
 6. **Example Topics**: Marketing/B2B/Sales/Startup focused examples
 7. **Layout Structure**: 40/60 resizable panels
+8. **Layout Foundation**: Fix SidebarInset integration as Phase 0
 
 ### ❓ Pending Decisions
 1. **Database Migration Timing**: When should we create the SEO preferences table?
@@ -224,12 +243,18 @@ See individual phase checklists above
 
 ## Next Steps
 
-1. **Immediate**: Create database schema for SEO preferences
-2. **Phase 1**: Start with database setup and core layout implementation
+1. **Immediate**: Fix layout foundation (Phase 0) - Update ArticleStudio.tsx to properly integrate with SidebarInset
+2. **Phase 1**: Create database schema for SEO preferences
 3. **User Input Needed**: Approval for database schema
 4. **Technical Setup**: Ensure OpenAI API credentials are configured
 
 ## Success Criteria
+
+### Phase 0 Success Metrics
+- [ ] Content area fills full available width
+- [ ] Sidebar collapse/expand properly resizes content
+- [ ] Header with SidebarTrigger and breadcrumbs implemented
+- [ ] No layout conflicts with existing sidebar
 
 ### Phase 1 Success Metrics
 - [ ] Working resizable layout (40/60)
@@ -249,6 +274,5 @@ See individual phase checklists above
 ---
 
 **Last Updated**: 2025-01-26  
-**Next Review**: After database schema approval  
-**Status**: 📋 Planning Complete - Ready for Database Setup
-
+**Next Review**: After Phase 0 layout fix completion  
+**Status**: 📋 Planning Complete - Ready for Layout Foundation Fix
