@@ -39,7 +39,7 @@ const ArticleStudio = () => {
   }
 
   return (
-    <>
+    <div className="flex h-full flex-col">
       {/* Header with SidebarTrigger and Breadcrumbs */}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-white">
         <div className="flex flex-1 items-center gap-2 px-4">
@@ -73,9 +73,9 @@ const ArticleStudio = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col">
-        <ResizablePanelGroup direction="horizontal" className="flex-1">
+      {/* Main Content Area - Full width resizable panels */}
+      <div className="flex-1 min-h-0">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
             <div className="h-full flex flex-col">
               <div className="py-3 px-4 border-b bg-gray-50/50">
@@ -107,7 +107,7 @@ const ArticleStudio = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-    </>
+    </div>
   );
 };
 

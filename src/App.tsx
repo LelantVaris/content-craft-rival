@@ -31,20 +31,18 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/*" element={
                   <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <SidebarInset className="flex-1">
-                        <Routes>
-                          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                          <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                          <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                          <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
-                          <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
-                          <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </SidebarInset>
-                    </div>
+                    <AppSidebar />
+                    <SidebarInset>
+                      <Routes>
+                        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                        <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                        <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                        <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
+                        <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
+                        <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </SidebarInset>
                   </SidebarProvider>
                 } />
               </Routes>
