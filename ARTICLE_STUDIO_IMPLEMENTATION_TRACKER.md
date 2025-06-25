@@ -10,19 +10,33 @@
 ## Key Decisions Made
 
 ### ✅ Web Search Integration
-- **Choice**: Firecrawl (primary) with OpenAI fallback
-- **Reason**: User preference for simplest MVP implementation
-- **Implementation**: Each outline section gets dedicated research
+- **Choice**: Raw OpenAI (primary) with Tavily upgrade option
+- **Reason**: Simplest MVP implementation, leverages existing API key
+- **Implementation**: Two-phase generation per section (skeleton → web-enhanced)
+
+### ✅ Content Generation Flow
+- **Phase 1**: Generate skeleton outline and rough content without search
+- **Phase 2**: Enhance each section with web search optimization
+- **Progress Display**: Single line status updates that replace each other
+- **Rate Limiting**: Standard retry with exponential backoff
 
 ### ✅ Novel Editor Approach
-- **Choice**: Simultaneous editing enabled during content generation
-- **Reason**: Leverages Novel's built-in AI features for enhanced UX
-- **Implementation**: JSON content structure with transaction-based updates
+- **Choice**: Minimal integration with simultaneous editing enabled
+- **Reason**: Keep existing functionality intact, leverage built-in AI features
+- **Implementation**: Stream content using editor's transaction system
 
 ### ✅ SEO Data Persistence
 - **Choice**: Save to database for user preferences
 - **Reason**: Users can restart with saved settings
 - **Implementation**: New `user_seo_preferences` table
+
+### ✅ Example Topics
+- **Focus Areas**: Marketing, B2B SaaS, Sales, Startups
+- **Examples**: 
+  - "How to reduce customer churn in B2B SaaS"
+  - "Building a sales funnel for early-stage startups"
+  - "Content marketing strategies for technical products"
+  - "Pricing strategies for subscription businesses"
 
 ### ✅ Architecture
 - **Layout**: 40/60 resizable panels using `react-resizable-panels`
@@ -31,22 +45,22 @@
 
 ## Implementation Phases
 
-### Phase 1: Layout & Step 1 (Title Input) 🔄 NEXT
+### Phase 1: Database Setup & Core Layout 🔄 NEXT
 **Status**: Ready to Start  
+**Database Changes**:
+- [ ] Create `user_seo_preferences` table
+- [ ] Update existing hooks for persistence
+
 **Components to Create**:
 - [ ] `ArticleStudioLayout.tsx` - Main resizable layout
 - [ ] `StepProgress.tsx` - Progress indicator
-- [ ] `TitleInputStep.tsx` - Step 1 form
+- [ ] `TitleInputStep.tsx` - Step 1 form with example topics
 - [ ] `SEOProModeToggle.tsx` - Collapsible SEO settings
 - [ ] `EmptyStateDisplay.tsx` - Right panel empty state
 - [ ] `TitleGenerationControls.tsx` - Generate button + counter
 
-**Database Changes**:
-- [ ] Create `user_seo_preferences` table
-- [ ] Update `useSEOConfiguration` hook for persistence
-
 **Key Features**:
-- [ ] Large topic input with "Try Example" button
+- [ ] Large topic input with "Try Example" button (Marketing/B2B/Sales/Startup topics)
 - [ ] SEO Pro Mode toggle with collapsible sections
 - [ ] Target audience, keywords, tone, length inputs
 - [ ] Number selector for title count (3-10, default 5)
@@ -56,7 +70,7 @@
 **Status**: Awaiting Phase 1 completion  
 **Components to Create**:
 - [ ] `TitleSelectionStep.tsx` - Title selection interface
-- [ ] Enhanced `generate-titles` Edge Function
+- [ ] Enhanced `generate-titles` Edge Function with OpenAI
 
 **Key Features**:
 - [ ] Title generation with SEO parameters
@@ -77,20 +91,21 @@
 - [ ] Drag-and-drop reordering
 - [ ] Character count estimates per section
 
-### Phase 4: Article Generation 🔲 PENDING
+### Phase 4: Two-Phase Article Generation 🔲 PENDING
 **Status**: Awaiting Phase 3 completion  
 **Components to Create**:
 - [ ] `ArticleGenerationStep.tsx` - Generation interface
-- [ ] `EnhancedNovelEditor.tsx` - Streaming-capable editor
-- [ ] Firecrawl integration service
+- [ ] `ContentStreamingManager.tsx` - Two-phase generation orchestrator
+- [ ] `ProgressStatusLine.tsx` - Single-line status updates
 - [ ] Enhanced `generate-content` Edge Function
 
 **Key Features**:
-- [ ] Section-by-section web research with Firecrawl
+- [ ] **Phase 1**: Skeleton generation per section
+- [ ] **Phase 2**: Web search enhancement per section
+- [ ] Progress status: "Generating outline..." → "Enhancing with web research..." → "Finalizing content..."
 - [ ] Real-time content streaming into Novel editor
 - [ ] Simultaneous editing capabilities
-- [ ] Progress indicators for research and generation
-- [ ] "Searching with Firecrawl..." status updates
+- [ ] Rate limiting with exponential backoff
 
 ### Phase 5: Polish & Enhancement 🔲 PENDING
 **Status**: Awaiting Phase 4 completion  
@@ -104,73 +119,128 @@
 ## Technical Requirements Checklist
 
 ### New Hooks to Create
-- [ ] `useArticleStudioWorkflow.ts` - 4-step state machine
-- [ ] `useStreamingGeneration.ts` - Section-by-section generation
-- [ ] `useSEOConfiguration.ts` - SEO settings with persistence
+- [ ] `useArticleStudioWorkflow.ts` - 4-step state machine with SEO persistence
+- [ ] `useTwoPhaseGeneration.ts` - Skeleton → Enhanced content generation
+- [ ] `useSEOConfiguration.ts` - SEO settings with database persistence
 - [ ] `useOutlineManagement.ts` - Outline CRUD operations
+- [ ] `useProgressStatus.ts` - Single-line status management
 
 ### API Integration Tasks
-- [ ] Enhance `generate-titles` with SEO parameters
+- [ ] Enhance `generate-titles` with SEO parameters and OpenAI
 - [ ] Enhance `generate-outline` with detailed structure
-- [ ] Enhance `generate-content` for streaming
-- [ ] Create Firecrawl integration service
-- [ ] Implement section research pipeline
+- [ ] Create `generate-content` with two-phase generation:
+  - Phase 1: Skeleton content generation
+  - Phase 2: Web search enhancement per section
+- [ ] Implement section-by-section generation pipeline
+- [ ] Add rate limiting and retry logic
+
+### Novel Editor Integration Strategy
+- [ ] Minimal changes to existing `NovelEditor.tsx`
+- [ ] Use editor's transaction system for content streaming
+- [ ] Preserve all existing AI features and functionality
+- [ ] Add progress indicators within editor content
+- [ ] Handle simultaneous user edits during generation
 
 ### Database Schema
-- [ ] Create `user_seo_preferences` table
+- [ ] Create `user_seo_preferences` table with columns:
+  - `user_id`, `target_audience`, `preferred_keywords[]`, `default_tone`, `default_length`
 - [ ] Add indices for performance
 - [ ] Set up RLS policies
 - [ ] Create migration scripts
+
+## Content Generation Flow Details
+
+### Two-Phase Generation Process
+1. **Skeleton Phase**: Generate basic content structure without web search
+2. **Enhancement Phase**: Research and enhance each section with web data
+3. **Progress Updates**: Single line that updates in real-time
+
+### Example Progress Messages
+- "Generating article outline..."
+- "Writing introduction..."
+- "Researching latest trends for 'Customer Retention'..."
+- "Enhancing section with industry insights..."
+- "Finalizing content..."
+
+### Rate Limiting Strategy
+- Exponential backoff: 1s, 2s, 4s, 8s delays
+- Maximum 3 retries per API call
+- Queue management for multiple sections
+- Graceful degradation to skeleton content if enhancement fails
 
 ## Current Codebase Status
 
 ### ✅ Existing Components (Available)
 - `useArticleStudio.ts` - Current hook (needs major restructure)
-- `NovelEditor.tsx` - WYSIWYG editor component
+- `NovelEditor.tsx` - WYSIWYG editor component (minimal changes needed)
 - `react-resizable-panels` - Layout system
 - Edge functions: `generate-titles`, `generate-outline`, `generate-content`
 
 ### 🔄 Components Needing Updates
 - `useArticleStudio.ts` → `useArticleStudioWorkflow.ts` (major restructure)
-- `generate-content` → Enhanced with Firecrawl integration
+- `generate-content` → Enhanced with two-phase generation
 - Article Studio main page → Complete redesign
 
 ### 🆕 Components to Create
 See individual phase checklists above
 
+## Example Topics for "Try Example" Button
+
+### Marketing Focus
+- "Content marketing strategies for B2B SaaS companies"
+- "Building brand awareness for early-stage startups"
+- "Email marketing automation for customer retention"
+
+### B2B SaaS Focus
+- "Reducing churn in subscription-based businesses"
+- "Pricing strategies for SaaS products"
+- "Onboarding best practices for enterprise software"
+
+### Sales Focus
+- "Building an effective sales funnel for B2B services"
+- "Sales enablement tools for remote teams"
+- "Lead qualification strategies for high-value prospects"
+
+### Startup Focus
+- "Fundraising strategies for pre-seed startups"
+- "Building MVPs that validate product-market fit"
+- "Scaling customer support for growing startups"
+
 ## Questions & Decisions Log
 
 ### ✅ Resolved
-1. **Web Search Provider**: Firecrawl (user preference)
-2. **Simultaneous Editing**: Enabled (leverages Novel AI features)
-3. **SEO Persistence**: Database storage (user preference)
-4. **Layout Structure**: 40/60 resizable panels
+1. **Web Search Provider**: Raw OpenAI for MVP (upgrade to Tavily optional)
+2. **Content Generation**: Two-phase approach (skeleton → enhanced)
+3. **Progress Display**: Single line updates that replace each other
+4. **Novel Editor**: Minimal integration, preserve existing functionality
+5. **SEO Persistence**: Database storage for user preferences
+6. **Example Topics**: Marketing/B2B/Sales/Startup focused examples
+7. **Layout Structure**: 40/60 resizable panels
 
 ### ❓ Pending Decisions
-1. **Example Topics**: What specific examples should "Try Example" button cycle through?
-2. **Error Handling Granularity**: Section-level retry vs full regeneration?
-3. **Firecrawl Rate Limits**: How to handle API limits gracefully?
-4. **Content Versioning**: Should we implement undo/redo for generated content?
+1. **Database Migration Timing**: When should we create the SEO preferences table?
+2. **Error Recovery**: How should we handle partial generation failures?
+3. **Content Versioning**: Should we implement undo/redo for generated content?
 
 ## Next Steps
 
-1. **Immediate**: Start Phase 1 implementation
-2. **User Input Needed**: Example topics for "Try Example" button
-3. **Technical Setup**: Configure Firecrawl API credentials
-4. **Database**: Create SEO preferences schema
+1. **Immediate**: Create database schema for SEO preferences
+2. **Phase 1**: Start with database setup and core layout implementation
+3. **User Input Needed**: Approval for database schema
+4. **Technical Setup**: Ensure OpenAI API credentials are configured
 
 ## Success Criteria
 
 ### Phase 1 Success Metrics
 - [ ] Working resizable layout (40/60)
 - [ ] Complete title input form with SEO Pro mode
-- [ ] Example topics functionality
+- [ ] Example topics functionality (Marketing/B2B/Sales/Startup)
 - [ ] SEO settings persistence
 - [ ] Empty state display
 
 ### Overall MVP Success Metrics
 - [ ] Complete 4-step workflow
-- [ ] Web research integration for each section
+- [ ] Two-phase content generation with web research
 - [ ] Simultaneous editing during generation
 - [ ] SEO settings saved and restored
 - [ ] Performance: Article generation under 2 minutes
@@ -179,5 +249,6 @@ See individual phase checklists above
 ---
 
 **Last Updated**: 2025-01-26  
-**Next Review**: After Phase 1 completion  
-**Status**: 📋 Planning Complete - Ready for Implementation
+**Next Review**: After database schema approval  
+**Status**: 📋 Planning Complete - Ready for Database Setup
+
