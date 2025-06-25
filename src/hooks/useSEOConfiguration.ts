@@ -13,7 +13,7 @@ export interface SEOPreferences {
 export function useSEOConfiguration() {
   const [seoPreferences, setSeoPreferences] = useState<SEOPreferences>({
     defaultTone: 'professional',
-    preferredArticleLength: 1200,
+    preferredArticleLength: 1500,
     defaultKeywords: [],
     defaultAudience: ''
   });
@@ -42,7 +42,7 @@ export function useSEOConfiguration() {
       if (data) {
         setSeoPreferences({
           defaultTone: data.default_tone || 'professional',
-          preferredArticleLength: data.preferred_article_length || 1200,
+          preferredArticleLength: data.preferred_article_length || 1500,
           defaultKeywords: data.default_keywords || [],
           defaultAudience: data.default_audience || ''
         });
@@ -88,11 +88,62 @@ export function useSEOConfiguration() {
     setSeoPreferences(prev => ({ ...prev, ...updates }));
   }, []);
 
+  // AI Generation functions
+  const generateAudience = useCallback(async (topic: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke('generate-audience', {
+        body: { topic }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const { audience } = data;
+      updateSEOPreferences({ defaultAudience: audience });
+      toast.success('Audience generated successfully');
+      return audience;
+    } catch (error) {
+      console.error('Error generating audience:', error);
+      toast.error('Failed to generate audience');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [updateSEOPreferences]);
+
+  const generateKeywords = useCallback(async (topic: string, audience?: string) => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke('generate-keywords', {
+        body: { topic, audience }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const { keywords } = data;
+      updateSEOPreferences({ defaultKeywords: keywords });
+      toast.success(`Generated ${keywords.length} keywords`);
+      return keywords;
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+      toast.error('Failed to generate keywords');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [updateSEOPreferences]);
+
   return {
     seoPreferences,
     updateSEOPreferences,
     saveSEOPreferences,
     loadSEOPreferences,
+    generateAudience,
+    generateKeywords,
     isLoading,
     isLoaded
   };

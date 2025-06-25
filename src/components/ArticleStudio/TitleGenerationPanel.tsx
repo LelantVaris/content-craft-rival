@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
@@ -15,12 +14,11 @@ import {
   RefreshCw, 
   Target,
   Settings,
-  ChevronDown,
-  ChevronUp,
   Lightbulb,
   Plus,
   X,
-  Minus
+  Minus,
+  Wand2
 } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { useSEOConfiguration } from '@/hooks/useSEOConfiguration';
@@ -43,11 +41,15 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [isGeneratingAudience, setIsGeneratingAudience] = useState(false);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
   
   const {
     seoPreferences,
     updateSEOPreferences,
     saveSEOPreferences,
+    generateAudience,
+    generateKeywords,
     isLoaded
   } = useSEOConfiguration();
 
@@ -94,6 +96,40 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
     onUpdate({ audience });
     if (seoProMode) {
       handleSEOPreferenceUpdate({ defaultAudience: audience });
+    }
+  };
+
+  const handleGenerateAudience = async () => {
+    if (!articleData.topic.trim()) {
+      toast.error('Please enter a topic first');
+      return;
+    }
+
+    try {
+      setIsGeneratingAudience(true);
+      const audience = await generateAudience(articleData.topic);
+      onUpdate({ audience });
+    } catch (error) {
+      // Error handling is done in the hook
+    } finally {
+      setIsGeneratingAudience(false);
+    }
+  };
+
+  const handleGenerateKeywords = async () => {
+    if (!articleData.topic.trim()) {
+      toast.error('Please enter a topic first');
+      return;
+    }
+
+    try {
+      setIsGeneratingKeywords(true);
+      const keywords = await generateKeywords(articleData.topic, articleData.audience);
+      onUpdate({ keywords });
+    } catch (error) {
+      // Error handling is done in the hook
+    } finally {
+      setIsGeneratingKeywords(false);
     }
   };
 
@@ -185,19 +221,51 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
               {/* Target Audience */}
               <div className="space-y-2">
                 <Label htmlFor="audience">Target Audience</Label>
-                <Textarea
-                  id="audience"
-                  placeholder="e.g., Marketing professionals and business owners looking to improve their content strategy"
-                  value={articleData.audience}
-                  onChange={(e) => handleAudienceChange(e.target.value)}
-                  rows={2}
-                  className="resize-none"
-                />
+                <div className="flex gap-2">
+                  <Textarea
+                    id="audience"
+                    placeholder="e.g., Marketing professionals and business owners looking to improve their content strategy"
+                    value={articleData.audience}
+                    onChange={(e) => handleAudienceChange(e.target.value)}
+                    rows={2}
+                    className="resize-none flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateAudience}
+                    disabled={isGeneratingAudience || !articleData.topic.trim()}
+                    className="flex items-center gap-2 shrink-0"
+                  >
+                    {isGeneratingAudience ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                    AI Generate
+                  </Button>
+                </div>
               </div>
 
               {/* Keywords */}
               <div className="space-y-2">
-                <Label>Target Keywords</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Target Keywords</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateKeywords}
+                    disabled={isGeneratingKeywords || !articleData.topic.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    {isGeneratingKeywords ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                    AI Generate
+                  </Button>
+                </div>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Add keyword..."
@@ -256,21 +324,22 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
               </div>
 
               {/* Article Length */}
-              <div className="space-y-3">
-                <Label>Target Article Length: {seoPreferences.preferredArticleLength} words</Label>
-                <Slider
-                  value={[seoPreferences.preferredArticleLength]}
-                  onValueChange={([value]) => handleSEOPreferenceUpdate({ preferredArticleLength: value })}
-                  min={500}
-                  max={3000}
-                  step={100}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>Short (500-800)</span>
-                  <span>Medium (800-1500)</span>
-                  <span>Long (1500+)</span>
-                </div>
+              <div className="space-y-2">
+                <Label>Target Article Length</Label>
+                <Select
+                  value={seoPreferences.preferredArticleLength.toString()}
+                  onValueChange={(value) => handleSEOPreferenceUpdate({ preferredArticleLength: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1000">1,000 words</SelectItem>
+                    <SelectItem value="1500">1,500 words</SelectItem>
+                    <SelectItem value="2500">2,500 words</SelectItem>
+                    <SelectItem value="4000">4,000+ words</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </CollapsibleContent>
@@ -338,26 +407,28 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
             {generatedTitles.length > 0 && (
               <div className="space-y-3 pt-4 border-t">
                 <Label className="text-base font-semibold">Select a title:</Label>
-                {generatedTitles.map((title, index) => (
-                  <Card
-                    key={index}
-                    className={`cursor-pointer transition-all hover:shadow-md border-2 ${
-                      articleData.selectedTitle === title
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-green-300'
-                    }`}
-                    onClick={() => handleTitleSelect(title)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-gray-900 flex-1">{title}</p>
-                        {articleData.selectedTitle === title && (
-                          <Badge className="bg-green-600">Selected</Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                <div className="grid gap-3">
+                  {generatedTitles.map((title, index) => (
+                    <Card
+                      key={index}
+                      className={`cursor-pointer transition-all hover:shadow-md border-2 ${
+                        articleData.selectedTitle === title
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-gray-200 hover:border-green-300'
+                      }`}
+                      onClick={() => handleTitleSelect(title)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-gray-900 flex-1 leading-relaxed">{title}</p>
+                          {articleData.selectedTitle === title && (
+                            <Badge className="bg-green-600 ml-3">Selected</Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
@@ -371,7 +442,7 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <Badge className="bg-green-600">Selected Title</Badge>
             </div>
-            <p className="text-green-900 font-medium">
+            <p className="text-green-900 font-medium leading-relaxed">
               {articleData.selectedTitle}
             </p>
           </CardContent>

@@ -4,7 +4,7 @@ CREATE TABLE public.user_seo_preferences (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users NOT NULL,
   default_tone TEXT DEFAULT 'professional' CHECK (default_tone IN ('professional', 'casual', 'technical', 'conversational', 'authoritative')),
-  preferred_article_length INTEGER DEFAULT 1200 CHECK (preferred_article_length BETWEEN 500 AND 3000),
+  preferred_article_length INTEGER DEFAULT 1500 CHECK (preferred_article_length IN (1000, 1500, 2500, 4000)),
   default_keywords TEXT[] DEFAULT '{}',
   default_audience TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -31,7 +31,7 @@ CREATE POLICY "Users can delete their own SEO preferences" ON public.user_seo_pr
 -- Create function to upsert SEO preferences
 CREATE OR REPLACE FUNCTION public.upsert_seo_preferences(
   p_tone TEXT DEFAULT 'professional',
-  p_article_length INTEGER DEFAULT 1200,
+  p_article_length INTEGER DEFAULT 1500,
   p_keywords TEXT[] DEFAULT '{}',
   p_audience TEXT DEFAULT ''
 )
