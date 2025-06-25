@@ -7,10 +7,15 @@ export const parseWebflowCredentials = (connection: WebflowConnection) => {
     ? connection.credentials as any
     : JSON.parse(connection.credentials || '{}')
   
+  const convertToString = (value: any): string => {
+    if (value === undefined || value === null) return ''
+    return String(value)
+  }
+  
   return {
-    token: (credentials.token !== undefined && credentials.token !== null) ? String(credentials.token) : '',
-    siteId: (credentials.site_id !== undefined && credentials.site_id !== null) ? String(credentials.site_id) : (connection.site_id ? String(connection.site_id) : ''),
-    siteName: (credentials.site_name !== undefined && credentials.site_name !== null) ? String(credentials.site_name) : ''
+    token: convertToString(credentials.token),
+    siteId: convertToString(credentials.site_id) || convertToString(connection.site_id),
+    siteName: convertToString(credentials.site_name)
   }
 }
 
