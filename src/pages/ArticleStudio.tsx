@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { PenTool, Sparkles, Target, Monitor } from 'lucide-react';
-import { ControlPanel } from '@/components/ArticleStudio/ControlPanel';
-import { PreviewPanel } from '@/components/ArticleStudio/PreviewPanel';
+import { Monitor } from 'lucide-react';
 import { useArticleStudio } from '@/hooks/useArticleStudio';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { TopProgressBar } from '@/components/ArticleStudio/TopProgressBar';
+import { StudioSidebar } from '@/components/ArticleStudio/StudioSidebar';
+import { TitleStepContent } from '@/components/ArticleStudio/TitleStepContent';
+import { OutlineStepContent } from '@/components/ArticleStudio/OutlineStepContent';
+import { ArticleStepContent } from '@/components/ArticleStudio/ArticleStepContent';
 
 const ArticleStudio = () => {
   const articleStudio = useArticleStudio();
@@ -30,68 +32,63 @@ const ArticleStudio = () => {
     );
   }
 
+  const renderStepContent = () => {
+    switch (articleStudio.articleData.currentStep) {
+      case 1:
+        return (
+          <TitleStepContent
+            articleData={articleStudio.articleData}
+            onUpdate={articleStudio.updateArticleData}
+          />
+        );
+      case 2:
+        return (
+          <OutlineStepContent
+            articleData={articleStudio.articleData}
+            onUpdate={articleStudio.updateArticleData}
+          />
+        );
+      case 3:
+        return (
+          <ArticleStepContent
+            articleData={articleStudio.articleData}
+            streamingContent={articleStudio.streamingContent}
+            isGenerating={articleStudio.isGenerating}
+            onGenerate={() => {
+              // This would trigger content generation
+              articleStudio.setIsGenerating(true);
+              // Simulate content generation
+              setTimeout(() => {
+                articleStudio.updateArticleData({
+                  generatedContent: `# ${articleStudio.articleData.customTitle || articleStudio.articleData.selectedTitle}\n\nThis is your generated article content based on the outline you created. The AI has crafted this content to match your specifications and provide value to your readers.\n\n## Introduction\n\nYour article begins here with an engaging introduction that hooks the reader and sets the stage for the valuable content that follows.\n\n## Main Content\n\nThe main body of your article contains detailed information, examples, and insights that deliver on the promise made in your title.\n\n## Conclusion\n\nA strong conclusion that summarizes key points and provides actionable next steps for your readers.`
+                });
+                articleStudio.setIsGenerating(false);
+              }, 3000);
+            }}
+            onSaveAndComplete={articleStudio.saveAndComplete}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="h-screen bg-white w-full flex flex-col">
-      <div className="border-b bg-white">
-        <div className="py-2">
-          <div className="text-center">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-1">
-              Article Studio
-            </h1>
-            <p className="text-gray-600 text-xs mb-2">
-              Create engaging, SEO-optimized content with real-time AI assistance
-            </p>
-            
-            <div className="flex justify-center gap-4">
-              <div className="flex items-center gap-1 text-purple-600">
-                <Sparkles className="w-3 h-3" />
-                <span className="text-xs font-medium">AI-Powered</span>
-              </div>
-              <div className="flex items-center gap-1 text-blue-600">
-                <Target className="w-3 h-3" />
-                <span className="text-xs font-medium">SEO Optimized</span>
-              </div>
-              <div className="flex items-center gap-1 text-green-600">
-                <PenTool className="w-3 h-3" />
-                <span className="text-xs font-medium">Real-time Preview</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full">
-        <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-          <ResizablePanel defaultSize={40} minSize={30} maxSize={60} className="h-full">
-            <div className="h-full flex flex-col">
-              <div className="py-2 border-b bg-gray-50/50">
-                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900 text-sm">
-                  <PenTool className="w-4 h-4 text-purple-600" />
-                  Control Panel
-                </h2>
-              </div>
-              <div className="flex-1 overflow-auto">
-                <ControlPanel {...articleStudio} />
-              </div>
-            </div>
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle className="bg-gray-200 hover:bg-gray-300 transition-colors" />
-          
-          <ResizablePanel defaultSize={60} minSize={40} className="h-full">
-            <div className="h-full flex flex-col">
-              <div className="py-2 border-b bg-gray-50/50">
-                <h2 className="flex items-center justify-center gap-2 font-semibold text-gray-900 text-sm">
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  Live Preview
-                </h2>
-              </div>
-              <div className="flex-1 overflow-auto">
-                <PreviewPanel {...articleStudio} />
-              </div>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+      <TopProgressBar currentStep={articleStudio.articleData.currentStep} />
+      
+      <div className="flex-1 flex overflow-hidden">
+        <StudioSidebar
+          articleData={articleStudio.articleData}
+          onNext={articleStudio.nextStep}
+          onPrev={articleStudio.prevStep}
+          canProceed={articleStudio.canProceed()}
+          isGenerating={articleStudio.isGenerating}
+        />
+        
+        <main className="flex-1 overflow-auto bg-gray-50">
+          {renderStepContent()}
+        </main>
       </div>
     </div>
   );
