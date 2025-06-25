@@ -14,7 +14,7 @@ export const parseWebflowCredentials = (connection: WebflowConnection) => {
   
   return {
     token: convertToString(credentials.token as any),
-    siteId: convertToString(credentials.site_id as any) || convertToString(connection.site_id),
+    siteId: convertToString(credentials.site_id as any) || convertToString(connection.site_id as any),
     siteName: convertToString(credentials.site_name as any)
   }
 }
