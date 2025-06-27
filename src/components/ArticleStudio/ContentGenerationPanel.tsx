@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Loader2, PenTool, Zap } from 'lucide-react';
+import { Loader2, PenTool, Zap, AlertCircle } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,10 +27,16 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   const [writingStyle, setWritingStyle] = useState('professional');
   const [tone, setTone] = useState('informative');
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  const canGenerate = () => {
+    const title = articleData.customTitle || articleData.selectedTitle;
+    return title && articleData.outline.length > 0;
+  };
 
   const handleGenerateContent = async () => {
     const title = articleData.customTitle || articleData.selectedTitle;
-    if (!title || articleData.outline.length === 0) {
+    if (!canGenerate()) {
       toast.error('Please complete the title and outline first');
       return;
     }
@@ -38,16 +44,26 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     setIsGeneratingContent(true);
     setIsGenerating(true);
     setStreamingContent('');
+    setGenerationError(null);
 
     try {
-      // Simulate streaming by showing progressive content
-      setStreamingContent('# Generating your article...\n\n*Searching the web for latest information...*');
+      // Show progressive loading states
+      setStreamingContent('# Initializing content generation...\n\n*Analyzing your requirements...*');
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStreamingContent('# Generating your article...\n\n*Analyzing your outline...*\n\n*Creating engaging introduction...*');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setStreamingContent('# Preparing content structure...\n\n*Processing outline and keywords...*\n\n*Optimizing for SEO...*');
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStreamingContent('# Generating your article...\n\n*Writing main content sections...*\n\n*Optimizing for SEO...*');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setStreamingContent('# Generating content...\n\n*Writing introduction...*\n\n*Developing main sections...*\n\n*This may take a moment...*');
+
+      console.log('Calling generate-content function with:', {
+        title,
+        outline: articleData.outline,
+        keywords: articleData.keywords,
+        audience: articleData.audience,
+        writingStyle,
+        tone
+      });
 
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
@@ -60,16 +76,30 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to generate content');
+      }
       
-      const generatedContent = data.content || '';
+      const generatedContent = data?.content || '';
+      
+      if (!generatedContent) {
+        throw new Error('No content was generated');
+      }
+      
+      // Simulate streaming effect for better UX
+      setStreamingContent('# Content generation complete!\n\n*Finalizing your article...*');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       onUpdate({ generatedContent });
       setStreamingContent(generatedContent);
       
       toast.success('Content generated successfully!');
     } catch (error) {
       console.error('Error generating content:', error);
-      toast.error('Failed to generate content. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setGenerationError(errorMessage);
+      toast.error(`Failed to generate content: ${errorMessage}`);
       setStreamingContent('');
     } finally {
       setIsGeneratingContent(false);
@@ -89,7 +119,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="writing-style">Writing Style</Label>
-            <Select value={writingStyle} onValueChange={setWritingStyle}>
+            <Select value={writingStyle} onValueChange={setWritingStyle} disabled={isGeneratingContent}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select writing style" />
               </SelectTrigger>
@@ -105,7 +135,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
 
           <div>
             <Label htmlFor="tone">Tone</Label>
-            <Select value={tone} onValueChange={setTone}>
+            <Select value={tone} onValueChange={setTone} disabled={isGeneratingContent}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select tone" />
               </SelectTrigger>
@@ -119,9 +149,19 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             </Select>
           </div>
 
+          {generationError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Generation Failed</p>
+                <p className="text-xs text-red-600 mt-1">{generationError}</p>
+              </div>
+            </div>
+          )}
+
           <Button
             onClick={handleGenerateContent}
-            disabled={isGeneratingContent || articleData.outline.length === 0}
+            disabled={isGeneratingContent || !canGenerate()}
             className="w-full"
           >
             {isGeneratingContent ? (
@@ -136,6 +176,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
               </>
             )}
           </Button>
+
+          {!canGenerate() && (
+            <p className="text-xs text-gray-500 text-center">
+              Complete title and outline steps to enable content generation
+            </p>
+          )}
         </CardContent>
       </Card>
 

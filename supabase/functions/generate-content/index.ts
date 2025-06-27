@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, outline, keywords = [], audience = '' } = await req.json();
+    const { title, outline, keywords = [], audience = '', writingStyle = 'professional', tone = 'informative' } = await req.json();
 
     if (!title || !outline || outline.length === 0) {
       return new Response(JSON.stringify({ error: 'Title and outline are required' }), {
@@ -35,6 +35,8 @@ serve(async (req) => {
     const prompt = `Write a comprehensive, engaging article based on the following specifications:
 
 Title: ${title}
+Writing Style: ${writingStyle}
+Tone: ${tone}
 ${keywordText}
 ${audienceText}
 
@@ -49,10 +51,12 @@ Requirements:
 - Aim for 1500-2500 words total
 - Use proper heading structure (# ## ###)
 - Include a compelling introduction and strong conclusion
-- Write in a professional yet accessible tone
+- Write in a ${tone} tone with ${writingStyle} style
 - Incorporate the target keywords naturally throughout the content
 
 Start with the title as an H1 heading, then write the full article with proper structure and formatting.`;
+
+    console.log('Generating content with OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

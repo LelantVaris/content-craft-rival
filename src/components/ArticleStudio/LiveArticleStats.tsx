@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, Clock, Target, TrendingUp } from 'lucide-react';
+import { BarChart3, Clock, Target, TrendingUp, FileText, CheckCircle } from 'lucide-react';
 
 interface LiveArticleStatsProps {
   title: string;
@@ -19,24 +19,55 @@ export const LiveArticleStats: React.FC<LiveArticleStatsProps> = ({
 }) => {
   const stats = useMemo(() => {
     const wordCount = content ? content.split(/\s+/).filter(word => word.length > 0).length : 0;
-    const readingTime = Math.max(1, Math.ceil(wordCount / 200)); // 200 words per minute
     const characterCount = content.length;
+    const readingTime = Math.max(1, Math.ceil(wordCount / 200)); // 200 words per minute
     
-    // Simple SEO score calculation
+    // Count headings for structure analysis
+    const headingMatches = content.match(/^#{1,6}\s+.+$/gm) || [];
+    const headingCount = headingMatches.length;
+    
+    // Count paragraphs
+    const paragraphCount = content.split(/\n\s*\n/).filter(p => p.trim().length > 0).length;
+    
+    // Calculate keyword density
+    let keywordDensity = 0;
+    if (keywords.length > 0 && content) {
+      const totalKeywordMentions = keywords.reduce((count, keyword) => {
+        const regex = new RegExp(keyword.toLowerCase(), 'gi');
+        const matches = content.toLowerCase().match(regex);
+        return count + (matches ? matches.length : 0);
+      }, 0);
+      keywordDensity = wordCount > 0 ? (totalKeywordMentions / wordCount) * 100 : 0;
+    }
+    
+    // Simple SEO score calculation (enhanced)
     let seoScore = 0;
-    if (title) seoScore += 20;
+    if (title) seoScore += 15;
+    if (title && title.length >= 30 && title.length <= 60) seoScore += 10;
     if (wordCount > 300) seoScore += 20;
-    if (wordCount > 1000) seoScore += 20;
-    if (keywords.length > 0) seoScore += 20;
-    if (content && keywords.some(keyword => 
-      content.toLowerCase().includes(keyword.toLowerCase())
-    )) seoScore += 20;
+    if (wordCount > 1000) seoScore += 15;
+    if (keywords.length > 0) seoScore += 10;
+    if (keywordDensity >= 1 && keywordDensity <= 3) seoScore += 15;
+    if (headingCount >= 2) seoScore += 10;
+    if (paragraphCount >= 3) seoScore += 5;
+    
+    // Publish readiness score
+    let publishReadiness = 0;
+    if (title && title.length > 10) publishReadiness += 20;
+    if (wordCount >= 300) publishReadiness += 30;
+    if (headingCount >= 2) publishReadiness += 20;
+    if (keywordDensity > 0) publishReadiness += 15;
+    if (paragraphCount >= 3) publishReadiness += 15;
     
     return {
       wordCount,
-      readingTime,
       characterCount,
-      seoScore: Math.min(100, seoScore)
+      readingTime,
+      headingCount,
+      paragraphCount,
+      keywordDensity,
+      seoScore: Math.min(100, seoScore),
+      publishReadiness: Math.min(100, publishReadiness)
     };
   }, [title, content, keywords]);
 
@@ -53,10 +84,16 @@ export const LiveArticleStats: React.FC<LiveArticleStatsProps> = ({
     return 'Needs Work';
   };
 
+  const getPublishReadinessColor = (score: number) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
-    <Card className="border-0 bg-gradient-to-r from-blue-50 to-purple-50">
+    <Card className="border-0 bg-gradient-to-r from-blue-50 via-purple-50 to-green-50">
       <CardContent className="p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {/* Word Count */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -109,6 +146,37 @@ export const LiveArticleStats: React.FC<LiveArticleStatsProps> = ({
               <p className="text-xs text-gray-500 uppercase tracking-wide">Keywords</p>
               <p className="text-lg font-semibold text-gray-900">
                 {keywords.length}
+                {stats.keywordDensity > 0 && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    ({stats.keywordDensity.toFixed(1)}%)
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Structure */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Structure</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {stats.headingCount}H/{stats.paragraphCount}P
+              </p>
+            </div>
+          </div>
+
+          {/* Publish Readiness */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Readiness</p>
+              <p className={`text-lg font-semibold ${getPublishReadinessColor(stats.publishReadiness)}`}>
+                {stats.publishReadiness}%
               </p>
             </div>
           </div>
