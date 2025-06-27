@@ -33,14 +33,13 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 }) => {
   const [titleCount, setTitleCount] = useState(5);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
-  const [enhancementProgress, setEnhancementProgress] = useState<{[key: number]: number}>({});
+  const [currentSectionIndex, setCurrentSectionIndex] = useState<number>(-1);
   const [seoPreferences, setSeoPreferences] = useState<SEOPreferences>({
     defaultTone: 'professional',
     preferredArticleLength: 1500,
     defaultKeywords: [],
     defaultAudience: ''
   });
-  const [currentArticleContent, setCurrentArticleContent] = useState('');
   
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -54,63 +53,20 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
     setIsGenerating(true);
     setStreamingContent('');
-    setCurrentArticleContent('');
-    setStreamingStatus('🚀 Phase 1: Generating basic article...');
+    setCurrentSectionIndex(-1);
+    setStreamingStatus('🚀 Starting article generation...');
 
     try {
-      // Phase 1: Generate basic article using existing function
-      console.log('Phase 1: Generating basic article with SEO optimization...');
+      console.log('Starting streaming article generation...');
       
-      const { data: basicArticleData, error: basicError } = await supabase.functions.invoke('generate-content', {
-        body: {
-          title,
-          outline: articleData.outline,
-          keywords: articleData.keywords,
-          audience: articleData.audience,
-          writingStyle: 'professional',
-          tone: seoPreferences.defaultTone
-        }
-      });
-
-      if (basicError) {
-        throw new Error(basicError.message || 'Failed to generate basic article');
-      }
-
-      const basicArticle = basicArticleData?.content || '';
-      if (!basicArticle) {
-        throw new Error('No basic article content generated');
-      }
-
-      console.log('Phase 1 complete: Basic article generated');
-      setCurrentArticleContent(basicArticle);
-      updateArticleData({ generatedContent: basicArticle });
-      setStreamingStatus('✅ Phase 1 complete! Starting enhanced research...');
-
-      // Phase 2: Enhance sections with research
-      console.log('Phase 2: Starting section-by-section enhancement...');
-      await enhanceSectionsWithResearch(basicArticle);
-
-    } catch (error) {
-      console.error('Error generating article:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setStreamingStatus(`❌ Error: ${errorMessage}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const enhanceSectionsWithResearch = async (basicArticle: string) => {
-    try {
-      setStreamingStatus('🔍 Phase 2: Researching and enhancing sections...');
-      
-      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/enhance-article-sections`, {
+      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-streaming-article`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          basicArticle,
+          title,
           outline: articleData.outline,
           keywords: articleData.keywords,
           audience: articleData.audience,
@@ -119,7 +75,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Enhancement failed: ${response.statusText}`);
+        throw new Error(`Generation failed: ${response.statusText}`);
       }
 
       const reader = response.body?.getReader();
@@ -127,14 +83,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         throw new Error('No response stream available');
       }
 
-      let enhancedArticle = basicArticle;
       const decoder = new TextDecoder();
-      const sectionMap = new Map();
-
-      // Create a map of section titles to their content for better matching
-      articleData.outline.forEach((section, index) => {
-        sectionMap.set(section.title.toLowerCase(), index);
-      });
+      let accumulatedContent = `# ${title}\n\n`;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -149,77 +99,28 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
               const data = JSON.parse(line.slice(6));
               
               switch (data.type) {
-                case 'status':
-                  setStreamingStatus(`🔍 ${data.message}`);
-                  break;
-                  
                 case 'section-start':
-                  setStreamingStatus(`🔍 Researching: ${data.sectionTitle}`);
-                  setEnhancementProgress(prev => ({ ...prev, [data.sectionIndex]: data.progress }));
+                  setCurrentSectionIndex(data.data.index);
+                  setStreamingStatus(`✍️ Writing: ${data.data.title}`);
                   break;
                   
-                case 'research-complete':
-                  setStreamingStatus(`✨ Enhancing: ${data.sectionTitle} (${data.researchCount} sources found)`);
-                  setEnhancementProgress(prev => ({ ...prev, [data.sectionIndex]: data.progress }));
+                case 'content-chunk':
+                  accumulatedContent = data.data.fullContent;
+                  setStreamingContent(accumulatedContent);
                   break;
                   
-                case 'section-enhanced':
-                  const sectionTitle = data.sectionTitle;
-                  const enhancedContent = data.enhancedContent;
-                  
-                  // Improved section replacement logic
-                  const patterns = [
-                    new RegExp(`(## ${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?)(?=## |$)`, 'i'),
-                    new RegExp(`(### ${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?)(?=### |## |$)`, 'i'),
-                    new RegExp(`(# ${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?)(?=# |$)`, 'i')
-                  ];
-                  
-                  let replaced = false;
-                  for (const pattern of patterns) {
-                    if (pattern.test(enhancedArticle)) {
-                      enhancedArticle = enhancedArticle.replace(pattern, enhancedContent);
-                      replaced = true;
-                      break;
-                    }
-                  }
-                  
-                  // If no pattern matched, try to find by partial title match
-                  if (!replaced) {
-                    const titleWords = sectionTitle.toLowerCase().split(' ');
-                    const articleSections = enhancedArticle.split(/(?=^##? )/gm);
-                    
-                    for (let i = 0; i < articleSections.length; i++) {
-                      const section = articleSections[i];
-                      const sectionTitleMatch = section.match(/^##? (.+?)$/m);
-                      
-                      if (sectionTitleMatch) {
-                        const existingTitle = sectionTitleMatch[1].toLowerCase();
-                        const matchingWords = titleWords.filter(word => existingTitle.includes(word));
-                        
-                        if (matchingWords.length >= Math.max(1, titleWords.length * 0.6)) {
-                          articleSections[i] = enhancedContent;
-                          enhancedArticle = articleSections.join('');
-                          replaced = true;
-                          break;
-                        }
-                      }
-                    }
-                  }
-                  
-                  setCurrentArticleContent(enhancedArticle);
-                  setStreamingContent(enhancedArticle);
-                  setStreamingStatus(`✅ Enhanced: ${data.sectionTitle}`);
-                  setEnhancementProgress(prev => ({ ...prev, [data.sectionIndex]: data.progress }));
+                case 'section-complete':
+                  setStreamingStatus(`✅ Completed: ${data.data.title}`);
                   break;
                   
                 case 'complete':
-                  updateArticleData({ generatedContent: enhancedArticle });
-                  setStreamingContent(enhancedArticle);
-                  setStreamingStatus('🎉 Article enhancement complete! Research-backed sections ready.');
+                  updateArticleData({ generatedContent: accumulatedContent });
+                  setStreamingContent(accumulatedContent);
+                  setStreamingStatus('🎉 Article generation complete!');
                   break;
                   
                 case 'error':
-                  throw new Error(data.message);
+                  throw new Error(data.data.error);
               }
             } catch (parseError) {
               console.warn('Failed to parse SSE data:', parseError);
@@ -229,8 +130,11 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       }
 
     } catch (error) {
-      console.error('Error enhancing sections:', error);
-      setStreamingStatus(`❌ Enhancement error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error generating article:', error);
+      setStreamingStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGenerating(false);
+      setCurrentSectionIndex(-1);
     }
   };
 
@@ -370,7 +274,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           size="lg"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating Research-Enhanced Article...' : 'Generate Research-Enhanced Article'}
+          {isGenerating ? 'Generating Streaming Article...' : 'Generate Streaming Article'}
         </Button>
         
         <Button
@@ -385,30 +289,24 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         </Button>
       </div>
 
-      {/* Enhanced generation info */}
+      {/* Streaming generation info */}
       {hasTitle && hasOutline && !isGenerating && (
         <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
           <div className="text-sm text-purple-800">
-            <strong>🚀 Two-Phase Generation:</strong>
+            <strong>🚀 Real-Time Streaming:</strong>
             <br />
-            Phase 1: Creates SEO-optimized article from outline
-            <br />
-            Phase 2: Researches and enhances each section with current data and sources
+            Watch your article build section by section with live content streaming and inline source links
           </div>
         </div>
       )}
 
-      {/* Enhancement progress */}
-      {Object.keys(enhancementProgress).length > 0 && (
+      {/* Current section progress */}
+      {isGenerating && currentSectionIndex >= 0 && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="text-sm text-blue-800">
-            <strong>Section Enhancement Progress:</strong>
-            {articleData.outline.map((section, index) => (
-              <div key={index} className="flex items-center justify-between mt-1">
-                <span className="truncate">{section.title}</span>
-                <span className="ml-2">{enhancementProgress[index] || 0}%</span>
-              </div>
-            ))}
+            <strong>Currently Writing:</strong>
+            <br />
+            Section {currentSectionIndex + 1} of {articleData.outline.length}: {articleData.outline[currentSectionIndex]?.title}
           </div>
         </div>
       )}
