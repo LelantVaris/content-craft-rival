@@ -17,9 +17,12 @@ import {
   Hash,
   Settings,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  FileText,
+  Plus,
+  Trash2
 } from 'lucide-react';
-import { ArticleStudioData } from '@/hooks/useArticleStudio';
+import { ArticleStudioData, OutlineSection } from '@/hooks/useArticleStudio';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -39,6 +42,7 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
   const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
   const [isGeneratingAudience, setIsGeneratingAudience] = useState(false);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
   const [isGeneratingArticle, setIsGeneratingArticle] = useState(false);
   const [suggestedTitles, setSuggestedTitles] = useState<string[]>([]);
   const [customTitle, setCustomTitle] = useState(articleData.customTitle || '');
@@ -57,6 +61,7 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
 
     setIsGeneratingTitles(true);
     try {
+      console.log('Generating titles for topic:', articleData.topic);
       const { data, error } = await supabase.functions.invoke('generate-titles', {
         body: { 
           topic: articleData.topic,
@@ -65,8 +70,12 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating titles:', error);
+        throw error;
+      }
       
+      console.log('Generated titles:', data.titles);
       setSuggestedTitles(data.titles || []);
       toast.success('Titles generated successfully!');
     } catch (error) {
@@ -85,12 +94,17 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
 
     setIsGeneratingAudience(true);
     try {
+      console.log('Generating audience for topic:', articleData.topic);
       const { data, error } = await supabase.functions.invoke('generate-audience', {
         body: { topic: articleData.topic }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating audience:', error);
+        throw error;
+      }
       
+      console.log('Generated audience:', data.audience);
       updateArticleData({ audience: data.audience });
       toast.success('Audience generated successfully!');
     } catch (error) {
@@ -109,6 +123,7 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
 
     setIsGeneratingKeywords(true);
     try {
+      console.log('Generating keywords for topic:', articleData.topic);
       const { data, error } = await supabase.functions.invoke('generate-keywords', {
         body: { 
           topic: articleData.topic,
@@ -116,8 +131,12 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating keywords:', error);
+        throw error;
+      }
       
+      console.log('Generated keywords:', data.keywords);
       updateArticleData({ keywords: data.keywords || [] });
       toast.success('Keywords generated successfully!');
     } catch (error) {
@@ -128,10 +147,50 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
     }
   };
 
+  const generateOutline = async () => {
+    const title = customTitle || articleData.selectedTitle;
+    if (!title.trim()) {
+      toast.error('Please select or enter a title first');
+      return;
+    }
+
+    setIsGeneratingOutline(true);
+    try {
+      console.log('Generating outline for title:', title);
+      const { data, error } = await supabase.functions.invoke('generate-outline', {
+        body: {
+          title,
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      if (error) {
+        console.error('Error generating outline:', error);
+        throw error;
+      }
+
+      console.log('Generated outline sections:', data.sections?.length);
+      updateArticleData({ outline: data.sections || [] });
+      toast.success('Outline generated successfully!');
+    } catch (error) {
+      console.error('Error generating outline:', error);
+      toast.error('Failed to generate outline');
+    } finally {
+      setIsGeneratingOutline(false);
+    }
+  };
+
   const generateBasicArticle = async () => {
     const title = customTitle || articleData.selectedTitle;
     if (!title.trim()) {
       toast.error('Please select or enter a title first');
+      return;
+    }
+
+    if (articleData.outline.length === 0) {
+      toast.error('Please generate an outline first');
       return;
     }
 
@@ -140,34 +199,27 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
     setStreamingContent('');
 
     try {
-      // First, generate an outline
-      const { data: outlineData, error: outlineError } = await supabase.functions.invoke('generate-outline', {
-        body: {
-          title,
-          keywords: articleData.keywords,
-          audience: articleData.audience
-        }
-      });
+      console.log('Starting article generation with title:', title);
+      console.log('Using outline with', articleData.outline.length, 'sections');
 
-      if (outlineError) throw outlineError;
-
-      // Update with generated outline
-      updateArticleData({ outline: outlineData.outline || [] });
-
-      // Then generate the basic article content
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
           title,
-          outline: outlineData.outline || [],
+          outline: articleData.outline,
           keywords: articleData.keywords,
           audience: articleData.audience,
           tone: 'professional'
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating article:', error);
+        throw error;
+      }
 
       const generatedContent = data.content || '';
+      console.log('Article generated successfully, length:', generatedContent.length);
+      
       updateArticleData({ 
         generatedContent,
         selectedTitle: title,
@@ -178,7 +230,7 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
       toast.success('Article generated successfully!');
     } catch (error) {
       console.error('Error generating article:', error);
-      toast.error('Failed to generate article');
+      toast.error('Failed to generate article. Please try again.');
       setStreamingContent('');
     } finally {
       setIsGeneratingArticle(false);
@@ -196,8 +248,36 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
     updateArticleData({ customTitle: title, selectedTitle: '' });
   };
 
-  const canGenerateArticle = () => {
+  const addOutlineSection = () => {
+    const newSection: OutlineSection = {
+      id: Date.now().toString(),
+      title: '',
+      content: '',
+      characterCount: 0,
+      expanded: true
+    };
+    updateArticleData({ outline: [...articleData.outline, newSection] });
+  };
+
+  const updateOutlineSection = (id: string, updates: Partial<OutlineSection>) => {
+    const updatedOutline = articleData.outline.map(section =>
+      section.id === id
+        ? { ...section, ...updates, characterCount: updates.content?.length || section.characterCount }
+        : section
+    );
+    updateArticleData({ outline: updatedOutline });
+  };
+
+  const removeOutlineSection = (id: string) => {
+    updateArticleData({ outline: articleData.outline.filter(section => section.id !== id) });
+  };
+
+  const canGenerateOutline = () => {
     return !!(customTitle.trim() || articleData.selectedTitle.trim());
+  };
+
+  const canGenerateArticle = () => {
+    return canGenerateOutline() && articleData.outline.length > 0;
   };
 
   return (
@@ -362,6 +442,83 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
 
         <Separator />
 
+        {/* Outline Generation */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Article Outline
+            </Label>
+            <Button
+              onClick={generateOutline}
+              disabled={!canGenerateOutline() || isGeneratingOutline}
+              size="sm"
+              variant="outline"
+            >
+              {isGeneratingOutline ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              Generate Outline
+            </Button>
+          </div>
+
+          {articleData.outline.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">
+                Outline Sections ({articleData.outline.length}):
+              </Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {articleData.outline.map((section, index) => (
+                  <Card key={section.id} className="p-3 border-l-4 border-l-blue-500">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {index + 1}
+                          </Badge>
+                          <Input
+                            placeholder="Section title..."
+                            value={section.title}
+                            onChange={(e) => updateOutlineSection(section.id, { title: e.target.value })}
+                            className="text-sm font-medium"
+                          />
+                        </div>
+                        <Textarea
+                          placeholder="Section description..."
+                          value={section.content}
+                          onChange={(e) => updateOutlineSection(section.id, { content: e.target.value })}
+                          className="text-sm min-h-[60px]"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeOutlineSection(section.id)}
+                        className="text-red-500 hover:text-red-700 flex-shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              <Button
+                onClick={addOutlineSection}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Section
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
         {/* Generate Article Button */}
         <div className="pt-4">
           <Button
@@ -385,7 +542,10 @@ export const SimplifiedUnifiedControlPanel: React.FC<SimplifiedUnifiedControlPan
           
           {!canGenerateArticle() && (
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Please select or enter a title to generate the article
+              {!canGenerateOutline() 
+                ? 'Please select or enter a title first'
+                : 'Please generate an outline first'
+              }
             </p>
           )}
         </div>
