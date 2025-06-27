@@ -31,7 +31,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 }) => {
   const [titleCount, setTitleCount] = useState(5);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
-  const [streamingStatus, setStreamingStatus] = useState<any>(null);
+  const [streamingStatus, setStreamingStatus] = useState<string>('');
   const [seoPreferences, setSeoPreferences] = useState<SEOPreferences>({
     defaultTone: 'professional',
     preferredArticleLength: 1500,
@@ -51,13 +51,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
     setIsGenerating(true);
     setStreamingContent('');
-    setStreamingStatus(null);
+    setStreamingStatus('🚀 Starting enhanced article generation...');
 
     try {
-      console.log('Starting enhanced article generation...');
+      console.log('Starting AI SDK enhanced article generation...');
       
-      // Use direct fetch for streaming approach
-      const response = await fetch('https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-content', {
+      const response = await fetch('https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-article', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
@@ -76,7 +75,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log('Response received, starting to read stream...');
+      console.log('AI SDK response received, starting to read stream...');
       
       const reader = response.body?.getReader();
       if (!reader) {
@@ -91,97 +90,60 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         const { done, value } = await reader.read();
         
         if (done) {
-          console.log('Stream reading completed');
+          console.log('AI SDK stream reading completed');
           break;
         }
 
-        // Decode the chunk and add to buffer
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
         
-        // Process complete lines from buffer
         const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.trim() === '') continue;
+          if (line.trim() === '' || !line.startsWith('data: ')) continue;
           
-          // Parse Server-Sent Events format
-          if (line.startsWith('data: ')) {
-            try {
-              const eventDataStr = line.substring(6); // Remove 'data: ' prefix
-              console.log('Received SSE event:', eventDataStr);
-              
-              const eventData = JSON.parse(eventDataStr);
-              
-              switch (eventData.type) {
-                case 'status':
-                  console.log('Status update:', eventData.data);
-                  setStreamingStatus(eventData.data);
-                  break;
-                  
-                case 'section':
-                  console.log('Section update:', eventData.data);
-                  setStreamingStatus({
-                    phase: 'writing',
-                    message: `Working on section: ${eventData.data.title}`,
-                    progress: (eventData.data.index / articleData.outline.length) * 100
-                  });
-                  break;
-                  
-                case 'research':
-                  console.log('Research update:', eventData.data);
-                  setStreamingStatus({
-                    phase: 'research',
-                    message: eventData.data.message || 'Researching current information...',
-                    progress: eventData.data.progress || 50
-                  });
-                  break;
-                  
-                case 'content':
-                  console.log('Content update received, length:', eventData.data.content?.length || 0);
-                  fullContent = eventData.data.content;
-                  setStreamingContent(fullContent);
-                  break;
-                  
-                case 'complete':
-                  console.log('Generation complete!');
-                  fullContent = eventData.data.content;
-                  setStreamingContent(fullContent);
-                  updateArticleData({ generatedContent: fullContent });
-                  setStreamingStatus({ 
-                    phase: 'complete', 
-                    message: eventData.data.message || 'Article generation complete!', 
-                    progress: 100 
-                  });
-                  break;
-                  
-                case 'error':
-                  console.error('Stream error:', eventData.data);
-                  throw new Error(eventData.data.error || 'Stream processing error');
-                  
-                default:
-                  console.log('Unknown event type:', eventData.type, eventData.data);
-              }
-            } catch (parseError) {
-              console.error('Error parsing SSE event:', parseError, 'Raw line:', line);
+          try {
+            const eventDataStr = line.substring(6);
+            console.log('Received AI SDK event:', eventDataStr);
+            
+            const eventData = JSON.parse(eventDataStr);
+            
+            switch (eventData.type) {
+              case 'content':
+                console.log('Content chunk received');
+                fullContent += eventData.data.content;
+                setStreamingContent(fullContent);
+                setStreamingStatus('✍️ Writing enhanced content...');
+                break;
+                
+              case 'complete':
+                console.log('AI SDK generation complete!');
+                updateArticleData({ generatedContent: fullContent });
+                setStreamingStatus('🎉 Article generation complete!');
+                break;
+                
+              case 'error':
+                console.error('AI SDK stream error:', eventData.data);
+                throw new Error(eventData.data.error || 'Stream processing error');
+                
+              default:
+                console.log('Unknown AI SDK event type:', eventData.type, eventData.data);
             }
+          } catch (parseError) {
+            console.error('Error parsing AI SDK event:', parseError, 'Raw line:', line);
           }
         }
       }
 
-      console.log('Enhanced article generation completed successfully!');
+      console.log('AI SDK enhanced article generation completed successfully!');
       
     } catch (error) {
-      console.error('Error generating enhanced article:', error);
+      console.error('Error generating AI SDK enhanced article:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error(`Failed to generate enhanced article: ${errorMessage}`);
       setStreamingContent('');
-      setStreamingStatus({
-        phase: 'error',
-        message: `Error: ${errorMessage}`,
-        progress: 0
-      });
+      setStreamingStatus(`❌ Error: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
     }
@@ -323,7 +285,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           size="lg"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating Enhanced Article...' : 'Generate Research-Enhanced Article'}
+          {isGenerating ? 'Generating AI-Enhanced Article...' : 'Generate AI-Enhanced Article'}
         </Button>
         
         <Button
@@ -342,17 +304,17 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       {hasTitle && hasOutline && !isGenerating && (
         <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
           <div className="text-sm text-purple-800">
-            <strong>🚀 Enhanced Generation:</strong> AI will research each section with current web data, 
-            optimize content with insights, and stream results in real-time.
+            <strong>🚀 AI SDK Enhanced Generation:</strong> Advanced AI will research each section with current data, 
+            integrate insights seamlessly, and stream results in real-time with better performance.
           </div>
         </div>
       )}
 
-      {/* Debug streaming status */}
+      {/* Status display */}
       {isGenerating && streamingStatus && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="text-sm text-blue-800">
-            <strong>Debug Status:</strong> {JSON.stringify(streamingStatus, null, 2)}
+            <strong>Status:</strong> {streamingStatus}
           </div>
         </div>
       )}
