@@ -159,6 +159,9 @@ export const TitleGenerationPanel: React.FC<TitleGenerationPanelProps> = ({
         generatedTitles={generatedTitles}
         selectedTitle={articleData.selectedTitle}
         onTitleSelect={handleTitleSelect}
+        topic={articleData.topic}
+        keywords={articleData.keywords}
+        audience={articleData.audience}
       />
 
       <TitleSummary selectedTitle={articleData.selectedTitle} />
