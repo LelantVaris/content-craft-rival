@@ -39,6 +39,15 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     console.log('Generating full article...');
   };
 
+  // Mock SEO preferences - this would come from a separate hook in a real implementation
+  const seoPreferences = {
+    includeMetaDescription: true,
+    optimizeForFeaturedSnippets: true,
+    includeInternalLinks: true,
+    keywordDensity: 2,
+    readabilityLevel: 'intermediate' as const
+  };
+
   return (
     <div className="p-4 space-y-4">
       {/* Always visible topic and SEO section */}
@@ -50,8 +59,19 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           />
           
           <SEOProMode
-            articleData={articleData}
-            onUpdate={updateArticleData}
+            seoProMode={true} // For now, always show SEO mode
+            onSeoProModeChange={() => {}} // Placeholder
+            audience={articleData.audience}
+            keywords={articleData.keywords}
+            seoPreferences={seoPreferences}
+            onAudienceChange={(audience) => updateArticleData({ audience })}
+            onKeywordsChange={(keywords) => updateArticleData({ keywords })}
+            onSEOPreferenceUpdate={() => {}} // Placeholder
+            onGenerateAudience={async () => {}} // Placeholder
+            onGenerateKeywords={async () => {}} // Placeholder
+            isGeneratingAudience={false}
+            isGeneratingKeywords={false}
+            hasTopic={!!articleData.topic}
           />
         </CardContent>
       </Card>
@@ -72,9 +92,14 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           <AccordionContent className="px-4 pb-4">
             <div className="space-y-4">
               <TitleSelector
-                articleData={articleData}
-                onUpdate={updateArticleData}
-                disabled={!articleData.topic || isGenerating}
+                hasTopic={!!articleData.topic}
+                titleCount={5}
+                onTitleCountChange={() => {}} // Placeholder
+                onGenerateTitles={() => {}} // Placeholder
+                isGenerating={isGenerating}
+                generatedTitles={[]} // Placeholder - would come from articleData
+                selectedTitle={articleData.selectedTitle}
+                onTitleSelect={(title) => updateArticleData({ selectedTitle: title })}
               />
               
               {hasTitle && (
