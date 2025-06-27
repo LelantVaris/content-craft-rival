@@ -56,7 +56,7 @@ Requirements:
 
 Start with the title as an H1 heading, then write the full article with proper structure and formatting.`;
 
-    console.log('Generating content with OpenAI...');
+    console.log('Generating streaming content with OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -72,6 +72,7 @@ Start with the title as an H1 heading, then write the full article with proper s
         ],
         temperature: 0.7,
         max_tokens: 4000,
+        stream: true,
       }),
     });
 
@@ -79,13 +80,66 @@ Start with the title as an H1 heading, then write the full article with proper s
       throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const generatedContent = data.choices[0].message.content.trim();
+    // Create a streaming response
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
 
-    console.log('Generated content length:', generatedContent.length);
+        if (!reader) {
+          controller.close();
+          return;
+        }
 
-    return new Response(JSON.stringify({ content: generatedContent }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              controller.close();
+              break;
+            }
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                if (data === '[DONE]') {
+                  controller.close();
+                  return;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  
+                  if (content) {
+                    controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
+                  }
+                } catch (parseError) {
+                  // Skip invalid JSON
+                  console.log('Skipping invalid JSON:', data);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.error(error);
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
   } catch (error) {
     console.error('Error in generate-content function:', error);
