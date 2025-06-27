@@ -41,11 +41,10 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
   // Mock SEO preferences - this would come from a separate hook in a real implementation
   const seoPreferences = {
-    includeMetaDescription: true,
-    optimizeForFeaturedSnippets: true,
-    includeInternalLinks: true,
-    keywordDensity: 2,
-    readabilityLevel: 'intermediate' as const
+    defaultTone: 'professional',
+    preferredArticleLength: 1500,
+    defaultKeywords: [],
+    defaultAudience: ''
   };
 
   return (
