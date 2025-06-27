@@ -131,36 +131,57 @@ export type Database = {
       cms_connections: {
         Row: {
           cms_type: string
+          company_name_override: string | null
           connection_name: string
+          content_goals_override: string[] | null
           created_at: string | null
           credentials: Json
           id: string
+          industry_override: string | null
           is_active: boolean | null
+          language_preference: string | null
+          preferred_tone_override: string | null
           site_id: string | null
+          target_audience_override: string | null
           updated_at: string | null
           user_id: string
+          website_url_override: string | null
         }
         Insert: {
           cms_type: string
+          company_name_override?: string | null
           connection_name: string
+          content_goals_override?: string[] | null
           created_at?: string | null
           credentials: Json
           id?: string
+          industry_override?: string | null
           is_active?: boolean | null
+          language_preference?: string | null
+          preferred_tone_override?: string | null
           site_id?: string | null
+          target_audience_override?: string | null
           updated_at?: string | null
           user_id: string
+          website_url_override?: string | null
         }
         Update: {
           cms_type?: string
+          company_name_override?: string | null
           connection_name?: string
+          content_goals_override?: string[] | null
           created_at?: string | null
           credentials?: Json
           id?: string
+          industry_override?: string | null
           is_active?: boolean | null
+          language_preference?: string | null
+          preferred_tone_override?: string | null
           site_id?: string | null
+          target_audience_override?: string | null
           updated_at?: string | null
           user_id?: string
+          website_url_override?: string | null
         }
         Relationships: []
       }
@@ -242,6 +263,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_lifetime: boolean | null
+          language_preference: string | null
           onboarding_completed: boolean | null
           plan_type: string | null
           stripe_customer_id: string | null
@@ -256,6 +278,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_lifetime?: boolean | null
+          language_preference?: string | null
           onboarding_completed?: boolean | null
           plan_type?: string | null
           stripe_customer_id?: string | null
@@ -270,6 +293,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_lifetime?: boolean | null
+          language_preference?: string | null
           onboarding_completed?: boolean | null
           plan_type?: string | null
           stripe_customer_id?: string | null

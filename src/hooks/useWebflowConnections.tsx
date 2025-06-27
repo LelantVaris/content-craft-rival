@@ -45,6 +45,11 @@ export function useWebflowConnections() {
     fetchConnections()
   }
 
+  // Get a specific connection by ID
+  const getConnection = (id: string) => {
+    return connections.find(conn => conn.id === id) || null
+  }
+
   useEffect(() => {
     fetchConnections()
   }, [])
@@ -53,6 +58,7 @@ export function useWebflowConnections() {
     connections,
     loading,
     error,
-    refreshConnections
+    refreshConnections,
+    getConnection
   }
 }
