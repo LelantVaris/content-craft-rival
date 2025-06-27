@@ -46,6 +46,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     const title = articleData.customTitle || articleData.selectedTitle;
     if (!title || !hasOutline) {
       console.error('Please complete the title and outline first');
+      setStreamingStatus('❌ Error: Please complete the title and outline first');
       return;
     }
 
@@ -54,92 +55,36 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     setStreamingStatus('🚀 Starting enhanced article generation...');
 
     try {
-      console.log('Starting AI SDK enhanced article generation...');
+      console.log('Calling generate-enhanced-article function...');
       
-      const response = await fetch('https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-article', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Use Supabase function invoke instead of direct fetch
+      const { data, error } = await supabase.functions.invoke('generate-enhanced-article', {
+        body: {
           title,
           outline: articleData.outline,
           keywords: articleData.keywords,
           audience: articleData.audience,
           tone: seoPreferences.defaultTone
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (error) {
+        console.error('Function invoke error:', error);
+        throw new Error(error.message || 'Failed to call generate-enhanced-article function');
       }
 
-      console.log('AI SDK response received, starting to read stream...');
-      
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No readable stream available');
+      if (data && data.generatedText) {
+        console.log('Function returned data:', data);
+        updateArticleData({ generatedContent: data.generatedText });
+        setStreamingContent(data.generatedText);
+        setStreamingStatus('🎉 Article generation complete!');
+      } else {
+        console.error('No generated text returned from function');
+        setStreamingStatus('❌ Error: No content generated');
       }
 
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          console.log('AI SDK stream reading completed');
-          break;
-        }
-
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-        
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.trim() === '' || !line.startsWith('data: ')) continue;
-          
-          try {
-            const eventDataStr = line.substring(6);
-            console.log('Received AI SDK event:', eventDataStr);
-            
-            const eventData = JSON.parse(eventDataStr);
-            
-            switch (eventData.type) {
-              case 'content':
-                console.log('Content chunk received');
-                fullContent += eventData.data.content;
-                setStreamingContent(fullContent);
-                setStreamingStatus('✍️ Writing enhanced content...');
-                break;
-                
-              case 'complete':
-                console.log('AI SDK generation complete!');
-                updateArticleData({ generatedContent: fullContent });
-                setStreamingStatus('🎉 Article generation complete!');
-                break;
-                
-              case 'error':
-                console.error('AI SDK stream error:', eventData.data);
-                throw new Error(eventData.data.error || 'Stream processing error');
-                
-              default:
-                console.log('Unknown AI SDK event type:', eventData.type, eventData.data);
-            }
-          } catch (parseError) {
-            console.error('Error parsing AI SDK event:', parseError, 'Raw line:', line);
-          }
-        }
-      }
-
-      console.log('AI SDK enhanced article generation completed successfully!');
-      
     } catch (error) {
-      console.error('Error generating AI SDK enhanced article:', error);
+      console.error('Error generating enhanced article:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error(`Failed to generate enhanced article: ${errorMessage}`);
       setStreamingContent('');
@@ -285,7 +230,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           size="lg"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating AI-Enhanced Article...' : 'Generate AI-Enhanced Article'}
+          {isGenerating ? 'Generating Enhanced Article...' : 'Generate Enhanced Article'}
         </Button>
         
         <Button
@@ -304,16 +249,20 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       {hasTitle && hasOutline && !isGenerating && (
         <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
           <div className="text-sm text-purple-800">
-            <strong>🚀 AI SDK Enhanced Generation:</strong> Advanced AI will research each section with current data, 
-            integrate insights seamlessly, and stream results in real-time with better performance.
+            <strong>🚀 Enhanced Generation:</strong> AI will research current data for each section 
+            and create comprehensive, well-researched content.
           </div>
         </div>
       )}
 
       {/* Status display */}
-      {isGenerating && streamingStatus && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="text-sm text-blue-800">
+      {streamingStatus && (
+        <div className={`p-3 border rounded-lg ${
+          streamingStatus.includes('Error') || streamingStatus.includes('❌') 
+            ? 'bg-red-50 border-red-200 text-red-800' 
+            : 'bg-blue-50 border-blue-200 text-blue-800'
+        }`}>
+          <div className="text-sm">
             <strong>Status:</strong> {streamingStatus}
           </div>
         </div>

@@ -1,9 +1,6 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { openai } from "npm:@ai-sdk/openai@latest";
-import { streamText, tool } from "npm:ai@latest";
-import { z } from "npm:zod@latest";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
@@ -16,6 +13,11 @@ const corsHeaders = {
 async function searchWithFirecrawl(query: string): Promise<string[]> {
   try {
     console.log('Searching with Firecrawl for:', query);
+    
+    if (!firecrawlApiKey) {
+      console.log('Firecrawl API key not available, skipping search');
+      return [];
+    }
     
     const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
@@ -30,7 +32,7 @@ async function searchWithFirecrawl(query: string): Promise<string[]> {
           includeHtml: false,
           waitFor: 1000,
         },
-        limit: 3,
+        limit: 2,
       }),
     });
 
@@ -44,7 +46,7 @@ async function searchWithFirecrawl(query: string): Promise<string[]> {
     
     const content = results.map((result: any) => {
       const text = result.content || result.markdown || '';
-      return text.substring(0, 2000);
+      return text.substring(0, 1500);
     }).filter(Boolean);
 
     console.log(`Found ${content.length} search results for query: ${query}`);
@@ -63,6 +65,14 @@ serve(async (req) => {
   try {
     const { title, outline, keywords = [], audience = '', tone = 'professional' } = await req.json();
 
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not found');
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!title || !outline || outline.length === 0) {
       return new Response(JSON.stringify({ error: 'Title and outline are required' }), {
         status: 400,
@@ -72,101 +82,99 @@ serve(async (req) => {
 
     console.log('Starting enhanced article generation for:', title);
 
+    // Create outline text
     const outlineText = outline.map((section: any, index: number) => 
       `${index + 1}. ${section.title}\n   - ${section.content}`
     ).join('\n');
 
-    const result = await streamText({
-      model: openai('gpt-4o-mini', { apiKey: openAIApiKey }),
-      system: `You are an expert content writer creating comprehensive, research-enhanced articles. 
+    // Research key topics for the article
+    const researchQueries = [
+      `${title} latest trends 2024`,
+      `${keywords.slice(0, 3).join(' ')} best practices`,
+      `${title} statistics and data`
+    ];
+
+    let researchData = '';
+    for (const query of researchQueries) {
+      const results = await searchWithFirecrawl(query);
+      if (results.length > 0) {
+        researchData += `\n\nResearch for "${query}":\n${results.join('\n')}\n`;
+      }
+    }
+
+    // Generate the article using OpenAI
+    const prompt = `You are an expert content writer creating comprehensive, research-enhanced articles.
 
 Write in a ${tone} tone for this audience: ${audience || 'general audience'}.
 
-Your task:
-1. Create a well-structured article based on the provided outline
-2. Use the research tools to find current information for each section
-3. Integrate research findings naturally into the content
-4. Use proper markdown formatting
-5. Include relevant statistics, examples, and insights from research
-6. Target keywords naturally: ${keywords.join(', ')}
-
-Structure your response as a complete article with proper sections and subsections.`,
-      prompt: `Create a comprehensive article with this information:
-
 Title: ${title}
-Outline: ${outlineText}
-Keywords: ${keywords.join(', ')}
-Audience: ${audience}
 
-Please research current information for each section and create an engaging, informative article.`,
-      tools: {
-        researchSection: tool({
-          description: 'Research current information for a specific article section',
-          parameters: z.object({
-            sectionTitle: z.string().describe('The title of the section to research'),
-            searchQuery: z.string().describe('The search query to find relevant information'),
-          }),
-          execute: async ({ sectionTitle, searchQuery }) => {
-            console.log(`Researching section: ${sectionTitle} with query: ${searchQuery}`);
-            const results = await searchWithFirecrawl(searchQuery);
-            return {
-              sectionTitle,
-              researchData: results,
-              summary: results.length > 0 ? 'Found relevant research data' : 'No research data found'
-            };
-          },
-        }),
-      },
-    });
+Outline to follow:
+${outlineText}
 
-    // Convert the AI SDK stream to Server-Sent Events format
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder();
-        
-        try {
-          for await (const chunk of result.textStream) {
-            const sseData = `data: ${JSON.stringify({
-              type: 'content',
-              data: { content: chunk }
-            })}\n\n`;
-            
-            controller.enqueue(encoder.encode(sseData));
-          }
-          
-          // Send completion event
-          const completeData = `data: ${JSON.stringify({
-            type: 'complete',
-            data: { message: 'Article generation complete!' }
-          })}\n\n`;
-          
-          controller.enqueue(encoder.encode(completeData));
-        } catch (error) {
-          console.error('Stream error:', error);
-          const errorData = `data: ${JSON.stringify({
-            type: 'error',
-            data: { error: error.message }
-          })}\n\n`;
-          
-          controller.enqueue(encoder.encode(errorData));
-        } finally {
-          controller.close();
-        }
-      }
-    });
+Target keywords to include naturally: ${keywords.join(', ')}
 
-    return new Response(stream, {
+${researchData ? `Current research data to incorporate:${researchData}` : ''}
+
+Instructions:
+1. Create a well-structured article based on the provided outline
+2. Use proper markdown formatting with headers, subheaders, and lists
+3. Include relevant statistics, examples, and insights from the research data
+4. Integrate the target keywords naturally throughout the content
+5. Write engaging, informative content that provides real value
+6. Aim for comprehensive coverage of each section in the outline
+
+Write the complete article now:`;
+
+    console.log('Calling OpenAI API...');
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { 
+            role: 'system', 
+            content: `You are an expert content writer specializing in creating comprehensive, SEO-optimized articles. Write in ${tone} tone.` 
+          },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 4000,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API error:', response.status, errorData);
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const generatedText = data.choices[0]?.message?.content;
+
+    if (!generatedText) {
+      throw new Error('No content generated from OpenAI');
+    }
+
+    console.log('Article generation completed successfully');
+
+    return new Response(JSON.stringify({ 
+      generatedText,
+      researchUsed: researchData.length > 0 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-enhanced-article function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
