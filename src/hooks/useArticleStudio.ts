@@ -38,7 +38,7 @@ export function useArticleStudio() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
-  const [streamingStatus, setStreamingStatus] = useState<any>(null);
+  const [streamingStatus, setStreamingStatus] = useState<string>('');
   
   const navigate = useNavigate();
   const { saveArticle, refreshArticles } = useArticles();
@@ -47,7 +47,6 @@ export function useArticleStudio() {
     setArticleData(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Keep existing step navigation for backward compatibility
   const nextStep = useCallback(() => {
     setArticleData(prev => ({ 
       ...prev, 
@@ -75,17 +74,15 @@ export function useArticleStudio() {
     }
   }, [articleData]);
 
-  // Enhanced auto-save functionality
   const autoSave = useCallback(async () => {
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
     const finalContent = streamingContent || articleData.generatedContent;
     
     if (!finalTitle || finalTitle === 'Untitled Article' || !finalContent) {
-      return; // Don't auto-save empty articles
+      return;
     }
     
     try {
-      // Implement auto-save logic here
       console.log('Auto-saving article...', { title: finalTitle, contentLength: finalContent.length });
     } catch (error) {
       console.error('Auto-save failed:', error);
@@ -124,7 +121,6 @@ export function useArticleStudio() {
     }
   }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
 
-  // New unified generation function with streaming status
   const generateFullArticle = useCallback(async () => {
     if (!articleData.topic) {
       console.error('Please enter a topic first');
@@ -134,11 +130,8 @@ export function useArticleStudio() {
     try {
       setIsGenerating(true);
       setStreamingContent('');
-      setStreamingStatus(null);
-
-      // This would implement the enhanced article generation pipeline
+      setStreamingStatus('');
       console.info('Enhanced article generation will be handled by the UnifiedControlPanel');
-      
     } catch (error) {
       console.error('Error generating article:', error);
       console.error('Failed to generate article. Please try again.');
