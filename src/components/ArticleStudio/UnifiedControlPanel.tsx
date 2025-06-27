@@ -56,38 +56,11 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     try {
       console.log('Starting enhanced article generation...');
       
-      // First try the Supabase function invoke method
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-enhanced-content', {
-          body: {
-            title,
-            outline: articleData.outline,
-            keywords: articleData.keywords,
-            audience: articleData.audience,
-            tone: seoPreferences.defaultTone
-          }
-        });
-
-        if (error) {
-          throw new Error(error.message || 'Failed to invoke function');
-        }
-
-        // If we get here, the function worked but might not support streaming
-        if (data && data.content) {
-          setStreamingContent(data.content);
-          updateArticleData({ generatedContent: data.content });
-          console.log('Enhanced article generation completed successfully!');
-          return;
-        }
-      } catch (invokeError) {
-        console.log('Function invoke failed, trying streaming approach:', invokeError);
-      }
-
-      // Fallback to streaming approach
+      // Use direct fetch for streaming approach
       const response = await fetch('https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-content', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk'}`,
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -100,63 +73,115 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to start enhanced generation');
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      console.log('Response received, starting to read stream...');
+      
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error('No reader available');
+        throw new Error('No readable stream available');
       }
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let fullContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        
+        if (done) {
+          console.log('Stream reading completed');
+          break;
+        }
 
-        buffer += decoder.decode(value, { stream: true });
+        // Decode the chunk and add to buffer
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // Process complete lines from buffer
         const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
         for (const line of lines) {
+          if (line.trim() === '') continue;
+          
+          // Parse Server-Sent Events format
           if (line.startsWith('data: ')) {
             try {
-              const eventData = JSON.parse(line.slice(6));
+              const eventDataStr = line.substring(6); // Remove 'data: ' prefix
+              console.log('Received SSE event:', eventDataStr);
+              
+              const eventData = JSON.parse(eventDataStr);
               
               switch (eventData.type) {
                 case 'status':
+                  console.log('Status update:', eventData.data);
                   setStreamingStatus(eventData.data);
                   break;
-                case 'content':
-                  setStreamingContent(eventData.data.content);
+                  
+                case 'section':
+                  console.log('Section update:', eventData.data);
+                  setStreamingStatus({
+                    phase: 'writing',
+                    message: `Working on section: ${eventData.data.title}`,
+                    progress: (eventData.data.index / articleData.outline.length) * 100
+                  });
                   break;
+                  
+                case 'research':
+                  console.log('Research update:', eventData.data);
+                  setStreamingStatus({
+                    phase: 'research',
+                    message: eventData.data.message || 'Researching current information...',
+                    progress: eventData.data.progress || 50
+                  });
+                  break;
+                  
+                case 'content':
+                  console.log('Content update received, length:', eventData.data.content?.length || 0);
+                  fullContent = eventData.data.content;
+                  setStreamingContent(fullContent);
+                  break;
+                  
                 case 'complete':
-                  setStreamingContent(eventData.data.content);
-                  updateArticleData({ generatedContent: eventData.data.content });
+                  console.log('Generation complete!');
+                  fullContent = eventData.data.content;
+                  setStreamingContent(fullContent);
+                  updateArticleData({ generatedContent: fullContent });
                   setStreamingStatus({ 
                     phase: 'complete', 
-                    message: eventData.data.message, 
+                    message: eventData.data.message || 'Article generation complete!', 
                     progress: 100 
                   });
                   break;
+                  
                 case 'error':
-                  throw new Error(eventData.data.error);
+                  console.error('Stream error:', eventData.data);
+                  throw new Error(eventData.data.error || 'Stream processing error');
+                  
+                default:
+                  console.log('Unknown event type:', eventData.type, eventData.data);
               }
             } catch (parseError) {
-              console.error('Error parsing stream event:', parseError);
+              console.error('Error parsing SSE event:', parseError, 'Raw line:', line);
             }
           }
         }
       }
 
       console.log('Enhanced article generation completed successfully!');
+      
     } catch (error) {
       console.error('Error generating enhanced article:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error(`Failed to generate enhanced article: ${errorMessage}`);
       setStreamingContent('');
-      setStreamingStatus(null);
+      setStreamingStatus({
+        phase: 'error',
+        message: `Error: ${errorMessage}`,
+        progress: 0
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -319,6 +344,15 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           <div className="text-sm text-purple-800">
             <strong>🚀 Enhanced Generation:</strong> AI will research each section with current web data, 
             optimize content with insights, and stream results in real-time.
+          </div>
+        </div>
+      )}
+
+      {/* Debug streaming status */}
+      {isGenerating && streamingStatus && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="text-sm text-blue-800">
+            <strong>Debug Status:</strong> {JSON.stringify(streamingStatus, null, 2)}
           </div>
         </div>
       )}
