@@ -16,6 +16,7 @@ interface ControlPanelProps {
   isGenerating: boolean;
   setStreamingContent: (content: string) => void;
   setIsGenerating: (generating: boolean) => void;
+  setStreamingStatus: (status: string) => void;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -27,7 +28,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   saveAndComplete,
   isGenerating,
   setStreamingContent,
-  setIsGenerating
+  setIsGenerating,
+  setStreamingStatus
 }) => {
   const renderStepContent = () => {
     switch (articleData.currentStep) {
@@ -53,6 +55,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             onComplete={saveAndComplete}
             setStreamingContent={setStreamingContent}
             setIsGenerating={setIsGenerating}
+            setStreamingStatus={setStreamingStatus}
           />
         );
       default:
