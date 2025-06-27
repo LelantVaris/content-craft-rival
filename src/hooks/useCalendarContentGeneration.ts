@@ -122,15 +122,17 @@ export function useCalendarContentGeneration() {
         
         const title = topicPrompts[i % topicPrompts.length];
         
+        let currentArticle: ScheduledArticle | null = null;
+        
         try {
-          const article = await generateSingleArticle(title, date, {
+          currentArticle = await generateSingleArticle(title, date, {
             targetAudience,
             keywords,
             tone
           });
 
-          if (article) {
-            generatedArticles.push(article);
+          if (currentArticle) {
+            generatedArticles.push(currentArticle);
             queue.completedArticles++;
           } else {
             queue.failedArticles++;
@@ -145,7 +147,7 @@ export function useCalendarContentGeneration() {
         setGenerationProgress(progress);
         
         if (onProgress) {
-          onProgress(progress, article);
+          onProgress(progress, currentArticle || undefined);
         }
 
         // Small delay to prevent API rate limiting
