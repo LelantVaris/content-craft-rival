@@ -60,12 +60,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       outline: articleData.outline
     });
 
-    console.log('🎯 OTHER DATA:', {
-      keywords: articleData.keywords,
-      audience: articleData.audience,
-      seoPreferences
-    });
-
     if (!title || !hasOutline) {
       console.error('❌ VALIDATION FAILED:', { 
         hasTitle: !!title, 
@@ -91,9 +85,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         hasData: !!sessionData,
         hasSession: !!sessionData?.session,
         hasAccessToken: !!sessionData?.session?.access_token,
-        tokenLength: sessionData?.session?.access_token?.length,
-        sessionError: sessionError?.message,
-        fullSessionError: sessionError
+        sessionError: sessionError?.message
       });
       
       if (sessionError) {
@@ -119,16 +111,50 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       };
       console.log('📤 REQUEST BODY PREPARED:', requestBody);
 
+      // Try using supabase.functions.invoke first
+      console.log('🔄 ATTEMPTING SUPABASE FUNCTION INVOKE...');
+      try {
+        const { data: functionData, error: functionError } = await supabase.functions.invoke('generate-content', {
+          body: requestBody
+        });
+
+        console.log('📥 SUPABASE FUNCTION RESULT:', {
+          hasData: !!functionData,
+          hasError: !!functionError,
+          error: functionError,
+          data: functionData
+        });
+
+        if (functionError) {
+          console.error('❌ SUPABASE FUNCTION ERROR:', functionError);
+          throw new Error(`Function error: ${functionError.message}`);
+        }
+
+        if (functionData?.content) {
+          console.log('✅ CONTENT RECEIVED FROM FUNCTION:', {
+            contentLength: functionData.content.length,
+            contentPreview: functionData.content.substring(0, 200)
+          });
+          
+          setStreamingContent(functionData.content);
+          updateArticleData({ generatedContent: functionData.content });
+          setStreamingStatus('✅ Article generation complete!');
+          return;
+        }
+      } catch (functionError) {
+        console.warn('⚠️ SUPABASE FUNCTION FAILED, TRYING DIRECT FETCH:', functionError);
+      }
+
+      // Fallback to direct fetch for streaming
       const fetchUrl = `https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`;
       const fetchHeaders = {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       };
       
-      console.log('🌐 PREPARING FETCH REQUEST:', {
+      console.log('🌐 PREPARING DIRECT FETCH REQUEST:', {
         url: fetchUrl,
-        headers: { ...fetchHeaders, 'Authorization': `Bearer ${session.access_token.substring(0, 20)}...` },
-        bodyKeys: Object.keys(requestBody)
+        hasAuth: !!session.access_token
       });
 
       console.log('📡 MAKING FETCH REQUEST...');
@@ -142,7 +168,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         ok: response.ok, 
         status: response.status, 
         statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
         hasBody: !!response.body
       });
 
@@ -176,20 +201,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       while (true) {
         console.log(`📖 READING CHUNK ${chunkCount + 1}...`);
         
-        let readResult;
-        try {
-          readResult = await reader.read();
-          console.log(`📖 CHUNK ${chunkCount + 1} READ result:`, {
-            done: readResult.done,
-            hasValue: !!readResult.value,
-            valueLength: readResult.value?.length
-          });
-        } catch (readError) {
-          console.error(`❌ ERROR READING CHUNK ${chunkCount + 1}:`, readError);
-          throw readError;
-        }
-        
-        const { done, value } = readResult;
+        const { done, value } = await reader.read();
+        console.log(`📖 CHUNK ${chunkCount + 1} READ result:`, {
+          done,
+          hasValue: !!value,
+          valueLength: value?.length
+        });
         
         if (done) {
           console.log('✅ STREAM READING COMPLETED, total chunks:', chunkCount);
@@ -205,8 +222,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         const chunk = decoder.decode(value);
         console.log(`📝 CHUNK ${chunkCount} DECODED:`, { 
           length: chunk.length, 
-          preview: chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''),
-          fullChunk: chunk
+          preview: chunk.substring(0, 100)
         });
 
         const lines = chunk.split('\n');
@@ -214,30 +230,26 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
-          console.log(`📄 LINE ${i + 1}:`, { line, startsWithData: line.startsWith('data: ') });
+          console.log(`📄 LINE ${i + 1}:`, { line: line.substring(0, 50), startsWithData: line.startsWith('data: ') });
           
           if (line.startsWith('data: ')) {
             try {
               const dataContent = line.slice(6);
               console.log('🔄 PROCESSING SSE DATA:', { 
-                dataContent: dataContent.substring(0, 100) + (dataContent.length > 100 ? '...' : ''),
-                fullDataContent: dataContent
+                dataContent: dataContent.substring(0, 100)
               });
               
               const data = JSON.parse(dataContent);
               console.log('📊 PARSED SSE DATA:', { 
                 hasContent: !!data.content, 
-                contentLength: data.content?.length || 0,
-                dataKeys: Object.keys(data),
-                fullData: data
+                contentLength: data.content?.length || 0
               });
               
               if (data.content) {
                 fullContent += data.content;
                 console.log('📝 UPDATED CONTENT:', { 
                   totalLength: fullContent.length,
-                  newContentLength: data.content.length,
-                  newContent: data.content
+                  newContentLength: data.content.length
                 });
                 setStreamingContent(fullContent);
                 setStreamingStatus('✍️ Writing article...');
@@ -245,8 +257,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
             } catch (parseError) {
               console.warn('⚠️ FAILED TO PARSE SSE DATA:', { 
                 error: parseError, 
-                line: line.substring(0, 100) + (line.length > 100 ? '...' : ''),
-                fullLine: line
+                line: line.substring(0, 100)
               });
             }
           }
@@ -254,9 +265,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       }
 
       console.log('✅ ARTICLE GENERATION COMPLETED:', { 
-        finalContentLength: fullContent.length,
-        totalChunks: chunkCount,
-        finalContent: fullContent.substring(0, 200) + (fullContent.length > 200 ? '...' : '')
+        finalContentLength: fullContent.length
       });
       
       updateArticleData({ generatedContent: fullContent });
@@ -267,12 +276,11 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         error,
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : 'Unknown',
-        cause: error instanceof Error ? error.cause : undefined
+        name: error instanceof Error ? error.name : 'Unknown'
       });
       setStreamingStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      console.log('🏁 GENERATION PROCESS FINISHED, setting isGenerating to false');
+      console.log('🏁 GENERATION PROCESS FINISHED');
       setIsGenerating(false);
     }
   };
