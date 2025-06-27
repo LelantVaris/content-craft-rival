@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, keywords = [], audience = '' } = await req.json();
+    const { topic, keywords = [], audience = '', count = 5 } = await req.json();
 
     if (!topic) {
       return new Response(JSON.stringify({ error: 'Topic is required' }), {
@@ -24,10 +24,12 @@ serve(async (req) => {
       });
     }
 
+    console.log(`Generating ${count} titles for topic: ${topic}`);
+
     const keywordText = keywords.length > 0 ? `Keywords to include: ${keywords.join(', ')}` : '';
     const audienceText = audience ? `Target audience: ${audience}` : '';
 
-    const prompt = `Generate 5 compelling, SEO-optimized article titles for the following topic:
+    const prompt = `Generate ${count} compelling, SEO-optimized article titles for the following topic:
 
 Topic: ${topic}
 ${keywordText}
@@ -71,9 +73,9 @@ Return only the titles, one per line, without numbering or bullets.`;
       .split('\n')
       .map(title => title.trim())
       .filter(title => title.length > 0)
-      .slice(0, 5); // Ensure we only return 5 titles
+      .slice(0, count); // Use the actual count parameter instead of hardcoded 5
 
-    console.log('Generated titles:', titles);
+    console.log(`Generated ${titles.length} titles:`, titles);
 
     return new Response(JSON.stringify({ titles }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
