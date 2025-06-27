@@ -10,14 +10,20 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
-import { UnifiedControlPanel } from '@/components/ArticleStudio/UnifiedControlPanel';
-import { LivePreviewPanel } from '@/components/ArticleStudio/LivePreviewPanel';
+import { SimplifiedUnifiedControlPanel } from '@/components/ArticleStudio/SimplifiedUnifiedControlPanel';
+import { SimplifiedLivePreviewPanel } from '@/components/ArticleStudio/SimplifiedLivePreviewPanel';
 import { useArticleStudio } from '@/hooks/useArticleStudio';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const ArticleStudio = () => {
   const articleStudio = useArticleStudio();
   const isMobile = useIsMobile();
+
+  const handleGenerateContent = () => {
+    // This will trigger the basic article generation
+    // The enhanced generation will be handled by the ArticleEditorWithNovel component
+    console.log('Generate content triggered');
+  };
 
   if (isMobile) {
     return (
@@ -67,41 +73,52 @@ const ArticleStudio = () => {
             </div>
             <div className="flex items-center gap-1">
               <PenTool className="w-3 h-3 text-green-600" />
-              <span>Real-time Preview</span>
+              <span>Novel Editor</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area - Unified Layout */}
+      {/* Main Content Area - Simplified Layout */}
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
+          <ResizablePanel defaultSize={35} minSize={30} maxSize={50}>
             <div className="h-full flex flex-col">
               <div className="py-3 px-4 border-b bg-gray-50/50">
                 <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
                   <PenTool className="w-4 h-4 text-purple-600" />
-                  Control Panel
+                  Article Setup
                 </h2>
               </div>
               <div className="flex-1 overflow-auto">
-                <UnifiedControlPanel {...articleStudio} />
+                <SimplifiedUnifiedControlPanel
+                  articleData={articleStudio.articleData}
+                  updateArticleData={articleStudio.updateArticleData}
+                  onGenerateContent={handleGenerateContent}
+                  isGenerating={articleStudio.isGenerating}
+                />
               </div>
             </div>
           </ResizablePanel>
           
           <ResizableHandle withHandle className="bg-gray-200 hover:bg-gray-300 transition-colors" />
           
-          <ResizablePanel defaultSize={60} minSize={40}>
+          <ResizablePanel defaultSize={65} minSize={50}>
             <div className="h-full flex flex-col">
               <div className="py-3 px-4 border-b bg-gray-50/50">
                 <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
                   <Sparkles className="w-4 h-4 text-blue-600" />
-                  Live Preview
+                  Article Editor
                 </h2>
               </div>
-              <div className="flex-1 overflow-auto">
-                <LivePreviewPanel {...articleStudio} />
+              <div className="flex-1 overflow-hidden">
+                <SimplifiedLivePreviewPanel
+                  articleData={articleStudio.articleData}
+                  streamingContent={articleStudio.streamingContent}
+                  saveAndComplete={articleStudio.saveAndComplete}
+                  isGenerating={articleStudio.isGenerating}
+                  setStreamingContent={articleStudio.setStreamingContent}
+                />
               </div>
             </div>
           </ResizablePanel>

@@ -11,13 +11,13 @@ const corsHeaders = {
 };
 
 async function searchWithFirecrawl(query: string): Promise<string[]> {
+  if (!firecrawlApiKey) {
+    console.log('Firecrawl API key not available, skipping search');
+    return [];
+  }
+
   try {
     console.log('Searching with Firecrawl for:', query);
-    
-    if (!firecrawlApiKey) {
-      console.log('Firecrawl API key not available, skipping search');
-      return [];
-    }
     
     const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
@@ -87,11 +87,10 @@ serve(async (req) => {
       `${index + 1}. ${section.title}\n   - ${section.content}`
     ).join('\n');
 
-    // Research key topics for the article
+    // Research key topics for the article (limit to avoid timeout)
     const researchQueries = [
       `${title} latest trends 2024`,
-      `${keywords.slice(0, 3).join(' ')} best practices`,
-      `${title} statistics and data`
+      `${keywords.slice(0, 2).join(' ')} best practices`,
     ];
 
     let researchData = '';
@@ -119,10 +118,12 @@ ${researchData ? `Current research data to incorporate:${researchData}` : ''}
 Instructions:
 1. Create a well-structured article based on the provided outline
 2. Use proper markdown formatting with headers, subheaders, and lists
-3. Include relevant statistics, examples, and insights from the research data
-4. Integrate the target keywords naturally throughout the content
-5. Write engaging, informative content that provides real value
-6. Aim for comprehensive coverage of each section in the outline
+3. If research data is available, incorporate relevant statistics, examples, and insights
+4. When referencing information from research, use inline links format: [relevant text](source-url)
+5. Integrate the target keywords naturally throughout the content
+6. Write engaging, informative content that provides real value
+7. Aim for comprehensive coverage of each section in the outline
+8. DO NOT add a separate sources section at the end
 
 Write the complete article now:`;
 
