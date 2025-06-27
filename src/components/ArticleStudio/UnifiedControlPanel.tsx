@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -64,7 +65,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/generate-content`, {
+      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
