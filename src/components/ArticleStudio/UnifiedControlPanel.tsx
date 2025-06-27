@@ -40,6 +40,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     defaultKeywords: [],
     defaultAudience: ''
   });
+  const [currentArticleContent, setCurrentArticleContent] = useState('');
   
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -53,6 +54,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
     setIsGenerating(true);
     setStreamingContent('');
+    setCurrentArticleContent('');
     setStreamingStatus('🚀 Phase 1: Generating basic article...');
 
     try {
@@ -80,7 +82,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       }
 
       console.log('Phase 1 complete: Basic article generated');
-      setStreamingContent(basicArticle);
+      setCurrentArticleContent(basicArticle);
       updateArticleData({ generatedContent: basicArticle });
       setStreamingStatus('✅ Phase 1 complete! Starting enhanced research...');
 
@@ -127,6 +129,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
       let enhancedArticle = basicArticle;
       const decoder = new TextDecoder();
+      const sectionMap = new Map();
+
+      // Create a map of section titles to their content for better matching
+      articleData.outline.forEach((section, index) => {
+        sectionMap.set(section.title.toLowerCase(), index);
+      });
 
       while (true) {
         const { done, value } = await reader.read();
@@ -156,14 +164,49 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
                   break;
                   
                 case 'section-enhanced':
-                  // Replace the section in the article
                   const sectionTitle = data.sectionTitle;
                   const enhancedContent = data.enhancedContent;
                   
-                  // Simple section replacement (could be improved with better parsing)
-                  const sectionRegex = new RegExp(`(## ${sectionTitle}[\\s\\S]*?)(?=## |$)`, 'i');
-                  enhancedArticle = enhancedArticle.replace(sectionRegex, enhancedContent);
+                  // Improved section replacement logic
+                  const patterns = [
+                    new RegExp(`(## ${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?)(?=## |$)`, 'i'),
+                    new RegExp(`(### ${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?)(?=### |## |$)`, 'i'),
+                    new RegExp(`(# ${sectionTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?)(?=# |$)`, 'i')
+                  ];
                   
+                  let replaced = false;
+                  for (const pattern of patterns) {
+                    if (pattern.test(enhancedArticle)) {
+                      enhancedArticle = enhancedArticle.replace(pattern, enhancedContent);
+                      replaced = true;
+                      break;
+                    }
+                  }
+                  
+                  // If no pattern matched, try to find by partial title match
+                  if (!replaced) {
+                    const titleWords = sectionTitle.toLowerCase().split(' ');
+                    const articleSections = enhancedArticle.split(/(?=^##? )/gm);
+                    
+                    for (let i = 0; i < articleSections.length; i++) {
+                      const section = articleSections[i];
+                      const sectionTitleMatch = section.match(/^##? (.+?)$/m);
+                      
+                      if (sectionTitleMatch) {
+                        const existingTitle = sectionTitleMatch[1].toLowerCase();
+                        const matchingWords = titleWords.filter(word => existingTitle.includes(word));
+                        
+                        if (matchingWords.length >= Math.max(1, titleWords.length * 0.6)) {
+                          articleSections[i] = enhancedContent;
+                          enhancedArticle = articleSections.join('');
+                          replaced = true;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  
+                  setCurrentArticleContent(enhancedArticle);
                   setStreamingContent(enhancedArticle);
                   setStreamingStatus(`✅ Enhanced: ${data.sectionTitle}`);
                   setEnhancementProgress(prev => ({ ...prev, [data.sectionIndex]: data.progress }));
@@ -171,6 +214,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
                   
                 case 'complete':
                   updateArticleData({ generatedContent: enhancedArticle });
+                  setStreamingContent(enhancedArticle);
                   setStreamingStatus('🎉 Article enhancement complete! Research-backed sections ready.');
                   break;
                   
