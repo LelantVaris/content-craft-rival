@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -53,64 +52,37 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
     setIsGenerating(true);
     setStreamingContent('');
-    setStreamingStatus('🚀 Generating article...');
+    setStreamingStatus('🚀 Starting article generation...');
 
     try {
-      console.log('Starting streaming article generation...');
+      console.log('Starting streaming article generation with Supabase client...');
       
-      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Use Supabase client to invoke the function
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
           title,
           outline: articleData.outline,
           keywords: articleData.keywords,
           audience: articleData.audience,
           writingStyle: 'professional',
           tone: seoPreferences.defaultTone
-        }),
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Stream failed: ${response.statusText}`);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(`Function call failed: ${error.message}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response stream available');
+      // Handle the response data
+      if (data && data.content) {
+        setStreamingContent(data.content);
+        updateArticleData({ generatedContent: data.content });
+        setStreamingStatus('✅ Article generation complete!');
+      } else {
+        console.error('No content received from function');
+        setStreamingStatus('❌ Error: No content generated');
       }
-
-      let fullContent = '';
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              
-              if (data.content) {
-                fullContent += data.content;
-                setStreamingContent(fullContent);
-              }
-            } catch (parseError) {
-              console.warn('Failed to parse SSE data:', parseError);
-            }
-          }
-        }
-      }
-
-      updateArticleData({ generatedContent: fullContent });
-      setStreamingStatus('✅ Article generation complete!');
 
     } catch (error) {
       console.error('Error generating streaming article:', error);
@@ -275,9 +247,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       {hasTitle && hasOutline && !isGenerating && (
         <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
           <div className="text-sm text-purple-800">
-            <strong>🚀 Streaming Generation:</strong>
+            <strong>🚀 Ready to Generate:</strong>
             <br />
-            Content will stream in real-time as it's generated
+            Your article will be created using AI with your title, outline, and keywords
           </div>
         </div>
       )}
