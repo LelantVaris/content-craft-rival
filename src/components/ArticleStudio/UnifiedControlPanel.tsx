@@ -56,26 +56,38 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     try {
       console.log('Starting enhanced article generation...');
       
-      const { data, error } = await supabase.functions.invoke('generate-enhanced-content', {
-        body: {
-          title,
-          outline: articleData.outline,
-          keywords: articleData.keywords,
-          audience: articleData.audience,
-          tone: seoPreferences.defaultTone
-        }
-      });
+      // First try the Supabase function invoke method
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-enhanced-content', {
+          body: {
+            title,
+            outline: articleData.outline,
+            keywords: articleData.keywords,
+            audience: articleData.audience,
+            tone: seoPreferences.defaultTone
+          }
+        });
 
-      if (error) {
-        console.error('Enhanced generation error:', error);
-        throw new Error(error.message || 'Failed to generate enhanced content');
+        if (error) {
+          throw new Error(error.message || 'Failed to invoke function');
+        }
+
+        // If we get here, the function worked but might not support streaming
+        if (data && data.content) {
+          setStreamingContent(data.content);
+          updateArticleData({ generatedContent: data.content });
+          console.log('Enhanced article generation completed successfully!');
+          return;
+        }
+      } catch (invokeError) {
+        console.log('Function invoke failed, trying streaming approach:', invokeError);
       }
 
-      // Handle the response as a stream
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/generate-enhanced-content`, {
+      // Fallback to streaming approach
+      const response = await fetch('https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-content', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk'}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
