@@ -10,8 +10,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
-import { SimplifiedUnifiedControlPanel } from '@/components/ArticleStudio/SimplifiedUnifiedControlPanel';
-import { SimplifiedLivePreviewPanel } from '@/components/ArticleStudio/SimplifiedLivePreviewPanel';
+import { UnifiedControlPanel } from '@/components/ArticleStudio/UnifiedControlPanel';
+import { LivePreviewPanel } from '@/components/ArticleStudio/LivePreviewPanel';
 import { useArticleStudio } from '@/hooks/useArticleStudio';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -67,41 +67,41 @@ const ArticleStudio = () => {
             </div>
             <div className="flex items-center gap-1">
               <PenTool className="w-3 h-3 text-green-600" />
-              <span>Rich Text Editor</span>
+              <span>Real-time Preview</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area - Simplified Layout */}
+      {/* Main Content Area - Unified Layout */}
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={35} minSize={30} maxSize={45}>
+          <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
             <div className="h-full flex flex-col">
               <div className="py-3 px-4 border-b bg-gray-50/50">
                 <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
                   <PenTool className="w-4 h-4 text-purple-600" />
-                  Setup & Generation
+                  Control Panel
                 </h2>
               </div>
-              <div className="flex-1 overflow-auto p-4">
-                <SimplifiedUnifiedControlPanel {...articleStudio} />
+              <div className="flex-1 overflow-auto">
+                <UnifiedControlPanel {...articleStudio} />
               </div>
             </div>
           </ResizablePanel>
           
           <ResizableHandle withHandle className="bg-gray-200 hover:bg-gray-300 transition-colors" />
           
-          <ResizablePanel defaultSize={65} minSize={55}>
+          <ResizablePanel defaultSize={60} minSize={40}>
             <div className="h-full flex flex-col">
               <div className="py-3 px-4 border-b bg-gray-50/50">
                 <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
                   <Sparkles className="w-4 h-4 text-blue-600" />
-                  Article Editor
+                  Live Preview
                 </h2>
               </div>
-              <div className="flex-1 overflow-auto p-4">
-                <SimplifiedLivePreviewPanel {...articleStudio} />
+              <div className="flex-1 overflow-auto">
+                <LivePreviewPanel {...articleStudio} />
               </div>
             </div>
           </ResizablePanel>
