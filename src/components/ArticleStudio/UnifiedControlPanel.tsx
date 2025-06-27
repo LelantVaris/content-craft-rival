@@ -12,7 +12,6 @@ import { ContentGenerationPanel } from './ContentGenerationPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, FileText, PenTool, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { SEOPreferences } from '@/hooks/useSEOConfiguration';
 
 interface UnifiedControlPanelProps {
@@ -53,7 +52,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
   const handleGenerateKeywords = async () => {
     if (!articleData.topic) {
-      toast.error('Please enter a topic first');
+      console.error('Please enter a topic first');
       return;
     }
 
@@ -78,13 +77,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       
       if (keywords.length > 0) {
         updateArticleData({ keywords });
-        toast.success(`Generated ${keywords.length} keywords successfully`);
+        console.log(`Generated ${keywords.length} keywords successfully`);
       } else {
-        toast.warning('No keywords were generated. Please try again.');
+        console.warn('No keywords were generated. Please try again.');
       }
     } catch (error) {
       console.error('Error generating keywords:', error);
-      toast.error('Failed to generate keywords. Please try again.');
     } finally {
       setIsGeneratingKeywords(false);
     }
@@ -93,7 +91,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   const handleSEOPreferenceUpdate = (updates: Partial<SEOPreferences>) => {
     console.log('Updating SEO preferences:', updates);
     setSeoPreferences(prev => ({ ...prev, ...updates }));
-    toast.success('SEO preferences updated');
   };
 
   return (
