@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, FileText, PenTool, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SEOPreferences } from '@/hooks/useSEOConfiguration';
 
 interface UnifiedControlPanelProps {
   articleData: ArticleStudioData;
@@ -33,6 +34,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 }) => {
   const [titleCount, setTitleCount] = useState(5);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  const [seoPreferences, setSeoPreferences] = useState<SEOPreferences>({
+    defaultTone: 'professional',
+    preferredArticleLength: 1500,
+    defaultKeywords: [],
+    defaultAudience: ''
+  });
   
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -83,12 +90,10 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     }
   };
 
-  // Mock SEO preferences - this would come from a separate hook in a real implementation
-  const seoPreferences = {
-    defaultTone: 'professional',
-    preferredArticleLength: 1500,
-    defaultKeywords: [],
-    defaultAudience: ''
+  const handleSEOPreferenceUpdate = (updates: Partial<SEOPreferences>) => {
+    console.log('Updating SEO preferences:', updates);
+    setSeoPreferences(prev => ({ ...prev, ...updates }));
+    toast.success('SEO preferences updated');
   };
 
   return (
@@ -109,7 +114,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
             seoPreferences={seoPreferences}
             onAudienceChange={(audience) => updateArticleData({ audience })}
             onKeywordsChange={(keywords) => updateArticleData({ keywords })}
-            onSEOPreferenceUpdate={() => {}} // Placeholder
+            onSEOPreferenceUpdate={handleSEOPreferenceUpdate}
             onGenerateAudience={async () => {}} // Placeholder
             onGenerateKeywords={handleGenerateKeywords}
             isGeneratingAudience={false}
@@ -223,3 +228,4 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     </div>
   );
 };
+
