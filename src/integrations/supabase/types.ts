@@ -11,15 +11,18 @@ export type Database = {
     Tables: {
       articles: {
         Row: {
+          calendar_generated: boolean | null
           content: string | null
           content_type: string | null
           created_at: string | null
+          generation_batch_id: string | null
           id: string
           keywords: string[] | null
           meta_description: string | null
           published_at: string | null
           reading_time: number | null
           scheduled_at: string | null
+          scheduled_date: string | null
           seo_score: number | null
           status: string | null
           target_audience: string | null
@@ -31,15 +34,18 @@ export type Database = {
           workflow_id: string | null
         }
         Insert: {
+          calendar_generated?: boolean | null
           content?: string | null
           content_type?: string | null
           created_at?: string | null
+          generation_batch_id?: string | null
           id?: string
           keywords?: string[] | null
           meta_description?: string | null
           published_at?: string | null
           reading_time?: number | null
           scheduled_at?: string | null
+          scheduled_date?: string | null
           seo_score?: number | null
           status?: string | null
           target_audience?: string | null
@@ -51,15 +57,18 @@ export type Database = {
           workflow_id?: string | null
         }
         Update: {
+          calendar_generated?: boolean | null
           content?: string | null
           content_type?: string | null
           created_at?: string | null
+          generation_batch_id?: string | null
           id?: string
           keywords?: string[] | null
           meta_description?: string | null
           published_at?: string | null
           reading_time?: number | null
           scheduled_at?: string | null
+          scheduled_date?: string | null
           seo_score?: number | null
           status?: string | null
           target_audience?: string | null
@@ -127,6 +136,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      cms_collections_cache: {
+        Row: {
+          collection_data: Json
+          collection_id: string
+          collection_name: string
+          connection_id: string
+          id: string
+          last_synced: string | null
+        }
+        Insert: {
+          collection_data: Json
+          collection_id: string
+          collection_name: string
+          connection_id: string
+          id?: string
+          last_synced?: string | null
+        }
+        Update: {
+          collection_data?: Json
+          collection_id?: string
+          collection_name?: string
+          connection_id?: string
+          id?: string
+          last_synced?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cms_collections_cache_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "cms_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cms_connections: {
         Row: {
@@ -221,6 +265,48 @@ export type Database = {
           updated_at?: string
           user_id?: string
           website_url?: string | null
+        }
+        Relationships: []
+      }
+      content_generation_batches: {
+        Row: {
+          completed_articles: number | null
+          completed_at: string | null
+          created_at: string | null
+          end_date: string
+          failed_articles: number | null
+          generation_options: Json | null
+          id: string
+          start_date: string
+          status: string | null
+          total_articles: number
+          user_id: string
+        }
+        Insert: {
+          completed_articles?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          end_date: string
+          failed_articles?: number | null
+          generation_options?: Json | null
+          id?: string
+          start_date: string
+          status?: string | null
+          total_articles: number
+          user_id: string
+        }
+        Update: {
+          completed_articles?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          end_date?: string
+          failed_articles?: number | null
+          generation_options?: Json | null
+          id?: string
+          start_date?: string
+          status?: string | null
+          total_articles?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -351,6 +437,57 @@ export type Database = {
           },
           {
             foreignKeyName: "publish_logs_cms_connection_id_fkey"
+            columns: ["cms_connection_id"]
+            isOneToOne: false
+            referencedRelation: "cms_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publishing_jobs: {
+        Row: {
+          article_id: string
+          cms_connection_id: string | null
+          created_at: string | null
+          id: string
+          last_error: string | null
+          published_at: string | null
+          retry_count: number | null
+          scheduled_time: string
+          status: string | null
+        }
+        Insert: {
+          article_id: string
+          cms_connection_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_time: string
+          status?: string | null
+        }
+        Update: {
+          article_id?: string
+          cms_connection_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_time?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publishing_jobs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publishing_jobs_cms_connection_id_fkey"
             columns: ["cms_connection_id"]
             isOneToOne: false
             referencedRelation: "cms_connections"

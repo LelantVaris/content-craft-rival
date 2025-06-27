@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react'
-import { format, parseISO } from 'date-fns'
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
+import { format } from 'date-fns'
+import { useCalendarPersistence } from '@/hooks/useCalendarPersistence'
 
 export interface ScheduledArticle {
   id: string
@@ -18,12 +19,15 @@ export interface CalendarState {
   selectedDate: Date | null
   viewMode: 'month' | 'week'
   currentMonth: Date
+  loading: boolean
 }
 
 type CalendarAction =
   | { type: 'SET_SELECTED_DATE'; payload: Date | null }
   | { type: 'SET_VIEW_MODE'; payload: 'month' | 'week' }
   | { type: 'SET_CURRENT_MONTH'; payload: Date }
+  | { type: 'SET_SCHEDULED_CONTENT'; payload: Record<string, ScheduledArticle[]> }
+  | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'ADD_SCHEDULED_CONTENT'; payload: { date: string; article: ScheduledArticle } }
   | { type: 'UPDATE_SCHEDULED_CONTENT'; payload: { articleId: string; updates: Partial<ScheduledArticle> } }
   | { type: 'REMOVE_SCHEDULED_CONTENT'; payload: { articleId: string } }
@@ -33,7 +37,8 @@ const initialState: CalendarState = {
   scheduledContent: {},
   selectedDate: null,
   viewMode: 'month',
-  currentMonth: new Date()
+  currentMonth: new Date(),
+  loading: true
 }
 
 function calendarReducer(state: CalendarState, action: CalendarAction): CalendarState {
@@ -46,6 +51,12 @@ function calendarReducer(state: CalendarState, action: CalendarAction): Calendar
     
     case 'SET_CURRENT_MONTH':
       return { ...state, currentMonth: action.payload }
+    
+    case 'SET_SCHEDULED_CONTENT':
+      return { ...state, scheduledContent: action.payload, loading: false }
+    
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload }
     
     case 'ADD_SCHEDULED_CONTENT': {
       const { date, article } = action.payload
@@ -125,13 +136,44 @@ function calendarReducer(state: CalendarState, action: CalendarAction): Calendar
 const CalendarContext = createContext<{
   state: CalendarState
   dispatch: React.Dispatch<CalendarAction>
+  saveScheduledArticle: (article: ScheduledArticle) => Promise<any>
+  updateScheduledArticle: (articleId: string, updates: Partial<ScheduledArticle>) => Promise<void>
+  deleteScheduledArticle: (articleId: string) => Promise<void>
+  saveBulkArticles: (articles: ScheduledArticle[], batchOptions?: any) => Promise<any[]>
+  refreshScheduledContent: () => Promise<void>
 } | null>(null)
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(calendarReducer, initialState)
+  const {
+    scheduledContent,
+    loading,
+    saveScheduledArticle,
+    updateScheduledArticle,
+    deleteScheduledArticle,
+    saveBulkArticles,
+    refreshScheduledContent
+  } = useCalendarPersistence()
+
+  // Update state when persistence data changes
+  useEffect(() => {
+    dispatch({ type: 'SET_SCHEDULED_CONTENT', payload: scheduledContent })
+  }, [scheduledContent])
+
+  useEffect(() => {
+    dispatch({ type: 'SET_LOADING', payload: loading })
+  }, [loading])
   
   return (
-    <CalendarContext.Provider value={{ state, dispatch }}>
+    <CalendarContext.Provider value={{ 
+      state, 
+      dispatch,
+      saveScheduledArticle,
+      updateScheduledArticle,
+      deleteScheduledArticle,
+      saveBulkArticles,
+      refreshScheduledContent
+    }}>
       {children}
     </CalendarContext.Provider>
   )

@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Zap, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Zap, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useCalendar, ScheduledArticle } from './CalendarState'
 import { ContentSchedulingModal } from './ContentSchedulingModal'
 import { ContentPreviewCard } from './ContentPreviewCard'
@@ -12,8 +13,15 @@ import { BulkGenerationModal } from './BulkGenerationModal'
 import { format, addMonths, subMonths, addDays, startOfMonth } from 'date-fns'
 
 export function FullscreenCalendar() {
-  const { state, dispatch } = useCalendar()
-  const { scheduledContent, selectedDate, currentMonth } = state
+  const { 
+    state, 
+    dispatch, 
+    saveScheduledArticle, 
+    updateScheduledArticle, 
+    deleteScheduledArticle, 
+    saveBulkArticles 
+  } = useCalendar()
+  const { scheduledContent, selectedDate, currentMonth, loading } = state
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
   const [showBulkGenerationModal, setShowBulkGenerationModal] = useState(false)
   const [schedulingDate, setSchedulingDate] = useState<Date | null>(null)
@@ -39,7 +47,7 @@ export function FullscreenCalendar() {
     setShowSchedulingModal(true)
   }
 
-  const handleScheduleContent = (content: Omit<ScheduledArticle, 'id' | 'scheduledDate'>) => {
+  const handleScheduleContent = async (content: Omit<ScheduledArticle, 'id' | 'scheduledDate'>) => {
     if (!schedulingDate) return
 
     const newArticle: ScheduledArticle = {
@@ -48,20 +56,15 @@ export function FullscreenCalendar() {
       scheduledDate: schedulingDate
     }
 
-    const dateStr = format(schedulingDate, 'yyyy-MM-dd')
-    dispatch({ 
-      type: 'ADD_SCHEDULED_CONTENT', 
-      payload: { date: dateStr, article: newArticle } 
-    })
+    // Save to database
+    await saveScheduledArticle(newArticle)
   }
 
-  const handleBulkContentGenerated = (articles: ScheduledArticle[]) => {
-    articles.forEach(article => {
-      const dateStr = format(article.scheduledDate, 'yyyy-MM-dd')
-      dispatch({ 
-        type: 'ADD_SCHEDULED_CONTENT', 
-        payload: { date: dateStr, article } 
-      })
+  const handleBulkContentGenerated = async (articles: ScheduledArticle[]) => {
+    // Save all articles to database
+    await saveBulkArticles(articles, {
+      bulkGeneration: true,
+      generatedAt: new Date().toISOString()
     })
   }
 
@@ -69,26 +72,32 @@ export function FullscreenCalendar() {
     console.log('Edit article:', article.id)
   }
 
-  const handleRescheduleArticle = (article: ScheduledArticle) => {
+  const handleRescheduleArticle = async (article: ScheduledArticle) => {
     console.log('Reschedule article:', article.id)
+    // TODO: Implement reschedule modal
   }
 
-  const handlePublishArticle = (article: ScheduledArticle) => {
-    dispatch({ 
-      type: 'UPDATE_SCHEDULED_CONTENT', 
-      payload: { 
-        articleId: article.id, 
-        updates: { status: 'published' } 
-      } 
-    })
+  const handlePublishArticle = async (article: ScheduledArticle) => {
+    await updateScheduledArticle(article.id, { status: 'published' })
   }
 
-  const handleDeleteArticle = (articleId: string) => {
-    dispatch({ type: 'REMOVE_SCHEDULED_CONTENT', payload: { articleId } })
+  const handleDeleteArticle = async (articleId: string) => {
+    await deleteScheduledArticle(articleId)
   }
 
   const selectedDateContent = selectedDate ? getContentForDate(selectedDate) : []
   const totalScheduledArticles = Object.values(scheduledContent).flat().length
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+          <span className="text-lg text-gray-700">Loading calendar...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col">

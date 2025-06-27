@@ -35,6 +35,8 @@ export function useCalendarContentGeneration() {
     options: Partial<BulkGenerationRequest> = {}
   ): Promise<ScheduledArticle | null> => {
     try {
+      console.log('Generating single article:', { title, scheduledDate, options });
+      
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
           title,
@@ -46,22 +48,31 @@ export function useCalendarContentGeneration() {
 
       if (error) {
         console.error('Content generation error:', error);
+        toast.error(`Failed to generate content: ${error.message}`);
+        return null;
+      }
+
+      if (!data || !data.content) {
+        console.error('No content returned from generation');
+        toast.error('No content was generated');
         return null;
       }
 
       const article: ScheduledArticle = {
         id: crypto.randomUUID(),
         title,
-        content: data.content || `# ${title}\n\nContent will be generated...`,
+        content: data.content,
         scheduledDate,
         status: 'draft',
-        metaDescription: `${title} - Generated content for ${format(scheduledDate, 'MMMM d, yyyy')}`,
+        metaDescription: data.metaDescription || `${title} - Generated content for ${format(scheduledDate, 'MMMM d, yyyy')}`,
         keywords: options.keywords
       };
 
+      console.log('Successfully generated article:', article);
       return article;
     } catch (error) {
       console.error('Error generating single article:', error);
+      toast.error('Failed to generate article content');
       return null;
     }
   }, []);
@@ -106,21 +117,55 @@ export function useCalendarContentGeneration() {
     setGenerationQueue(queue);
 
     try {
+      console.log(`Starting bulk generation for ${totalArticles} articles`);
+      
+      // Create a batch record in the database
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data: batchRecord, error: batchError } = await supabase
+        .from('content_generation_batches')
+        .insert({
+          user_id: user.user.id,
+          start_date: format(startDate, 'yyyy-MM-dd'),
+          end_date: format(endDate, 'yyyy-MM-dd'),
+          total_articles: totalArticles,
+          status: 'processing',
+          generation_options: {
+            contentTypes,
+            targetAudience,
+            keywords,
+            tone,
+            publishingSchedule
+          }
+        })
+        .select()
+        .single();
+
+      if (batchError) {
+        console.error('Error creating batch record:', batchError);
+      }
+
       // Generate content for each date
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
         const contentType = contentTypes[i % contentTypes.length] || 'blog-post';
         
-        // Generate diverse topics
-        const topicPrompts = [
-          `${contentType} about industry trends for ${format(date, 'MMMM yyyy')}`,
-          `${contentType} focusing on practical tips and best practices`,
-          `${contentType} discussing emerging technologies and innovations`,
-          `${contentType} covering market insights and analysis`,
-          `${contentType} featuring case studies and success stories`
+        // Generate more diverse and specific topics
+        const topicTemplates = [
+          `${contentType}: Industry trends and insights for ${format(date, 'MMMM yyyy')}`,
+          `${contentType}: Practical tips and best practices`,
+          `${contentType}: Emerging technologies and innovations`,
+          `${contentType}: Market analysis and expert predictions`,
+          `${contentType}: Case studies and success stories`,
+          `${contentType}: Common challenges and solutions`,
+          `${contentType}: Future outlook and strategic planning`,
+          `${contentType}: Tools and resources guide`
         ];
         
-        const title = topicPrompts[i % topicPrompts.length];
+        const title = topicTemplates[i % topicTemplates.length];
         
         let currentArticle: ScheduledArticle | null = null;
         
@@ -134,8 +179,10 @@ export function useCalendarContentGeneration() {
           if (currentArticle) {
             generatedArticles.push(currentArticle);
             queue.completedArticles++;
+            queue.generatedContent.push(currentArticle);
           } else {
             queue.failedArticles++;
+            console.warn(`Failed to generate article for ${format(date, 'yyyy-MM-dd')}`);
           }
         } catch (error) {
           console.error(`Failed to generate article for ${format(date, 'yyyy-MM-dd')}:`, error);
@@ -150,14 +197,31 @@ export function useCalendarContentGeneration() {
           onProgress(progress, currentArticle || undefined);
         }
 
-        // Small delay to prevent API rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Small delay to prevent API rate limiting and allow UI updates
+        if (i < dates.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
 
-      queue.status = queue.failedArticles === 0 ? 'completed' : 'completed';
+      // Update batch record
+      if (batchRecord) {
+        await supabase
+          .from('content_generation_batches')
+          .update({
+            completed_articles: queue.completedArticles,
+            failed_articles: queue.failedArticles,
+            status: queue.failedArticles === 0 ? 'completed' : 'completed',
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', batchRecord.id);
+      }
+
+      queue.status = 'completed';
       setGenerationQueue(queue);
       
-      toast.success(`Generated ${queue.completedArticles} articles successfully!`);
+      if (queue.completedArticles > 0) {
+        toast.success(`Generated ${queue.completedArticles} articles successfully!`);
+      }
       
       if (queue.failedArticles > 0) {
         toast.warning(`${queue.failedArticles} articles failed to generate`);
