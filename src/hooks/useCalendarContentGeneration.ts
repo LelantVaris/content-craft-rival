@@ -1,9 +1,9 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ScheduledArticle } from '@/components/ContentPlanner/CalendarState';
 import { format, addDays } from 'date-fns';
+import { generateDiverseTopics, generateTopicForDate } from '@/utils/topicGenerator';
 
 export interface BulkGenerationRequest {
   startDate: Date;
@@ -68,7 +68,7 @@ export function useCalendarContentGeneration() {
         keywords: options.keywords
       };
 
-      console.log('Successfully generated article:', article);
+      console.log('Successfully generated article:', article.title);
       return article;
     } catch (error) {
       console.error('Error generating single article:', error);
@@ -94,7 +94,7 @@ export function useCalendarContentGeneration() {
     while (currentDate <= endDate) {
       if (publishingSchedule === 'weekdays') {
         const dayOfWeek = currentDate.getDay();
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip weekends
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
           dates.push(new Date(currentDate));
         }
       } else {
@@ -105,7 +105,6 @@ export function useCalendarContentGeneration() {
 
     const totalArticles = dates.length;
     
-    // Initialize generation queue
     const queue: ContentGenerationQueue = {
       id: crypto.randomUUID(),
       totalArticles,
@@ -119,12 +118,40 @@ export function useCalendarContentGeneration() {
     try {
       console.log(`Starting bulk generation for ${totalArticles} articles`);
       
-      // Create a batch record in the database
+      // Get user profile for industry context
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
         throw new Error('User not authenticated');
       }
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_profile_id')
+        .eq('id', user.user.id)
+        .single();
+
+      let industry = 'business';
+      if (profile?.company_profile_id) {
+        const { data: companyProfile } = await supabase
+          .from('company_profiles')
+          .select('industry')
+          .eq('id', profile.company_profile_id)
+          .single();
+        
+        if (companyProfile?.industry) {
+          industry = companyProfile.industry;
+        }
+      }
+
+      // Generate diverse topics for all dates at once
+      const diverseTopics = generateDiverseTopics(
+        totalArticles,
+        industry,
+        targetAudience,
+        []
+      );
+
+      // Create batch record
       const { data: batchRecord, error: batchError } = await supabase
         .from('content_generation_batches')
         .insert({
@@ -138,7 +165,8 @@ export function useCalendarContentGeneration() {
             targetAudience,
             keywords,
             tone,
-            publishingSchedule
+            publishingSchedule,
+            industry
           }
         })
         .select()
@@ -151,42 +179,43 @@ export function useCalendarContentGeneration() {
       // Generate content for each date
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
-        const contentType = contentTypes[i % contentTypes.length] || 'blog-post';
-        
-        // Generate more diverse and specific topics
-        const topicTemplates = [
-          `${contentType}: Industry trends and insights for ${format(date, 'MMMM yyyy')}`,
-          `${contentType}: Practical tips and best practices`,
-          `${contentType}: Emerging technologies and innovations`,
-          `${contentType}: Market analysis and expert predictions`,
-          `${contentType}: Case studies and success stories`,
-          `${contentType}: Common challenges and solutions`,
-          `${contentType}: Future outlook and strategic planning`,
-          `${contentType}: Tools and resources guide`
-        ];
-        
-        const title = topicTemplates[i % topicTemplates.length];
+        const topicData = diverseTopics[i] || generateTopicForDate(date, industry, targetAudience);
         
         let currentArticle: ScheduledArticle | null = null;
+        let retryCount = 0;
+        const maxRetries = 2;
         
-        try {
-          currentArticle = await generateSingleArticle(title, date, {
-            targetAudience,
-            keywords,
-            tone
-          });
+        while (!currentArticle && retryCount <= maxRetries) {
+          try {
+            currentArticle = await generateSingleArticle(topicData.title, date, {
+              targetAudience,
+              keywords: [...(keywords || []), ...topicData.keywords.slice(0, 3)],
+              tone
+            });
 
-          if (currentArticle) {
-            generatedArticles.push(currentArticle);
-            queue.completedArticles++;
-            queue.generatedContent.push(currentArticle);
-          } else {
-            queue.failedArticles++;
-            console.warn(`Failed to generate article for ${format(date, 'yyyy-MM-dd')}`);
+            if (currentArticle) {
+              generatedArticles.push(currentArticle);
+              queue.completedArticles++;
+              queue.generatedContent.push(currentArticle);
+            } else {
+              retryCount++;
+              if (retryCount <= maxRetries) {
+                console.log(`Retrying article generation for ${format(date, 'yyyy-MM-dd')} (attempt ${retryCount + 1})`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to generate article for ${format(date, 'yyyy-MM-dd')}:`, error);
+            retryCount++;
+            if (retryCount <= maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
           }
-        } catch (error) {
-          console.error(`Failed to generate article for ${format(date, 'yyyy-MM-dd')}:`, error);
+        }
+
+        if (!currentArticle) {
           queue.failedArticles++;
+          console.warn(`Failed to generate article for ${format(date, 'yyyy-MM-dd')} after ${maxRetries + 1} attempts`);
         }
 
         // Update progress
@@ -197,9 +226,9 @@ export function useCalendarContentGeneration() {
           onProgress(progress, currentArticle || undefined);
         }
 
-        // Small delay to prevent API rate limiting and allow UI updates
+        // Delay between requests to avoid rate limiting
         if (i < dates.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
 

@@ -50,7 +50,6 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     setShowReasoning(true);
 
     try {
-      // Start reasoning simulation
       setReasoningText('Analyzing your article requirements...');
       setStreamingStatus('Preparing to generate content...');
       
@@ -59,7 +58,8 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
           title,
           outline: articleData.outline,
           keywords: articleData.keywords,
-          audience: articleData.audience
+          audience: articleData.audience,
+          tone: 'professional'
         }
       });
 
@@ -68,53 +68,13 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         throw new Error(error.message || 'Failed to generate content');
       }
 
-      // Handle streaming response
-      if (data && typeof data.getReader === 'function') {
-        const reader = data.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedContent = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const eventData = JSON.parse(line.slice(6));
-                
-                if (eventData.type === 'content') {
-                  accumulatedContent = eventData.content;
-                  setStreamingContent(accumulatedContent);
-                  setReasoningText(`Writing section... ${accumulatedContent.length} characters generated`);
-                } else if (eventData.type === 'complete') {
-                  accumulatedContent = eventData.content;
-                  setStreamingContent(accumulatedContent);
-                  onUpdate({ generatedContent: accumulatedContent });
-                  setReasoningText('Content generation complete!');
-                  break;
-                } else if (eventData.type === 'error') {
-                  throw new Error(eventData.error);
-                }
-              } catch (parseError) {
-                console.warn('Failed to parse SSE data:', parseError);
-              }
-            }
-          }
-        }
+      if (data?.content) {
+        onUpdate({ generatedContent: data.content });
+        setStreamingContent(data.content);
+        setReasoningText('Content generation complete!');
+        setStreamingStatus('Ready to create article');
       } else {
-        // Fallback for non-streaming response
-        const generatedContent = data?.content || '';
-        if (generatedContent) {
-          onUpdate({ generatedContent });
-          setStreamingContent(generatedContent);
-          setReasoningText('Content generation complete!');
-        } else {
-          throw new Error('No content was generated');
-        }
+        throw new Error('No content was generated');
       }
       
       console.log('Content generated successfully!');
@@ -129,7 +89,6 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       setIsGeneratingContent(false);
       setIsGenerating(false);
       
-      // Auto-hide reasoning after completion
       setTimeout(() => {
         setShowReasoning(false);
       }, 3000);
@@ -147,10 +106,9 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Ready to generate your article content using AI with real-time streaming.
+            Ready to generate your article content using AI.
           </p>
 
-          {/* AI Reasoning Panel */}
           <Reasoning 
             isStreaming={isGeneratingContent}
             open={showReasoning}
