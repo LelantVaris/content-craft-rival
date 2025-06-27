@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -46,7 +45,16 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
   const generateStreamingArticle = async () => {
     const title = articleData.customTitle || articleData.selectedTitle;
+    console.log('🚀 generateStreamingArticle called with:', {
+      title,
+      hasOutline,
+      outlineLength: articleData.outline.length,
+      keywords: articleData.keywords,
+      audience: articleData.audience
+    });
+
     if (!title || !hasOutline) {
+      console.error('❌ Missing requirements:', { title: !!title, hasOutline });
       setStreamingStatus('❌ Error: Please complete the title and outline first');
       return;
     }
@@ -54,16 +62,31 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     setIsGenerating(true);
     setStreamingContent('');
     setStreamingStatus('🚀 Starting article generation...');
+    console.log('📝 Starting streaming article generation...');
 
     try {
-      console.log('Starting streaming article generation...');
-      
       // Get the current session for authentication
+      console.log('🔐 Getting authentication session...');
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        console.error('❌ No authentication session found');
         throw new Error('Authentication required');
       }
+      console.log('✅ Authentication session obtained:', { 
+        hasAccessToken: !!session.access_token,
+        tokenLength: session.access_token?.length 
+      });
+
+      const requestBody = {
+        title,
+        outline: articleData.outline,
+        keywords: articleData.keywords,
+        audience: articleData.audience,
+        writingStyle: 'professional',
+        tone: seoPreferences.defaultTone
+      };
+      console.log('📤 Sending request with body:', requestBody);
 
       const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
         method: 'POST',
@@ -71,61 +94,104 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          title,
-          outline: articleData.outline,
-          keywords: articleData.keywords,
-          audience: articleData.audience,
-          writingStyle: 'professional',
-          tone: seoPreferences.defaultTone
-        }),
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📥 Response received:', { 
+        ok: response.ok, 
+        status: response.status, 
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
-        throw new Error(`Stream failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ Response not ok:', { status: response.status, statusText: response.statusText, errorText });
+        throw new Error(`Stream failed: ${response.statusText} - ${errorText}`);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
+        console.error('❌ No response stream available');
         throw new Error('No response stream available');
       }
 
+      console.log('📖 Starting to read stream...');
       let fullContent = '';
       const decoder = new TextDecoder();
+      let chunkCount = 0;
 
       setStreamingStatus('✍️ Generating content...');
 
       while (true) {
+        console.log(`📖 Reading chunk ${chunkCount + 1}...`);
         const { done, value } = await reader.read();
-        if (done) break;
+        
+        if (done) {
+          console.log('✅ Stream reading completed, total chunks:', chunkCount);
+          break;
+        }
 
+        chunkCount++;
         const chunk = decoder.decode(value);
+        console.log(`📝 Chunk ${chunkCount} received:`, { 
+          length: chunk.length, 
+          preview: chunk.substring(0, 100) + (chunk.length > 100 ? '...' : '')
+        });
+
         const lines = chunk.split('\n');
+        console.log(`📄 Processing ${lines.length} lines from chunk ${chunkCount}`);
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const dataContent = line.slice(6);
+              console.log('🔄 Processing SSE data:', { 
+                dataPreview: dataContent.substring(0, 50) + (dataContent.length > 50 ? '...' : '')
+              });
+              
+              const data = JSON.parse(dataContent);
+              console.log('📊 Parsed SSE data:', { 
+                hasContent: !!data.content, 
+                contentLength: data.content?.length || 0,
+                dataKeys: Object.keys(data)
+              });
               
               if (data.content) {
                 fullContent += data.content;
+                console.log('📝 Updated content:', { 
+                  totalLength: fullContent.length,
+                  newContentLength: data.content.length
+                });
                 setStreamingContent(fullContent);
                 setStreamingStatus('✍️ Writing article...');
               }
             } catch (parseError) {
-              console.warn('Failed to parse SSE data:', parseError);
+              console.warn('⚠️ Failed to parse SSE data:', { 
+                error: parseError, 
+                line: line.substring(0, 100) + (line.length > 100 ? '...' : '')
+              });
             }
           }
         }
       }
 
+      console.log('✅ Article generation completed:', { 
+        finalContentLength: fullContent.length,
+        totalChunks: chunkCount
+      });
       updateArticleData({ generatedContent: fullContent });
       setStreamingStatus('✅ Article generation complete!');
 
     } catch (error) {
-      console.error('Error generating streaming article:', error);
+      console.error('❌ Error generating streaming article:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setStreamingStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
+      console.log('🏁 Generation process finished, setting isGenerating to false');
       setIsGenerating(false);
     }
   };
