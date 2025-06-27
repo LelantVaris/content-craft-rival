@@ -13,6 +13,7 @@ import ArticleEditor from "./pages/ArticleEditor";
 import ArticleEditorRoute from "./pages/ArticleEditorRoute";
 import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
@@ -30,6 +31,7 @@ function App() {
               <BrowserRouter>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                   <Route path="/*" element={
                     <SidebarProvider>
                       <div className="flex min-h-screen w-full">

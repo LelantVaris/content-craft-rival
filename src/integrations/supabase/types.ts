@@ -164,6 +164,45 @@ export type Database = {
         }
         Relationships: []
       }
+      company_profiles: {
+        Row: {
+          company_name: string
+          content_goals: string[] | null
+          created_at: string
+          id: string
+          industry: string | null
+          preferred_tone: string | null
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          company_name: string
+          content_goals?: string[] | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          preferred_tone?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          company_name?: string
+          content_goals?: string[] | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          preferred_tone?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -197,11 +236,13 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          company_profile_id: string | null
           created_at: string | null
           credits: number | null
           full_name: string | null
           id: string
           is_lifetime: boolean | null
+          onboarding_completed: boolean | null
           plan_type: string | null
           stripe_customer_id: string | null
           updated_at: string | null
@@ -209,11 +250,13 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          company_profile_id?: string | null
           created_at?: string | null
           credits?: number | null
           full_name?: string | null
           id: string
           is_lifetime?: boolean | null
+          onboarding_completed?: boolean | null
           plan_type?: string | null
           stripe_customer_id?: string | null
           updated_at?: string | null
@@ -221,17 +264,27 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          company_profile_id?: string | null
           created_at?: string | null
           credits?: number | null
           full_name?: string | null
           id?: string
           is_lifetime?: boolean | null
+          onboarding_completed?: boolean | null
           plan_type?: string | null
           stripe_customer_id?: string | null
           updated_at?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_profile_id_fkey"
+            columns: ["company_profile_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       publish_logs: {
         Row: {
