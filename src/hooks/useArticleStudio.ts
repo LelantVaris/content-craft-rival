@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useArticles } from '@/hooks/useArticles';
@@ -130,7 +131,7 @@ export function useArticleStudio() {
     try {
       setIsGenerating(true);
       setStreamingContent('');
-      setStreamingStatus('');
+      setStreamingStatus('Preparing to generate article...');
       console.info('Enhanced article generation will be handled by the UnifiedControlPanel');
     } catch (error) {
       console.error('Error generating article:', error);

@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, PenTool, Zap, AlertCircle } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { supabase } from '@/integrations/supabase/client';
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/prompt-kit/reasoning';
+import { ResponseStream } from '@/components/prompt-kit/response-stream';
 
 interface ContentGenerationPanelProps {
   articleData: ArticleStudioData;
@@ -12,6 +14,7 @@ interface ContentGenerationPanelProps {
   onComplete: () => Promise<void>;
   setStreamingContent: (content: string) => void;
   setIsGenerating: (generating: boolean) => void;
+  setStreamingStatus: (status: string) => void;
 }
 
 export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
@@ -19,10 +22,13 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   onUpdate,
   onComplete,
   setStreamingContent,
-  setIsGenerating
+  setIsGenerating,
+  setStreamingStatus
 }) => {
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [showReasoning, setShowReasoning] = useState(false);
+  const [reasoningText, setReasoningText] = useState('');
 
   const canGenerate = () => {
     const title = articleData.customTitle || articleData.selectedTitle;
@@ -40,24 +46,14 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     setIsGenerating(true);
     setStreamingContent('');
     setGenerationError(null);
+    setReasoningText('');
+    setShowReasoning(true);
 
     try {
-      // Show progressive loading states
-      setStreamingContent('# Initializing content generation...\n\n*Analyzing your requirements...*');
+      // Start reasoning simulation
+      setReasoningText('Analyzing your article requirements...');
+      setStreamingStatus('Preparing to generate content...');
       
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setStreamingContent('# Preparing content structure...\n\n*Processing outline and keywords...*\n\n*Optimizing for SEO...*');
-      
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setStreamingContent('# Generating content...\n\n*Writing introduction...*\n\n*Developing main sections...*\n\n*This may take a moment...*');
-
-      console.log('Calling generate-content function with:', {
-        title,
-        outline: articleData.outline,
-        keywords: articleData.keywords,
-        audience: articleData.audience
-      });
-
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
           title,
@@ -71,19 +67,55 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         console.error('Supabase function error:', error);
         throw new Error(error.message || 'Failed to generate content');
       }
-      
-      const generatedContent = data?.content || '';
-      
-      if (!generatedContent) {
-        throw new Error('No content was generated');
+
+      // Handle streaming response
+      if (data && typeof data.getReader === 'function') {
+        const reader = data.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedContent = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6));
+                
+                if (eventData.type === 'content') {
+                  accumulatedContent = eventData.content;
+                  setStreamingContent(accumulatedContent);
+                  setReasoningText(`Writing section... ${accumulatedContent.length} characters generated`);
+                } else if (eventData.type === 'complete') {
+                  accumulatedContent = eventData.content;
+                  setStreamingContent(accumulatedContent);
+                  onUpdate({ generatedContent: accumulatedContent });
+                  setReasoningText('Content generation complete!');
+                  break;
+                } else if (eventData.type === 'error') {
+                  throw new Error(eventData.error);
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse SSE data:', parseError);
+              }
+            }
+          }
+        }
+      } else {
+        // Fallback for non-streaming response
+        const generatedContent = data?.content || '';
+        if (generatedContent) {
+          onUpdate({ generatedContent });
+          setStreamingContent(generatedContent);
+          setReasoningText('Content generation complete!');
+        } else {
+          throw new Error('No content was generated');
+        }
       }
-      
-      // Simulate streaming effect for better UX
-      setStreamingContent('# Content generation complete!\n\n*Finalizing your article...*');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      onUpdate({ generatedContent });
-      setStreamingContent(generatedContent);
       
       console.log('Content generated successfully!');
     } catch (error) {
@@ -92,9 +124,15 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       setGenerationError(errorMessage);
       console.error(`Failed to generate content: ${errorMessage}`);
       setStreamingContent('');
+      setReasoningText(`Error: ${errorMessage}`);
     } finally {
       setIsGeneratingContent(false);
       setIsGenerating(false);
+      
+      // Auto-hide reasoning after completion
+      setTimeout(() => {
+        setShowReasoning(false);
+      }, 3000);
     }
   };
 
@@ -109,8 +147,27 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Ready to generate your article content using the settings from SEO Pro Mode above.
+            Ready to generate your article content using AI with real-time streaming.
           </p>
+
+          {/* AI Reasoning Panel */}
+          <Reasoning 
+            isStreaming={isGeneratingContent}
+            open={showReasoning}
+            onOpenChange={setShowReasoning}
+          >
+            <ReasoningTrigger>Show AI reasoning process</ReasoningTrigger>
+            <ReasoningContent 
+              className="ml-2 border-l-2 border-l-green-200 px-3 py-2 bg-green-50 rounded-r-lg"
+              markdown={false}
+            >
+              <ResponseStream
+                textStream={reasoningText}
+                mode="typewriter"
+                className="text-sm text-green-800"
+              />
+            </ReasoningContent>
+          </Reasoning>
 
           {generationError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">

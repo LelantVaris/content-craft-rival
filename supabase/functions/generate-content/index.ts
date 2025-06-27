@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, outline, keywords = [], audience = '', writingStyle = 'professional', tone = 'informative' } = await req.json();
+    const { title, outline, keywords = [], audience = '' } = await req.json();
 
     if (!title || !outline || outline.length === 0) {
       return new Response(JSON.stringify({ error: 'Title and outline are required' }), {
@@ -27,7 +27,6 @@ serve(async (req) => {
     const keywordText = keywords.length > 0 ? `Target keywords: ${keywords.join(', ')}` : '';
     const audienceText = audience ? `Target audience: ${audience}` : '';
 
-    // Create outline text for the prompt
     const outlineText = outline.map((section: any, index: number) => 
       `${index + 1}. ${section.title}\n   - ${section.content}`
     ).join('\n');
@@ -35,8 +34,6 @@ serve(async (req) => {
     const prompt = `Write a comprehensive, engaging article based on the following specifications:
 
 Title: ${title}
-Writing Style: ${writingStyle}
-Tone: ${tone}
 ${keywordText}
 ${audienceText}
 
@@ -50,13 +47,9 @@ Requirements:
 - Include practical examples and actionable advice
 - Aim for 1500-2500 words total
 - Use proper heading structure (# ## ###)
-- Include a compelling introduction and strong conclusion
-- Write in a ${tone} tone with ${writingStyle} style
-- Incorporate the target keywords naturally throughout the content
+- Start with the title as an H1 heading`;
 
-Start with the title as an H1 heading, then write the full article with proper structure and formatting.`;
-
-    console.log('Generating streaming content with OpenAI...');
+    console.log('Starting streaming content generation...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -67,7 +60,7 @@ Start with the title as an H1 heading, then write the full article with proper s
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are an expert content writer who creates comprehensive, SEO-optimized articles that engage readers and provide real value. You always use proper markdown formatting and structure.' },
+          { role: 'system', content: 'You are an expert content writer who creates comprehensive, SEO-optimized articles. Always use proper markdown formatting and structure.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -80,18 +73,14 @@ Start with the title as an H1 heading, then write the full article with proper s
       throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    // Create a streaming response with proper error handling
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        let isControllerClosed = false;
+        let accumulatedContent = '';
 
         if (!reader) {
-          if (!isControllerClosed) {
-            controller.error(new Error('No response stream available'));
-            isControllerClosed = true;
-          }
+          controller.error(new Error('No response stream available'));
           return;
         }
 
@@ -100,69 +89,66 @@ Start with the title as an H1 heading, then write the full article with proper s
             const { done, value } = await reader.read();
             
             if (done) {
-              console.log('OpenAI stream completed');
-              if (!isControllerClosed) {
-                controller.close();
-                isControllerClosed = true;
-              }
+              // Send final complete content
+              controller.enqueue(new TextEncoder().encode(
+                `data: ${JSON.stringify({ 
+                  type: 'complete', 
+                  content: accumulatedContent 
+                })}\n\n`
+              ));
+              controller.close();
               break;
             }
 
-            if (!value) {
-              continue;
-            }
-
             const chunk = decoder.decode(value, { stream: true });
-            console.log('Raw chunk received:', chunk.substring(0, 200));
-            
             const lines = chunk.split('\n');
 
             for (const line of lines) {
-              if (line.trim() === '') continue;
+              if (line.trim() === '' || !line.startsWith('data: ')) continue;
               
-              if (line.startsWith('data: ')) {
-                const dataContent = line.slice(6).trim();
-                
-                if (dataContent === '[DONE]') {
-                  console.log('Received [DONE] signal');
-                  if (!isControllerClosed) {
-                    controller.close();
-                    isControllerClosed = true;
-                  }
-                  return;
-                }
+              const dataContent = line.slice(6).trim();
+              
+              if (dataContent === '[DONE]') {
+                controller.enqueue(new TextEncoder().encode(
+                  `data: ${JSON.stringify({ 
+                    type: 'complete', 
+                    content: accumulatedContent 
+                  })}\n\n`
+                ));
+                controller.close();
+                return;
+              }
 
-                try {
-                  const parsed = JSON.parse(dataContent);
-                  const content = parsed.choices?.[0]?.delta?.content;
+              try {
+                const parsed = JSON.parse(dataContent);
+                const content = parsed.choices?.[0]?.delta?.content;
+                
+                if (content) {
+                  accumulatedContent += content;
                   
-                  if (content) {
-                    console.log('Streaming content chunk:', content.substring(0, 50));
-                    
-                    if (!isControllerClosed) {
-                      const sseData = `data: ${JSON.stringify({ content })}\n\n`;
-                      controller.enqueue(new TextEncoder().encode(sseData));
-                    }
-                  }
-                } catch (parseError) {
-                  console.warn('Failed to parse OpenAI chunk:', dataContent.substring(0, 100), parseError);
-                  // Continue processing other chunks instead of failing completely
+                  // Stream the incremental content
+                  controller.enqueue(new TextEncoder().encode(
+                    `data: ${JSON.stringify({ 
+                      type: 'content', 
+                      content: accumulatedContent,
+                      delta: content
+                    })}\n\n`
+                  ));
                 }
+              } catch (parseError) {
+                console.warn('Failed to parse OpenAI chunk:', parseError);
               }
             }
           }
         } catch (error) {
           console.error('Stream processing error:', error);
-          if (!isControllerClosed) {
-            controller.error(error);
-            isControllerClosed = true;
-          }
-        } finally {
-          try {
-            reader.releaseLock();
-          } catch (releaseError) {
-            console.warn('Error releasing reader lock:', releaseError);
-          }
+          controller.enqueue(new TextEncoder().encode(
+            `data: ${JSON.stringify({ 
+              type: 'error', 
+              error: error.message 
+            })}\n\n`
+          ));
+          controller.close();
         }
       },
     });
