@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -57,8 +58,8 @@ const topNavItems = [{
   icon: Search
 }, {
   title: "Content Planner",
-  url: "#",
-  icon: Bot
+  url: "/calendar",
+  icon: Calendar
 }, {
   title: "Home",
   url: "/",
@@ -68,6 +69,7 @@ const topNavItems = [{
   url: "/article/new",
   icon: FileEdit
 }];
+
 export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
