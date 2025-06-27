@@ -44,39 +44,70 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   const hasOutline = articleData.outline.length > 0;
 
   const generateStreamingArticle = async () => {
+    console.log('🚀 FUNCTION START: generateStreamingArticle called');
+    
     const title = articleData.customTitle || articleData.selectedTitle;
-    console.log('🚀 generateStreamingArticle called with:', {
+    console.log('📝 TITLE CHECK:', {
       title,
+      customTitle: articleData.customTitle,
+      selectedTitle: articleData.selectedTitle,
+      hasTitle: !!title
+    });
+
+    console.log('📋 OUTLINE CHECK:', {
       hasOutline,
       outlineLength: articleData.outline.length,
+      outline: articleData.outline
+    });
+
+    console.log('🎯 OTHER DATA:', {
       keywords: articleData.keywords,
-      audience: articleData.audience
+      audience: articleData.audience,
+      seoPreferences
     });
 
     if (!title || !hasOutline) {
-      console.error('❌ Missing requirements:', { title: !!title, hasOutline });
+      console.error('❌ VALIDATION FAILED:', { 
+        hasTitle: !!title, 
+        hasOutline,
+        title,
+        outlineLength: articleData.outline.length
+      });
       setStreamingStatus('❌ Error: Please complete the title and outline first');
       return;
     }
-
-    setIsGenerating(true);
-    setStreamingContent('');
-    setStreamingStatus('🚀 Starting article generation...');
-    console.log('📝 Starting streaming article generation...');
+    console.log('✅ VALIDATION PASSED');
 
     try {
-      // Get the current session for authentication
-      console.log('🔐 Getting authentication session...');
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔄 SETTING INITIAL STATE');
+      setIsGenerating(true);
+      setStreamingContent('');
+      setStreamingStatus('🚀 Starting article generation...');
       
-      if (!session) {
-        console.error('❌ No authentication session found');
-        throw new Error('Authentication required');
-      }
-      console.log('✅ Authentication session obtained:', { 
-        hasAccessToken: !!session.access_token,
-        tokenLength: session.access_token?.length 
+      console.log('🔐 GETTING AUTHENTICATION SESSION...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      console.log('🔐 SESSION RESULT:', {
+        hasData: !!sessionData,
+        hasSession: !!sessionData?.session,
+        hasAccessToken: !!sessionData?.session?.access_token,
+        tokenLength: sessionData?.session?.access_token?.length,
+        sessionError: sessionError?.message,
+        fullSessionError: sessionError
       });
+      
+      if (sessionError) {
+        console.error('❌ SESSION ERROR:', sessionError);
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+      
+      if (!sessionData?.session) {
+        console.error('❌ NO SESSION FOUND');
+        throw new Error('No authentication session found');
+      }
+
+      const session = sessionData.session;
+      console.log('✅ AUTHENTICATION SESSION OBTAINED');
 
       const requestBody = {
         title,
@@ -86,37 +117,56 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         writingStyle: 'professional',
         tone: seoPreferences.defaultTone
       };
-      console.log('📤 Sending request with body:', requestBody);
+      console.log('📤 REQUEST BODY PREPARED:', requestBody);
 
-      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
+      const fetchUrl = `https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`;
+      const fetchHeaders = {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      };
+      
+      console.log('🌐 PREPARING FETCH REQUEST:', {
+        url: fetchUrl,
+        headers: { ...fetchHeaders, 'Authorization': `Bearer ${session.access_token.substring(0, 20)}...` },
+        bodyKeys: Object.keys(requestBody)
+      });
+
+      console.log('📡 MAKING FETCH REQUEST...');
+      const response = await fetch(fetchUrl, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: fetchHeaders,
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📥 Response received:', { 
+      console.log('📥 FETCH RESPONSE RECEIVED:', { 
         ok: response.ok, 
         status: response.status, 
         statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
+        headers: Object.fromEntries(response.headers.entries()),
+        hasBody: !!response.body
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Response not ok:', { status: response.status, statusText: response.statusText, errorText });
+        console.error('❌ RESPONSE NOT OK');
+        let errorText = '';
+        try {
+          errorText = await response.text();
+          console.error('❌ ERROR RESPONSE TEXT:', errorText);
+        } catch (textError) {
+          console.error('❌ FAILED TO READ ERROR TEXT:', textError);
+        }
         throw new Error(`Stream failed: ${response.statusText} - ${errorText}`);
       }
 
+      console.log('📖 GETTING RESPONSE READER...');
       const reader = response.body?.getReader();
       if (!reader) {
-        console.error('❌ No response stream available');
+        console.error('❌ NO RESPONSE STREAM AVAILABLE');
         throw new Error('No response stream available');
       }
+      console.log('✅ READER OBTAINED');
 
-      console.log('📖 Starting to read stream...');
+      console.log('🔄 STARTING STREAM READING...');
       let fullContent = '';
       const decoder = new TextDecoder();
       let chunkCount = 0;
@@ -124,74 +174,105 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       setStreamingStatus('✍️ Generating content...');
 
       while (true) {
-        console.log(`📖 Reading chunk ${chunkCount + 1}...`);
-        const { done, value } = await reader.read();
+        console.log(`📖 READING CHUNK ${chunkCount + 1}...`);
+        
+        let readResult;
+        try {
+          readResult = await reader.read();
+          console.log(`📖 CHUNK ${chunkCount + 1} READ result:`, {
+            done: readResult.done,
+            hasValue: !!readResult.value,
+            valueLength: readResult.value?.length
+          });
+        } catch (readError) {
+          console.error(`❌ ERROR READING CHUNK ${chunkCount + 1}:`, readError);
+          throw readError;
+        }
+        
+        const { done, value } = readResult;
         
         if (done) {
-          console.log('✅ Stream reading completed, total chunks:', chunkCount);
+          console.log('✅ STREAM READING COMPLETED, total chunks:', chunkCount);
           break;
+        }
+
+        if (!value) {
+          console.warn(`⚠️ CHUNK ${chunkCount + 1} has no value, continuing...`);
+          continue;
         }
 
         chunkCount++;
         const chunk = decoder.decode(value);
-        console.log(`📝 Chunk ${chunkCount} received:`, { 
+        console.log(`📝 CHUNK ${chunkCount} DECODED:`, { 
           length: chunk.length, 
-          preview: chunk.substring(0, 100) + (chunk.length > 100 ? '...' : '')
+          preview: chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''),
+          fullChunk: chunk
         });
 
         const lines = chunk.split('\n');
-        console.log(`📄 Processing ${lines.length} lines from chunk ${chunkCount}`);
+        console.log(`📄 PROCESSING ${lines.length} lines from chunk ${chunkCount}`);
 
-        for (const line of lines) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          console.log(`📄 LINE ${i + 1}:`, { line, startsWithData: line.startsWith('data: ') });
+          
           if (line.startsWith('data: ')) {
             try {
               const dataContent = line.slice(6);
-              console.log('🔄 Processing SSE data:', { 
-                dataPreview: dataContent.substring(0, 50) + (dataContent.length > 50 ? '...' : '')
+              console.log('🔄 PROCESSING SSE DATA:', { 
+                dataContent: dataContent.substring(0, 100) + (dataContent.length > 100 ? '...' : ''),
+                fullDataContent: dataContent
               });
               
               const data = JSON.parse(dataContent);
-              console.log('📊 Parsed SSE data:', { 
+              console.log('📊 PARSED SSE DATA:', { 
                 hasContent: !!data.content, 
                 contentLength: data.content?.length || 0,
-                dataKeys: Object.keys(data)
+                dataKeys: Object.keys(data),
+                fullData: data
               });
               
               if (data.content) {
                 fullContent += data.content;
-                console.log('📝 Updated content:', { 
+                console.log('📝 UPDATED CONTENT:', { 
                   totalLength: fullContent.length,
-                  newContentLength: data.content.length
+                  newContentLength: data.content.length,
+                  newContent: data.content
                 });
                 setStreamingContent(fullContent);
                 setStreamingStatus('✍️ Writing article...');
               }
             } catch (parseError) {
-              console.warn('⚠️ Failed to parse SSE data:', { 
+              console.warn('⚠️ FAILED TO PARSE SSE DATA:', { 
                 error: parseError, 
-                line: line.substring(0, 100) + (line.length > 100 ? '...' : '')
+                line: line.substring(0, 100) + (line.length > 100 ? '...' : ''),
+                fullLine: line
               });
             }
           }
         }
       }
 
-      console.log('✅ Article generation completed:', { 
+      console.log('✅ ARTICLE GENERATION COMPLETED:', { 
         finalContentLength: fullContent.length,
-        totalChunks: chunkCount
+        totalChunks: chunkCount,
+        finalContent: fullContent.substring(0, 200) + (fullContent.length > 200 ? '...' : '')
       });
+      
       updateArticleData({ generatedContent: fullContent });
       setStreamingStatus('✅ Article generation complete!');
 
     } catch (error) {
-      console.error('❌ Error generating streaming article:', {
+      console.error('❌ COMPREHENSIVE ERROR DETAILS:', {
         error,
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
+        cause: error instanceof Error ? error.cause : undefined
       });
       setStreamingStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      console.log('🏁 Generation process finished, setting isGenerating to false');
+      console.log('🏁 GENERATION PROCESS FINISHED, setting isGenerating to false');
       setIsGenerating(false);
     }
   };
