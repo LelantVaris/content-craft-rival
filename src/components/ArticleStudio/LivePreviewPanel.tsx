@@ -5,20 +5,21 @@ import { StreamingArticlePreview } from './StreamingArticlePreview';
 import { LiveArticleStats } from './LiveArticleStats';
 import { RealtimeSEOPanel } from './RealtimeSEOPanel';
 import { EnhancedPublishingOptions } from './EnhancedPublishingOptions';
-import { Card } from '@/components/ui/card';
 
 interface LivePreviewPanelProps {
   articleData: ArticleStudioData;
   streamingContent: string;
   saveAndComplete: () => Promise<void>;
   isGenerating: boolean;
+  streamingStatus?: any;
 }
 
 export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   articleData,
   streamingContent,
   saveAndComplete,
-  isGenerating
+  isGenerating,
+  streamingStatus
 }) => {
   const finalTitle = articleData.customTitle || articleData.selectedTitle;
   const finalContent = streamingContent || articleData.generatedContent;
@@ -40,6 +41,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
           content={finalContent}
           isGenerating={isGenerating}
           streamingContent={streamingContent}
+          streamingStatus={streamingStatus}
         />
       </div>
       

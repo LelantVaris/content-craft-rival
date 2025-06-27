@@ -38,6 +38,7 @@ export function useArticleStudio() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [streamingStatus, setStreamingStatus] = useState<any>(null);
   
   const navigate = useNavigate();
   const { saveArticle, refreshArticles } = useArticles();
@@ -123,24 +124,24 @@ export function useArticleStudio() {
     }
   }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
 
-  // New unified generation function
+  // New unified generation function with streaming status
   const generateFullArticle = useCallback(async () => {
     if (!articleData.topic) {
-      toast.error('Please enter a topic first');
+      console.error('Please enter a topic first');
       return;
     }
 
     try {
       setIsGenerating(true);
       setStreamingContent('');
+      setStreamingStatus(null);
 
-      // This would implement the full article generation pipeline
-      // For now, just show a placeholder
-      toast.info('Full article generation coming soon! Use individual sections for now.');
+      // This would implement the enhanced article generation pipeline
+      console.info('Enhanced article generation will be handled by the UnifiedControlPanel');
       
     } catch (error) {
       console.error('Error generating article:', error);
-      toast.error('Failed to generate article. Please try again.');
+      console.error('Failed to generate article. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -157,7 +158,9 @@ export function useArticleStudio() {
     autoSave,
     isGenerating,
     streamingContent,
+    streamingStatus,
     setStreamingContent,
-    setIsGenerating
+    setIsGenerating,
+    setStreamingStatus
   };
 }

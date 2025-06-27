@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -32,6 +31,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 }) => {
   const [titleCount, setTitleCount] = useState(5);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  const [streamingStatus, setStreamingStatus] = useState<any>(null);
   const [seoPreferences, setSeoPreferences] = useState<SEOPreferences>({
     defaultTone: 'professional',
     preferredArticleLength: 1500,
@@ -43,9 +43,111 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   const hasOutline = articleData.outline.length > 0;
 
   const generateFullArticle = async () => {
-    // Generate titles, outline, and content in sequence
-    // This would be implemented to call each generation step
-    console.log('Generating full article...');
+    const title = articleData.customTitle || articleData.selectedTitle;
+    if (!title || !hasOutline) {
+      console.error('Please complete the title and outline first');
+      return;
+    }
+
+    setIsGenerating(true);
+    setStreamingContent('');
+    setStreamingStatus(null);
+
+    try {
+      console.log('Starting enhanced article generation...');
+      
+      const { data, error } = await supabase.functions.invoke('generate-enhanced-content', {
+        body: {
+          title,
+          outline: articleData.outline,
+          keywords: articleData.keywords,
+          audience: articleData.audience,
+          tone: seoPreferences.defaultTone
+        }
+      });
+
+      if (error) {
+        console.error('Enhanced generation error:', error);
+        throw new Error(error.message || 'Failed to generate enhanced content');
+      }
+
+      // Handle the response as a stream
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/generate-enhanced-content`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          outline: articleData.outline,
+          keywords: articleData.keywords,
+          audience: articleData.audience,
+          tone: seoPreferences.defaultTone
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start enhanced generation');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No reader available');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+              
+              switch (eventData.type) {
+                case 'status':
+                  setStreamingStatus(eventData.data);
+                  break;
+                case 'content':
+                  setStreamingContent(eventData.data.content);
+                  break;
+                case 'complete':
+                  setStreamingContent(eventData.data.content);
+                  updateArticleData({ generatedContent: eventData.data.content });
+                  setStreamingStatus({ 
+                    phase: 'complete', 
+                    message: eventData.data.message, 
+                    progress: 100 
+                  });
+                  break;
+                case 'error':
+                  throw new Error(eventData.data.error);
+              }
+            } catch (parseError) {
+              console.error('Error parsing stream event:', parseError);
+            }
+          }
+        }
+      }
+
+      console.log('Enhanced article generation completed successfully!');
+    } catch (error) {
+      console.error('Error generating enhanced article:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error(`Failed to generate enhanced article: ${errorMessage}`);
+      setStreamingContent('');
+      setStreamingStatus(null);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleGenerateKeywords = async () => {
@@ -102,15 +204,15 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           />
           
           <SEOProMode
-            seoProMode={true} // For now, always show SEO mode
-            onSeoProModeChange={() => {}} // Placeholder
+            seoProMode={true}
+            onSeoProModeChange={() => {}}
             audience={articleData.audience}
             keywords={articleData.keywords}
             seoPreferences={seoPreferences}
             onAudienceChange={(audience) => updateArticleData({ audience })}
             onKeywordsChange={(keywords) => updateArticleData({ keywords })}
             onSEOPreferenceUpdate={handleSEOPreferenceUpdate}
-            onGenerateAudience={async () => {}} // Placeholder
+            onGenerateAudience={async () => {}}
             onGenerateKeywords={handleGenerateKeywords}
             isGeneratingAudience={false}
             isGeneratingKeywords={isGeneratingKeywords}
@@ -138,9 +240,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
                 hasTopic={!!articleData.topic}
                 titleCount={titleCount}
                 onTitleCountChange={setTitleCount}
-                onGenerateTitles={() => {}} // Now handled internally
+                onGenerateTitles={() => {}}
                 isGenerating={isGenerating}
-                generatedTitles={[]} // Managed internally now
+                generatedTitles={[]}
                 selectedTitle={articleData.selectedTitle}
                 onTitleSelect={(title) => updateArticleData({ selectedTitle: title })}
                 topic={articleData.topic}
@@ -179,12 +281,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       <div className="space-y-2 pt-4 border-t">
         <Button
           onClick={generateFullArticle}
-          disabled={!articleData.topic || isGenerating}
+          disabled={!articleData.topic || !hasTitle || !hasOutline || isGenerating}
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           size="lg"
         >
           <Sparkles className="w-4 h-4 mr-2" />
-          {isGenerating ? 'Generating...' : 'Generate Complete Article'}
+          {isGenerating ? 'Generating Enhanced Article...' : 'Generate Research-Enhanced Article'}
         </Button>
         
         <Button
@@ -198,6 +300,16 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           {isGenerating ? 'Saving...' : 'Save as Draft'}
         </Button>
       </div>
+
+      {/* Enhanced generation info */}
+      {hasTitle && hasOutline && !isGenerating && (
+        <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+          <div className="text-sm text-purple-800">
+            <strong>🚀 Enhanced Generation:</strong> AI will research each section with current web data, 
+            optimize content with insights, and stream results in real-time.
+          </div>
+        </div>
+      )}
     </div>
   );
 };
