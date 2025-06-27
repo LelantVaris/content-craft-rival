@@ -1,6 +1,4 @@
 
-
-
 # Article Studio Critical Issues - Phase 2B
 
 ## Priority: HIGH - Human-in-the-Loop Testing Required
@@ -47,25 +45,18 @@ This document tracks critical issues in the Article Studio that need immediate a
 ---
 
 ## Issue #4: Number of Titles Generation Always Returns 5
-**Status**: 🔴 Open - IN PROGRESS  
+**Status**: ✅ Resolved  
 **Priority**: Medium  
 **Component**: `TitleSelector` component / `generate-titles` edge function  
 **Description**: Changing "Number of titles to generate" slider doesn't affect actual number generated  
 **Expected Behavior**: Should generate the specified number of titles (1-10)  
-**Test Steps**:
-1. Change title count slider to different values (3, 7, 8, etc.)
-2. Click "Generate Titles"
-3. Verify correct number of titles are returned
-
-**Technical Notes**:
-- Check if titleCount parameter is passed to generate-titles function
-- Verify edge function respects the count parameter
-- Ensure UI slider properly updates the value
+**Resolution**: Fixed in `generate-titles/index.ts` - updated edge function to properly use the `count` parameter instead of hardcoded 5
+**Test Results**: ✅ Title count slider now correctly generates the specified number of titles
 
 ---
 
 ## Issue #5: Duplicate Content Generation Settings
-**Status**: 🔴 Open  
+**Status**: 🔴 Open - NEXT  
 **Priority**: Low  
 **Component**: `ContentGenerationPanel` component  
 **Description**: Content Generation Settings box appears to duplicate SEO Pro Mode settings  
@@ -128,14 +119,14 @@ This document tracks critical issues in the Article Studio that need immediate a
 - [x] Issue #1: Fix keyword generation ✅ COMPLETED
 - [x] Issue #2: Fix tone selection ✅ COMPLETED
 - [x] Issue #3: Fix article length selection ✅ COMPLETED  
-- [ ] Issue #4: Fix title count parameter (IN PROGRESS)
+- [x] Issue #4: Fix title count parameter ✅ COMPLETED
 
 ### Phase 2B-2: User Experience Improvements
 - [ ] Issue #6: Implement real-time streaming
 - [ ] Issue #7: Fix SEO metrics and auto-optimization
 
 ### Phase 2B-3: Cleanup
-- [ ] Issue #5: Remove duplicate settings
+- [ ] Issue #5: Remove duplicate settings (NEXT)
 
 ## Testing Protocol
 
@@ -147,8 +138,8 @@ For each issue:
 
 ## Progress Summary
 - **Total Issues**: 7
-- **Resolved**: 3 ✅
-- **In Progress**: 1 🔄
+- **Resolved**: 4 ✅
+- **In Progress**: 0 🔄
 - **Remaining**: 3 ⏳
 
 ## Success Criteria
@@ -162,6 +153,4 @@ For each issue:
 ---
 
 **Last Updated**: 2025-06-27  
-**Next Review**: After each issue resolution
-
-
+**Next Review**: After Issue #5 resolution
