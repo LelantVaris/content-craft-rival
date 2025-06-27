@@ -11,6 +11,8 @@ import { OutlineCreationPanel } from './OutlineCreationPanel';
 import { ContentGenerationPanel } from './ContentGenerationPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Lightbulb, FileText, PenTool, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface UnifiedControlPanelProps {
   articleData: ArticleStudioData;
@@ -30,6 +32,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   setIsGenerating
 }) => {
   const [titleCount, setTitleCount] = useState(5);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
   
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -39,6 +42,45 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     // Generate titles, outline, and content in sequence
     // This would be implemented to call each generation step
     console.log('Generating full article...');
+  };
+
+  const handleGenerateKeywords = async () => {
+    if (!articleData.topic) {
+      toast.error('Please enter a topic first');
+      return;
+    }
+
+    setIsGeneratingKeywords(true);
+    try {
+      console.log('Generating keywords for topic:', articleData.topic);
+      
+      const { data, error } = await supabase.functions.invoke('generate-keywords', {
+        body: {
+          topic: articleData.topic,
+          audience: articleData.audience || ''
+        }
+      });
+
+      if (error) {
+        console.error('Error generating keywords:', error);
+        throw new Error(error.message || 'Failed to generate keywords');
+      }
+
+      const keywords = data?.keywords || [];
+      console.log('Generated keywords:', keywords);
+      
+      if (keywords.length > 0) {
+        updateArticleData({ keywords });
+        toast.success(`Generated ${keywords.length} keywords successfully`);
+      } else {
+        toast.warning('No keywords were generated. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+      toast.error('Failed to generate keywords. Please try again.');
+    } finally {
+      setIsGeneratingKeywords(false);
+    }
   };
 
   // Mock SEO preferences - this would come from a separate hook in a real implementation
@@ -69,9 +111,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
             onKeywordsChange={(keywords) => updateArticleData({ keywords })}
             onSEOPreferenceUpdate={() => {}} // Placeholder
             onGenerateAudience={async () => {}} // Placeholder
-            onGenerateKeywords={async () => {}} // Placeholder
+            onGenerateKeywords={handleGenerateKeywords}
             isGeneratingAudience={false}
-            isGeneratingKeywords={false}
+            isGeneratingKeywords={isGeneratingKeywords}
             hasTopic={!!articleData.topic}
           />
         </CardContent>
