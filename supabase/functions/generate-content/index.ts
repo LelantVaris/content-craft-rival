@@ -80,14 +80,18 @@ Start with the title as an H1 heading, then write the full article with proper s
       throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    // Create a streaming response
+    // Create a streaming response with proper error handling
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
+        let isControllerClosed = false;
 
         if (!reader) {
-          controller.close();
+          if (!isControllerClosed) {
+            controller.error(new Error('No response stream available'));
+            isControllerClosed = true;
+          }
           return;
         }
 
@@ -96,39 +100,69 @@ Start with the title as an H1 heading, then write the full article with proper s
             const { done, value } = await reader.read();
             
             if (done) {
-              controller.close();
+              console.log('OpenAI stream completed');
+              if (!isControllerClosed) {
+                controller.close();
+                isControllerClosed = true;
+              }
               break;
             }
 
-            const chunk = decoder.decode(value);
+            if (!value) {
+              continue;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            console.log('Raw chunk received:', chunk.substring(0, 200));
+            
             const lines = chunk.split('\n');
 
             for (const line of lines) {
+              if (line.trim() === '') continue;
+              
               if (line.startsWith('data: ')) {
-                const data = line.slice(6);
+                const dataContent = line.slice(6).trim();
                 
-                if (data === '[DONE]') {
-                  controller.close();
+                if (dataContent === '[DONE]') {
+                  console.log('Received [DONE] signal');
+                  if (!isControllerClosed) {
+                    controller.close();
+                    isControllerClosed = true;
+                  }
                   return;
                 }
 
                 try {
-                  const parsed = JSON.parse(data);
+                  const parsed = JSON.parse(dataContent);
                   const content = parsed.choices?.[0]?.delta?.content;
                   
                   if (content) {
-                    controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
+                    console.log('Streaming content chunk:', content.substring(0, 50));
+                    
+                    if (!isControllerClosed) {
+                      const sseData = `data: ${JSON.stringify({ content })}\n\n`;
+                      controller.enqueue(new TextEncoder().encode(sseData));
+                    }
                   }
                 } catch (parseError) {
-                  // Skip invalid JSON
-                  console.log('Skipping invalid JSON:', data);
+                  console.warn('Failed to parse OpenAI chunk:', dataContent.substring(0, 100), parseError);
+                  // Continue processing other chunks instead of failing completely
                 }
               }
             }
           }
         } catch (error) {
-          console.error('Stream error:', error);
-          controller.error(error);
+          console.error('Stream processing error:', error);
+          if (!isControllerClosed) {
+            controller.error(error);
+            isControllerClosed = true;
+          }
+        } finally {
+          try {
+            reader.releaseLock();
+          } catch (releaseError) {
+            console.warn('Error releasing reader lock:', releaseError);
+          }
         }
       },
     });
