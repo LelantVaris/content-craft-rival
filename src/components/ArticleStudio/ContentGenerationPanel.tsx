@@ -2,12 +2,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { Loader2, PenTool, Zap, AlertCircle } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface ContentGenerationPanelProps {
   articleData: ArticleStudioData;
@@ -24,8 +21,6 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   setStreamingContent,
   setIsGenerating
 }) => {
-  const [writingStyle, setWritingStyle] = useState('professional');
-  const [tone, setTone] = useState('informative');
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
@@ -37,7 +32,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   const handleGenerateContent = async () => {
     const title = articleData.customTitle || articleData.selectedTitle;
     if (!canGenerate()) {
-      toast.error('Please complete the title and outline first');
+      console.error('Please complete the title and outline first');
       return;
     }
 
@@ -60,9 +55,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         title,
         outline: articleData.outline,
         keywords: articleData.keywords,
-        audience: articleData.audience,
-        writingStyle,
-        tone
+        audience: articleData.audience
       });
 
       const { data, error } = await supabase.functions.invoke('generate-content', {
@@ -70,9 +63,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
           title,
           outline: articleData.outline,
           keywords: articleData.keywords,
-          audience: articleData.audience,
-          writingStyle,
-          tone
+          audience: articleData.audience
         }
       });
 
@@ -94,12 +85,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       onUpdate({ generatedContent });
       setStreamingContent(generatedContent);
       
-      toast.success('Content generated successfully!');
+      console.log('Content generated successfully!');
     } catch (error) {
       console.error('Error generating content:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setGenerationError(errorMessage);
-      toast.error(`Failed to generate content: ${errorMessage}`);
+      console.error(`Failed to generate content: ${errorMessage}`);
       setStreamingContent('');
     } finally {
       setIsGeneratingContent(false);
@@ -113,41 +104,13 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <PenTool className="w-5 h-5 text-green-600" />
-            Content Generation Settings
+            Generate Article Content  
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="writing-style">Writing Style</Label>
-            <Select value={writingStyle} onValueChange={setWritingStyle} disabled={isGeneratingContent}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select writing style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="professional">Professional</SelectItem>
-                <SelectItem value="casual">Casual</SelectItem>
-                <SelectItem value="academic">Academic</SelectItem>
-                <SelectItem value="conversational">Conversational</SelectItem>
-                <SelectItem value="technical">Technical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="tone">Tone</Label>
-            <Select value={tone} onValueChange={setTone} disabled={isGeneratingContent}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select tone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="informative">Informative</SelectItem>
-                <SelectItem value="persuasive">Persuasive</SelectItem>
-                <SelectItem value="friendly">Friendly</SelectItem>
-                <SelectItem value="authoritative">Authoritative</SelectItem>
-                <SelectItem value="humorous">Humorous</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <p className="text-sm text-gray-600">
+            Ready to generate your article content using the settings from SEO Pro Mode above.
+          </p>
 
           {generationError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
