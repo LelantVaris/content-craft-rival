@@ -55,34 +55,71 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     setStreamingStatus('🚀 Starting article generation...');
 
     try {
-      console.log('Starting streaming article generation with Supabase client...');
+      console.log('Starting streaming article generation...');
       
-      // Use Supabase client to invoke the function
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/generate-content`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           title,
           outline: articleData.outline,
           keywords: articleData.keywords,
           audience: articleData.audience,
           writingStyle: 'professional',
           tone: seoPreferences.defaultTone
-        }
+        }),
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(`Function call failed: ${error.message}`);
+      if (!response.ok) {
+        throw new Error(`Stream failed: ${response.statusText}`);
       }
 
-      // Handle the response data
-      if (data && data.content) {
-        setStreamingContent(data.content);
-        updateArticleData({ generatedContent: data.content });
-        setStreamingStatus('✅ Article generation complete!');
-      } else {
-        console.error('No content received from function');
-        setStreamingStatus('❌ Error: No content generated');
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response stream available');
       }
+
+      let fullContent = '';
+      const decoder = new TextDecoder();
+
+      setStreamingStatus('✍️ Generating content...');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.content) {
+                fullContent += data.content;
+                setStreamingContent(fullContent);
+                setStreamingStatus('✍️ Writing article...');
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse SSE data:', parseError);
+            }
+          }
+        }
+      }
+
+      updateArticleData({ generatedContent: fullContent });
+      setStreamingStatus('✅ Article generation complete!');
 
     } catch (error) {
       console.error('Error generating streaming article:', error);
@@ -249,7 +286,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           <div className="text-sm text-purple-800">
             <strong>🚀 Ready to Generate:</strong>
             <br />
-            Your article will be created using AI with your title, outline, and keywords
+            Content will stream in real-time as it's generated
           </div>
         </div>
       )}
