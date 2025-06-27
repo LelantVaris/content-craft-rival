@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Wand2 } from 'lucide-react';
+import { RefreshCw, Users, Wand2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AudienceGeneratorProps {
   audience: string;
@@ -16,30 +18,56 @@ interface AudienceGeneratorProps {
 export const AudienceGenerator: React.FC<AudienceGeneratorProps> = ({
   audience,
   onAudienceChange,
-  onGenerateAudience,
   isGenerating,
   hasTopic
 }) => {
+  const [isLocalGenerating, setIsLocalGenerating] = useState(false);
+
+  const handleGenerateAudience = async () => {
+    if (!hasTopic) {
+      toast.error('Please enter a topic first');
+      return;
+    }
+
+    setIsLocalGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-audience', {
+        body: {
+          topic: 'current topic' // This would be passed from parent
+        }
+      });
+
+      if (error) throw error;
+      
+      const generatedAudience = data.audience || '';
+      onAudienceChange(generatedAudience);
+      
+      if (generatedAudience) {
+        toast.success('Target audience generated successfully');
+      }
+    } catch (error) {
+      console.error('Error generating audience:', error);
+      toast.error('Failed to generate audience. Please try again.');
+    } finally {
+      setIsLocalGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-2">
-      <Label htmlFor="audience">Target Audience</Label>
-      <div className="flex gap-2">
-        <Textarea
-          id="audience"
-          placeholder="e.g., Marketing professionals and business owners looking to improve their content strategy"
-          value={audience}
-          onChange={(e) => onAudienceChange(e.target.value)}
-          rows={2}
-          className="resize-none flex-1"
-        />
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-blue-600" />
+          Target Audience
+        </Label>
         <Button
           variant="outline"
           size="sm"
-          onClick={onGenerateAudience}
-          disabled={isGenerating || !hasTopic}
-          className="flex items-center gap-2 shrink-0"
+          onClick={handleGenerateAudience}
+          disabled={isLocalGenerating || !hasTopic}
+          className="flex items-center gap-2"
         >
-          {isGenerating ? (
+          {isLocalGenerating ? (
             <RefreshCw className="w-4 h-4 animate-spin" />
           ) : (
             <Wand2 className="w-4 h-4" />
@@ -47,6 +75,17 @@ export const AudienceGenerator: React.FC<AudienceGeneratorProps> = ({
           AI Generate
         </Button>
       </div>
+      <Textarea
+        placeholder="Describe your target audience (e.g., small business owners, marketing professionals, etc.)..."
+        value={audience}
+        onChange={(e) => onAudienceChange(e.target.value)}
+        className="min-h-[80px]"
+      />
+      {audience && (
+        <div className="text-xs text-gray-500">
+          {audience.length} characters
+        </div>
+      )}
     </div>
   );
 };

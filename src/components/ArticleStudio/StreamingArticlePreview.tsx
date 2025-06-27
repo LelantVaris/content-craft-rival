@@ -37,7 +37,8 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em class="italic text-gray-800">$1</em>')
       .replace(/\n\n/g, '</p><p class="mb-4 leading-relaxed text-gray-700">')
-      .replace(/\n/g, '<br>');
+      .replace(/\n/g, '<br>')
+      .replace(/^([^<\n].*)$/gm, '<p class="mb-4 leading-relaxed text-gray-700">$1</p>');
   };
 
   const displayContent = streamingContent || content;

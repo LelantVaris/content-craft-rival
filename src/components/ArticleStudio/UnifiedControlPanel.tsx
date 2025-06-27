@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
@@ -29,6 +29,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   setStreamingContent,
   setIsGenerating
 }) => {
+  const [titleCount, setTitleCount] = useState(5);
+  
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
   const hasContent = articleData.generatedContent.length > 0;
@@ -92,13 +94,16 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
             <div className="space-y-4">
               <TitleSelector
                 hasTopic={!!articleData.topic}
-                titleCount={5}
-                onTitleCountChange={() => {}} // Placeholder
-                onGenerateTitles={() => {}} // Placeholder
+                titleCount={titleCount}
+                onTitleCountChange={setTitleCount}
+                onGenerateTitles={() => {}} // Now handled internally
                 isGenerating={isGenerating}
-                generatedTitles={[]} // Placeholder - would come from articleData
+                generatedTitles={[]} // Managed internally now
                 selectedTitle={articleData.selectedTitle}
                 onTitleSelect={(title) => updateArticleData({ selectedTitle: title })}
+                topic={articleData.topic}
+                keywords={articleData.keywords}
+                audience={articleData.audience}
               />
               
               {hasTitle && (
