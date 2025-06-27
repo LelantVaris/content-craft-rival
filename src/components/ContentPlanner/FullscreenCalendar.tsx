@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
@@ -9,12 +8,14 @@ import { useCalendar, ScheduledArticle } from './CalendarState'
 import { ContentSchedulingModal } from './ContentSchedulingModal'
 import { ContentPreviewCard } from './ContentPreviewCard'
 import { EnhancedCalendarCell } from './EnhancedCalendarCell'
+import { BulkGenerationModal } from './BulkGenerationModal'
 import { format, addMonths, subMonths, addDays, startOfMonth } from 'date-fns'
 
 export function FullscreenCalendar() {
   const { state, dispatch } = useCalendar()
   const { scheduledContent, selectedDate, currentMonth } = state
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
+  const [showBulkGenerationModal, setShowBulkGenerationModal] = useState(false)
   const [schedulingDate, setSchedulingDate] = useState<Date | null>(null)
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -54,21 +55,9 @@ export function FullscreenCalendar() {
     })
   }
 
-  const handleBulkGenerate = () => {
-    const startDate = startOfMonth(currentMonth)
-    const dates = Array.from({ length: 30 }, (_, i) => addDays(startDate, i))
-    
-    dates.forEach((date, index) => {
-      const article: ScheduledArticle = {
-        id: crypto.randomUUID(),
-        title: `Generated Article ${index + 1}: ${format(date, 'MMM d')} Content`,
-        content: `Sample content for ${format(date, 'MMMM d, yyyy')}`,
-        scheduledDate: date,
-        status: 'draft',
-        metaDescription: `Generated content for ${format(date, 'MMMM d, yyyy')}`
-      }
-      
-      const dateStr = format(date, 'yyyy-MM-dd')
+  const handleBulkContentGenerated = (articles: ScheduledArticle[]) => {
+    articles.forEach(article => {
+      const dateStr = format(article.scheduledDate, 'yyyy-MM-dd')
       dispatch({ 
         type: 'ADD_SCHEDULED_CONTENT', 
         payload: { date: dateStr, article } 
@@ -116,7 +105,7 @@ export function FullscreenCalendar() {
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
-              onClick={handleBulkGenerate}
+              onClick={() => setShowBulkGenerationModal(true)}
               className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 hover:opacity-90"
             >
               <Zap className="w-4 h-4 mr-2" />
@@ -244,6 +233,13 @@ export function FullscreenCalendar() {
         onClose={() => setShowSchedulingModal(false)}
         selectedDate={schedulingDate}
         onScheduleContent={handleScheduleContent}
+      />
+
+      <BulkGenerationModal
+        isOpen={showBulkGenerationModal}
+        onClose={() => setShowBulkGenerationModal(false)}
+        currentMonth={currentMonth}
+        onContentGenerated={handleBulkContentGenerated}
       />
     </div>
   )

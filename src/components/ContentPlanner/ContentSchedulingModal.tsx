@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Calendar, Clock, BookOpen, Target } from 'lucide-react'
+import { Calendar, Clock, BookOpen, Target, Loader2, Sparkles } from 'lucide-react'
 import { format } from 'date-fns'
 import { ScheduledArticle } from './CalendarState'
+import { useCalendarContentGeneration } from '@/hooks/useCalendarContentGeneration'
 
 interface ContentSchedulingModalProps {
   isOpen: boolean
@@ -28,6 +29,9 @@ export function ContentSchedulingModal({
   const [metaDescription, setMetaDescription] = useState('')
   const [keywords, setKeywords] = useState('')
   const [targetAudience, setTargetAudience] = useState('')
+  const [tone, setTone] = useState('professional')
+
+  const { generateSingleArticle } = useCalendarContentGeneration()
   const [isGenerating, setIsGenerating] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +42,7 @@ export function ContentSchedulingModal({
 
     const content: Omit<ScheduledArticle, 'id' | 'scheduledDate'> = {
       title: title.trim(),
-      content: '', // Will be generated later
+      content: '', // Will be generated later or left empty for manual editing
       status: 'draft',
       metaDescription: metaDescription.trim() || undefined,
       keywords: keywordArray.length > 0 ? keywordArray : undefined
@@ -52,13 +56,47 @@ export function ContentSchedulingModal({
     setMetaDescription('')
     setKeywords('')
     setTargetAudience('')
+    setTone('professional')
     onClose()
   }
 
-  const handleGenerateContent = () => {
+  const handleGenerateAndSchedule = async () => {
+    if (!title.trim() || !selectedDate) return
+
     setIsGenerating(true)
-    // TODO: Integrate with Article Studio content generation
-    setTimeout(() => setIsGenerating(false), 2000)
+    
+    try {
+      const generatedArticle = await generateSingleArticle(title, selectedDate, {
+        targetAudience,
+        keywords: keywords.split(',').map(k => k.trim()).filter(k => k.length > 0),
+        tone
+      })
+
+      if (generatedArticle) {
+        const content: Omit<ScheduledArticle, 'id' | 'scheduledDate'> = {
+          title: generatedArticle.title,
+          content: generatedArticle.content,
+          status: 'draft',
+          metaDescription: metaDescription.trim() || generatedArticle.metaDescription,
+          keywords: generatedArticle.keywords
+        }
+
+        onScheduleContent(content)
+        
+        // Reset form
+        setTitle('')
+        setContentType('blog-post')
+        setMetaDescription('')
+        setKeywords('')
+        setTargetAudience('')
+        setTone('professional')
+        onClose()
+      }
+    } catch (error) {
+      console.error('Failed to generate and schedule content:', error)
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
@@ -104,33 +142,21 @@ export function ContentSchedulingModal({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="metaDescription">Meta Description</Label>
-            <Textarea
-              id="metaDescription"
-              value={metaDescription}
-              onChange={(e) => setMetaDescription(e.target.value)}
-              placeholder="Brief description for SEO (optional)..."
-              rows={2}
-              maxLength={160}
-            />
-            <div className="text-xs text-gray-500">
-              {metaDescription.length}/160 characters
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="keywords">Keywords</Label>
-              <Input
-                id="keywords"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                placeholder="keyword1, keyword2, keyword3..."
-              />
-              <div className="text-xs text-gray-500">
-                Separate keywords with commas
-              </div>
+              <Label htmlFor="tone">Writing Tone</Label>
+              <Select value={tone} onValueChange={setTone}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="casual">Casual</SelectItem>
+                  <SelectItem value="formal">Formal</SelectItem>
+                  <SelectItem value="conversational">Conversational</SelectItem>
+                  <SelectItem value="technical">Technical</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -147,6 +173,34 @@ export function ContentSchedulingModal({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="metaDescription">Meta Description</Label>
+            <Textarea
+              id="metaDescription"
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
+              placeholder="Brief description for SEO (optional)..."
+              rows={2}
+              maxLength={160}
+            />
+            <div className="text-xs text-gray-500">
+              {metaDescription.length}/160 characters
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="keywords">Keywords</Label>
+            <Input
+              id="keywords"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              placeholder="keyword1, keyword2, keyword3..."
+            />
+            <div className="text-xs text-gray-500">
+              Separate keywords with commas
+            </div>
+          </div>
+
           <div className="flex gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
@@ -154,12 +208,21 @@ export function ContentSchedulingModal({
             <Button 
               type="button" 
               variant="outline" 
-              onClick={handleGenerateContent}
+              onClick={handleGenerateAndSchedule}
               disabled={!title.trim() || isGenerating}
               className="flex-1"
             >
-              <Clock className="w-4 h-4 mr-2" />
-              {isGenerating ? 'Generating...' : 'Generate & Schedule'}
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate & Schedule
+                </>
+              )}
             </Button>
             <Button type="submit" disabled={!title.trim()} className="flex-1">
               Schedule Draft
