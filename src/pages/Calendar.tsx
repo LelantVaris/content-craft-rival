@@ -6,9 +6,7 @@ import { FullscreenCalendar } from '@/components/ContentPlanner/FullscreenCalend
 const Calendar = () => {
   return (
     <CalendarProvider>
-      <div className="h-screen w-full bg-white">
-        <FullscreenCalendar />
-      </div>
+      <FullscreenCalendar />
     </CalendarProvider>
   )
 }
