@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
@@ -10,9 +9,12 @@ import { ContentSchedulingModal } from './ContentSchedulingModal'
 import { ContentPreviewCard } from './ContentPreviewCard'
 import { EnhancedCalendarCell } from './EnhancedCalendarCell'
 import { BulkGenerationModal } from './BulkGenerationModal'
+import { ReschedulingModal } from './ReschedulingModal'
 import { format, addMonths, subMonths, addDays, startOfMonth } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 
 export function FullscreenCalendar() {
+  const navigate = useNavigate()
   const { 
     state, 
     dispatch, 
@@ -25,6 +27,8 @@ export function FullscreenCalendar() {
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
   const [showBulkGenerationModal, setShowBulkGenerationModal] = useState(false)
   const [schedulingDate, setSchedulingDate] = useState<Date | null>(null)
+  const [showReschedulingModal, setShowReschedulingModal] = useState(false)
+  const [reschedulingArticle, setReschedulingArticle] = useState<ScheduledArticle | null>(null)
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newMonth = direction === 'prev' 
@@ -69,12 +73,29 @@ export function FullscreenCalendar() {
   }
 
   const handleEditArticle = (article: ScheduledArticle) => {
-    console.log('Edit article:', article.id)
+    navigate(`/article/${article.id}/edit`, {
+      state: { 
+        fromCalendar: true,
+        calendarDate: article.scheduledDate,
+        article: article 
+      }
+    })
   }
 
   const handleRescheduleArticle = async (article: ScheduledArticle) => {
-    console.log('Reschedule article:', article.id)
-    // TODO: Implement reschedule modal
+    setReschedulingArticle(article)
+    setShowReschedulingModal(true)
+  }
+
+  const handleConfirmReschedule = async (newDate: Date) => {
+    if (!reschedulingArticle) return
+    
+    await updateScheduledArticle(reschedulingArticle.id, { 
+      scheduledDate: newDate 
+    })
+    
+    setShowReschedulingModal(false)
+    setReschedulingArticle(null)
   }
 
   const handlePublishArticle = async (article: ScheduledArticle) => {
@@ -250,6 +271,15 @@ export function FullscreenCalendar() {
         currentMonth={currentMonth}
         onContentGenerated={handleBulkContentGenerated}
       />
+
+      {showReschedulingModal && reschedulingArticle && (
+        <ReschedulingModal
+          isOpen={showReschedulingModal}
+          onClose={() => setShowReschedulingModal(false)}
+          article={reschedulingArticle}
+          onConfirm={handleConfirmReschedule}
+        />
+      )}
     </div>
   )
 }

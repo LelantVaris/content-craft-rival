@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation, useParams } from "react-router-dom"
 import ArticleEditorHeader from "@/components/ArticleEditor/ArticleEditorHeader"
@@ -8,6 +7,7 @@ import AISuggestions from "@/components/ArticleEditor/AISuggestions"
 import SEOScorePanel from "@/components/ArticleEditor/SEOScorePanel"
 import ArticleStatsPanel from "@/components/ArticleEditor/ArticleStatsPanel"
 import PublishingPanel from "@/components/ArticleEditor/PublishingPanel"
+import CalendarArticlePanel from "@/components/ArticleEditor/CalendarArticlePanel"
 import { useArticles } from "@/hooks/useArticles"
 import { useAutoSave } from "@/hooks/useAutoSave"
 import { Tables } from "@/integrations/supabase/types"
@@ -28,7 +28,13 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
   const { saveArticle, updateArticle, articles, refreshArticles } = useArticles()
   
   // Get article data from location state or find by ID
-  const locationArticle = location.state as { title?: string; content?: string; article?: Article }
+  const locationArticle = location.state as { 
+    title?: string; 
+    content?: string; 
+    article?: Article;
+    fromCalendar?: boolean;
+    calendarDate?: Date;
+  }
   const existingArticle = urlArticleId ? articles.find(a => a.id === urlArticleId) : null
   
   const [article, setArticle] = useState<Article | null>(existingArticle || null)
@@ -46,6 +52,10 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
   const [readingTime, setReadingTime] = useState(0)
   const [seoScore, setSeoScore] = useState(78)
 
+  // Calendar-specific state
+  const isFromCalendar = locationArticle?.fromCalendar || false
+  const isCalendarGenerated = article?.calendar_generated || false
+
   // Update state when articles load or URL changes
   useEffect(() => {
     if (urlArticleId && articles.length > 0) {
@@ -57,7 +67,6 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
         setIsNew(false)
         setIsLoading(false)
       } else if (!foundArticle && articles.length > 0) {
-        // Article not found, might be a new article that hasn't loaded yet
         setIsLoading(false)
       }
     }
@@ -130,6 +139,14 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
     toast.success('Article saved successfully')
   }
 
+  const handleBackToCalendar = () => {
+    if (isFromCalendar) {
+      navigate('/calendar')
+    } else {
+      navigate('/')
+    }
+  }
+
   useEffect(() => {
     const words = content.trim().split(/\s+/).filter(word => word.length > 0).length
     setWordCount(words)
@@ -152,6 +169,9 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
         onSave={handleSave}
         isSaving={isSaving}
         isNew={isNew}
+        isFromCalendar={isFromCalendar}
+        onBackToCalendar={handleBackToCalendar}
+        article={article}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -169,6 +189,14 @@ const ArticleEditor = ({ initialTitle, initialContent }: ArticleEditorProps = {}
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Calendar-specific panel */}
+          {(isFromCalendar || isCalendarGenerated) && article && (
+            <CalendarArticlePanel 
+              article={article}
+              onArticleUpdate={setArticle}
+            />
+          )}
+          
           <SEOScorePanel seoScore={seoScore} />
           <ArticleStatsPanel wordCount={wordCount} readingTime={readingTime} />
           <PublishingPanel />
