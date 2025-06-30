@@ -340,6 +340,85 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_captures: {
+        Row: {
+          conversion_status: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          map_data: Json | null
+          website_url: string
+        }
+        Insert: {
+          conversion_status?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          map_data?: Json | null
+          website_url: string
+        }
+        Update: {
+          conversion_status?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          map_data?: Json | null
+          website_url?: string
+        }
+        Relationships: []
+      }
+      page_connections: {
+        Row: {
+          created_at: string | null
+          id: string
+          link_text: string | null
+          link_type: string | null
+          source_page_id: string | null
+          target_page_id: string | null
+          website_map_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          link_text?: string | null
+          link_type?: string | null
+          source_page_id?: string | null
+          target_page_id?: string | null
+          website_map_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          link_text?: string | null
+          link_type?: string | null
+          source_page_id?: string | null
+          target_page_id?: string | null
+          website_map_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_connections_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_connections_target_page_id_fkey"
+            columns: ["target_page_id"]
+            isOneToOne: false
+            referencedRelation: "website_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_connections_website_map_id_fkey"
+            columns: ["website_map_id"]
+            isOneToOne: false
+            referencedRelation: "website_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -527,6 +606,101 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      website_maps: {
+        Row: {
+          crawl_data: Json | null
+          crawl_job_id: string | null
+          crawl_status: string | null
+          crawled_pages: number | null
+          created_at: string | null
+          id: string
+          last_crawl_date: string | null
+          sitemap_url: string | null
+          total_pages: number | null
+          updated_at: string | null
+          user_id: string | null
+          website_url: string
+        }
+        Insert: {
+          crawl_data?: Json | null
+          crawl_job_id?: string | null
+          crawl_status?: string | null
+          crawled_pages?: number | null
+          created_at?: string | null
+          id?: string
+          last_crawl_date?: string | null
+          sitemap_url?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_url: string
+        }
+        Update: {
+          crawl_data?: Json | null
+          crawl_job_id?: string | null
+          crawl_status?: string | null
+          crawled_pages?: number | null
+          created_at?: string | null
+          id?: string
+          last_crawl_date?: string | null
+          sitemap_url?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_url?: string
+        }
+        Relationships: []
+      }
+      website_pages: {
+        Row: {
+          content_summary: string | null
+          crawl_data: Json | null
+          created_at: string | null
+          external_links: string[] | null
+          id: string
+          internal_links: string[] | null
+          meta_description: string | null
+          title: string | null
+          url: string
+          website_map_id: string | null
+          word_count: number | null
+        }
+        Insert: {
+          content_summary?: string | null
+          crawl_data?: Json | null
+          created_at?: string | null
+          external_links?: string[] | null
+          id?: string
+          internal_links?: string[] | null
+          meta_description?: string | null
+          title?: string | null
+          url: string
+          website_map_id?: string | null
+          word_count?: number | null
+        }
+        Update: {
+          content_summary?: string | null
+          crawl_data?: Json | null
+          created_at?: string | null
+          external_links?: string[] | null
+          id?: string
+          internal_links?: string[] | null
+          meta_description?: string | null
+          title?: string | null
+          url?: string
+          website_map_id?: string | null
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_pages_website_map_id_fkey"
+            columns: ["website_map_id"]
+            isOneToOne: false
+            referencedRelation: "website_maps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
