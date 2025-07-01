@@ -106,7 +106,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         outline: articleData.outline,
         keywords: articleData.keywords,
         audience: articleData.audience,
-        writingStyle: 'professional',
         tone: seoPreferences.defaultTone
       };
       console.log('📤 REQUEST BODY PREPARED:', requestBody);
@@ -250,7 +249,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         stack: error instanceof Error ? error.stack : undefined,
         name: error instanceof Error ? error.name : 'Unknown'
       });
-      setStreamingStatus(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setStreamingStatus(`❌ Error: ${errorMessage}`);
     } finally {
       console.log('🏁 GENERATION PROCESS FINISHED');
       setIsGenerating(false);

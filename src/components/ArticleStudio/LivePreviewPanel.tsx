@@ -11,7 +11,7 @@ interface LivePreviewPanelProps {
   streamingContent: string;
   saveAndComplete: () => Promise<void>;
   isGenerating: boolean;
-  streamingStatus?: any;
+  streamingStatus?: string;
 }
 
 export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
@@ -23,6 +23,9 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 }) => {
   const finalTitle = articleData.customTitle || articleData.selectedTitle;
   const finalContent = streamingContent || articleData.generatedContent;
+
+  // Ensure streamingStatus is always a string
+  const safeStreamingStatus = typeof streamingStatus === 'string' ? streamingStatus : '';
 
   return (
     <div className="p-4 space-y-4 h-full">
@@ -41,7 +44,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
           content={finalContent}
           isGenerating={isGenerating}
           streamingContent={streamingContent}
-          streamingStatus={streamingStatus}
+          streamingStatus={safeStreamingStatus}
         />
       </div>
       

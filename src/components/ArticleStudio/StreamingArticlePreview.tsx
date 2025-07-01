@@ -33,6 +33,9 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
   }, [streamingContent, isGenerating]);
 
   const displayContent = streamingContent || content;
+  
+  // Ensure streamingStatus is always a string and handle empty/undefined cases
+  const safeStreamingStatus = streamingStatus && typeof streamingStatus === 'string' ? streamingStatus : '';
 
   return (
     <Card className="h-full overflow-hidden border-2 border-gray-100">
@@ -52,7 +55,7 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
         </CardTitle>
         
         {/* AI Reasoning Panel */}
-        {isGenerating && streamingStatus && (
+        {isGenerating && safeStreamingStatus && (
           <Reasoning 
             isStreaming={isGenerating}
             open={showReasoning}
@@ -61,7 +64,7 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
             <ReasoningTrigger>Show AI reasoning</ReasoningTrigger>
             <ReasoningContent className="ml-2 border-l-2 border-l-blue-200 px-2 pb-1">
               <ResponseStream 
-                textStream={streamingStatus}
+                textStream={safeStreamingStatus}
                 mode="typewriter"
                 className="text-sm text-blue-800"
               />
