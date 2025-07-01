@@ -6,7 +6,7 @@
 ### Phase 1: Database Schema & Core Components
 
 #### 1.1 Database Setup (PRIORITY: CRITICAL)
-Create the SEO preferences table for user settings persistence:
+- [ ] Create the SEO preferences table for user settings persistence:
 
 ```sql
 -- User SEO preferences for Article Studio
@@ -52,13 +52,13 @@ src/components/ArticleStudio/
 ```
 
 **Key Implementation Details**:
-- Use `react-resizable-panels` for 40/60 layout
-- Implement collapsible SEO Pro Mode with smooth animations
-- Add "Try Example" button with Marketing/B2B/Sales/Startup topics
-- Create number selector for title count (3-10, default 5)
+- [ ] Use `react-resizable-panels` for 40/60 layout
+- [ ] Implement collapsible SEO Pro Mode with smooth animations
+- [ ] Add "Try Example" button with Marketing/B2B/Sales/Startup topics
+- [ ] Create number selector for title count (3-10, default 5)
 
 #### 1.3 State Management Enhancement
-**File**: `src/hooks/useArticleStudioWorkflow.ts`
+- [ ] **File**: `src/hooks/useArticleStudioWorkflow.ts`
 
 ```typescript
 interface ArticleStudioState {
@@ -90,20 +90,20 @@ interface ArticleStudioState {
 ### Phase 2: AI SDK Migration (CRITICAL FIX)
 
 #### 2.1 Root Cause Analysis
-**Current Issues**:
-- React Error #31: Objects rendered as React children due to type safety violations
-- Streaming failures: Manual SSE parsing in `generate-content/index.ts` fails silently
-- Type issues: `streamingStatus` typed as `any` instead of `string`
-- Complex error handling leading to stream termination
+- [ ] **Current Issues**:
+  - [ ] React Error #31: Objects rendered as React children due to type safety violations
+  - [ ] Streaming failures: Manual SSE parsing in `generate-content/index.ts` fails silently
+  - [ ] Type issues: `streamingStatus` typed as `any` instead of `string`
+  - [ ] Complex error handling leading to stream termination
 
 #### 2.2 AI SDK Implementation Plan
-**Step 1**: Install AI SDK dependencies
+- [ ] **Step 1**: Install AI SDK dependencies
 ```bash
 npm install ai @ai-sdk/react @ai-sdk/openai
 ```
 
-**Step 2**: Create new API route structure
-**File**: `src/api/chat/route.ts`
+- [ ] **Step 2**: Create new API route structure
+- [ ] **File**: `src/api/chat/route.ts`
 ```typescript
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
 }
 ```
 
-**Step 3**: Replace frontend manual streaming
+- [ ] **Step 3**: Replace frontend manual streaming
 Replace complex manual fetch and stream parsing with:
 ```typescript
 import { useChat } from '@ai-sdk/react';
@@ -139,25 +139,25 @@ const { messages, input, handleSubmit, isLoading, error } = useChat({
 
 #### 2.3 Type Safety Improvements
 **Files to Update**:
-- `StreamingArticlePreview.tsx`: Replace `streamingStatus?: any` with proper AI SDK types
-- `LivePreviewPanel.tsx`: Remove manual type guards and string validation
-- `useArticleStudio.ts`: Use AI SDK's built-in message and error types
+- [ ] `StreamingArticlePreview.tsx`: Replace `streamingStatus?: any` with proper AI SDK types
+- [ ] `LivePreviewPanel.tsx`: Remove manual type guards and string validation
+- [ ] `useArticleStudio.ts`: Use AI SDK's built-in message and error types
 
 ### Phase 3: Two-Phase Content Generation
 
 #### 3.1 Generation Flow Architecture
-**Phase 1: Skeleton Generation**
-- Generate basic content structure without web search
-- Fast initial content to show progress
-- Foundation for enhancement phase
+- [ ] **Phase 1: Skeleton Generation**
+  - [ ] Generate basic content structure without web search
+  - [ ] Fast initial content to show progress
+  - [ ] Foundation for enhancement phase
 
-**Phase 2: Web Enhancement**
-- Research each section with OpenAI (primary) or Tavily (upgrade)
-- Enhance content with latest insights and data
-- Maintain content structure while improving quality
+- [ ] **Phase 2: Web Enhancement**
+  - [ ] Research each section with OpenAI (primary) or Tavily (upgrade)
+  - [ ] Enhance content with latest insights and data
+  - [ ] Maintain content structure while improving quality
 
 #### 3.2 Progress Status Implementation
-**Single-line status updates** that replace each other:
+- [ ] **Single-line status updates** that replace each other:
 ```typescript
 const progressMessages = [
   "Generating article outline...",
@@ -169,13 +169,13 @@ const progressMessages = [
 ```
 
 #### 3.3 Novel Editor Integration
-**Simultaneous Editing Strategy**:
-- Use editor's JSON format for precise content placement
-- Transaction-based updates for conflict-free insertion
-- Progress indicators within editor content
-- Preserve all existing Novel AI features (slash commands, bubble menu)
+- [ ] **Simultaneous Editing Strategy**:
+  - [ ] Use editor's JSON format for precise content placement
+  - [ ] Transaction-based updates for conflict-free insertion
+  - [ ] Progress indicators within editor content
+  - [ ] Preserve all existing Novel AI features (slash commands, bubble menu)
 
-**Implementation Pattern**:
+- [ ] **Implementation Pattern**:
 ```typescript
 // Insert content at specific editor positions
 editor.chain()
@@ -190,24 +190,24 @@ editor.chain()
 ### Phase 4: Enhanced Features Implementation
 
 #### 4.1 Title Generation Enhancement
-**File**: `supabase/functions/generate-titles/index.ts`
-- Integrate SEO parameters (keywords, audience, tone)
-- Generate 3-10 titles based on user selection
-- Include title scoring and SEO optimization
-- Add fallback error handling
+- [ ] **File**: `supabase/functions/generate-titles/index.ts`
+  - [ ] Integrate SEO parameters (keywords, audience, tone)
+  - [ ] Generate 3-10 titles based on user selection
+  - [ ] Include title scoring and SEO optimization
+  - [ ] Add fallback error handling
 
 #### 4.2 Outline Creation System
-**Components**:
-- `OutlineCreationStep.tsx`: Main outline interface
-- `OutlineEditor.tsx`: Drag-and-drop outline management
-- Hierarchical display with character count estimates
-- Add/remove/reorder sections with visual feedback
+- [ ] **Components**:
+  - [ ] `OutlineCreationStep.tsx`: Main outline interface
+  - [ ] `OutlineEditor.tsx`: Drag-and-drop outline management
+  - [ ] Hierarchical display with character count estimates
+  - [ ] Add/remove/reorder sections with visual feedback
 
 #### 4.3 SEO Integration Throughout
-- Real-time keyword density tracking
-- Readability score calculation
-- Meta description generation
-- Content optimization suggestions
+- [ ] Real-time keyword density tracking
+- [ ] Readability score calculation
+- [ ] Meta description generation
+- [ ] Content optimization suggestions
 
 ## Technical Implementation Details
 
@@ -257,63 +257,63 @@ CREATE FUNCTION track_generation_progress(
 ```
 
 #### Credit System Integration
-- Title generation: 0 credits (part of flow)
-- Outline generation: 0 credits (part of flow)
-- Content generation: 0 credits (part of flow)
-- Stand-alone usage: 1 credit per operation
+- [ ] Title generation: 0 credits (part of flow)
+- [ ] Outline generation: 0 credits (part of flow)
+- [ ] Content generation: 0 credits (part of flow)
+- [ ] Stand-alone usage: 1 credit per operation
 
 ### Performance Optimization Strategy
 
 #### Caching Implementation
-- Cache generated titles for session
-- Store outline structures for quick editing
-- Implement progressive content loading
-- Use debounced auto-save for SEO settings
+- [ ] Cache generated titles for session
+- [ ] Store outline structures for quick editing
+- [ ] Implement progressive content loading
+- [ ] Use debounced auto-save for SEO settings
 
 #### Error Recovery
-- Graceful degradation when API calls fail
-- Retry logic with exponential backoff
-- Fallback to skeleton content if enhancement fails
-- Comprehensive error boundaries
+- [ ] Graceful degradation when API calls fail
+- [ ] Retry logic with exponential backoff
+- [ ] Fallback to skeleton content if enhancement fails
+- [ ] Comprehensive error boundaries
 
 #### Memory Management
-- Efficient re-rendering with React.memo
-- Cleanup of event listeners and subscriptions
-- Optimized drag-and-drop operations
-- Lazy loading of non-critical components
+- [ ] Efficient re-rendering with React.memo
+- [ ] Cleanup of event listeners and subscriptions
+- [ ] Optimized drag-and-drop operations
+- [ ] Lazy loading of non-critical components
 
 ## Testing Strategy
 
 ### Component Testing
-- Unit tests for all new hooks
-- Integration tests for multi-step workflow
-- Accessibility testing for all UI components
-- Performance testing with large content volumes
+- [ ] Unit tests for all new hooks
+- [ ] Integration tests for multi-step workflow
+- [ ] Accessibility testing for all UI components
+- [ ] Performance testing with large content volumes
 
 ### End-to-End Testing
-- Complete article creation workflow
-- SEO settings persistence across sessions
-- Streaming content generation reliability
-- Simultaneous editing conflict resolution
+- [ ] Complete article creation workflow
+- [ ] SEO settings persistence across sessions
+- [ ] Streaming content generation reliability
+- [ ] Simultaneous editing conflict resolution
 
 ### User Acceptance Testing
-- Article creation time measurement
-- Content quality assessment
-- User satisfaction surveys
-- Feature adoption tracking
+- [ ] Article creation time measurement
+- [ ] Content quality assessment
+- [ ] User satisfaction surveys
+- [ ] Feature adoption tracking
 
 ## Deployment Strategy
 
 ### Gradual Migration Plan
-1. **Phase 1**: Build alongside existing components
-2. **Phase 2**: Feature flag for beta testing
-3. **Phase 3**: Gradual user migration
-4. **Phase 4**: Full replacement of old wizard
+- [ ] **Phase 1**: Build alongside existing components
+- [ ] **Phase 2**: Feature flag for beta testing
+- [ ] **Phase 3**: Gradual user migration
+- [ ] **Phase 4**: Full replacement of old wizard
 
 ### Rollback Strategy
-- Maintain existing components during migration
-- Database schema backward compatible
-- Feature flags for instant rollback
-- Comprehensive monitoring and alerting
+- [ ] Maintain existing components during migration
+- [ ] Database schema backward compatible
+- [ ] Feature flags for instant rollback
+- [ ] Comprehensive monitoring and alerting
 
 This implementation guide provides the detailed technical roadmap for executing the Article Studio Master Plan with clear priorities, specific file structures, and comprehensive implementation details.
