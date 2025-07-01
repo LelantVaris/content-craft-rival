@@ -4,18 +4,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useWebsiteCrawler } from '@/hooks/useWebsiteCrawler';
 import { useCrawlStatus } from '@/hooks/useCrawlStatus';
 import { useWebsiteMap } from '@/hooks/useWebsiteMap';
 import { CrawlConsole } from '@/components/CrawlConsole';
 import { CrawlProgress } from '@/components/CrawlProgress';
-import { Globe, Search, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { WebsiteMapGraph } from '@/components/WebsiteMapGraph';
+import { Globe, Search, CheckCircle, Clock, AlertCircle, BarChart3, List } from 'lucide-react';
 
 interface ConsoleMessage {
   id: string;
   message: string;
   type: 'info' | 'success' | 'error' | 'warning';
   timestamp: Date;
+}
+
+interface RealTimeProgress {
+  totalPages: number;
+  crawledPages: number;
+  status: string;
 }
 
 const CrawlerTest = () => {
@@ -28,10 +36,15 @@ const CrawlerTest = () => {
   } | null>(null);
   const [consoleMessages, setConsoleMessages] = useState<ConsoleMessage[]>([]);
   const [userMaps, setUserMaps] = useState<any[]>([]);
+  const [realTimeProgress, setRealTimeProgress] = useState<RealTimeProgress>({
+    totalPages: 0,
+    crawledPages: 0,
+    status: 'idle'
+  });
 
   const { startCrawl, isLoading: isCrawling } = useWebsiteCrawler();
   const { checkStatus, isLoading: isCheckingStatus } = useCrawlStatus();
-  const { websiteMap, pages, loading: isLoadingMap, fetchUserMaps } = useWebsiteMap(currentCrawl?.websiteMapId);
+  const { websiteMap, pages, loading: isLoadingMap, fetchUserMaps, fetchWebsiteMap } = useWebsiteMap(currentCrawl?.websiteMapId);
 
   // Auto-polling for active crawls
   useEffect(() => {
@@ -45,6 +58,13 @@ const CrawlerTest = () => {
       if (result?.success && result.status) {
         const oldStatus = currentCrawl.status;
         const newStatus = result.status;
+        
+        // Update real-time progress
+        setRealTimeProgress({
+          totalPages: result.total || 0,
+          crawledPages: result.completed || 0,
+          status: newStatus
+        });
         
         setCurrentCrawl(prev => prev ? { ...prev, status: newStatus } : null);
         
@@ -64,11 +84,18 @@ const CrawlerTest = () => {
             'info'
           );
         }
+        
+        // If completed, refresh the website map data
+        if (newStatus === 'completed') {
+          setTimeout(() => {
+            fetchWebsiteMap(currentCrawl.websiteMapId);
+          }, 2000); // Give backend time to process data
+        }
       }
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(interval);
-  }, [currentCrawl?.crawlJobId, currentCrawl?.websiteMapId, currentCrawl?.status, checkStatus]);
+  }, [currentCrawl?.crawlJobId, currentCrawl?.websiteMapId, currentCrawl?.status, checkStatus, fetchWebsiteMap]);
 
   const addConsoleMessage = (message: string, type: ConsoleMessage['type'] = 'info') => {
     const newMessage: ConsoleMessage = {
@@ -84,8 +111,9 @@ const CrawlerTest = () => {
   const handleStartCrawl = async () => {
     if (!url.trim()) return;
 
-    // Clear previous console messages
+    // Clear previous data
     setConsoleMessages([]);
+    setRealTimeProgress({ totalPages: 0, crawledPages: 0, status: 'idle' });
     addConsoleMessage(`Starting crawl for ${url}`, 'info');
 
     const result = await startCrawl({
@@ -100,6 +128,13 @@ const CrawlerTest = () => {
         crawlJobId: result.crawlJobId,
         status: result.status || 'crawling',
         startTime
+      });
+      
+      // Set initial progress
+      setRealTimeProgress({
+        totalPages: result.totalPages || 0,
+        crawledPages: 0,
+        status: result.status || 'crawling'
       });
       
       addConsoleMessage(`Crawl started successfully`, 'success');
@@ -119,6 +154,11 @@ const CrawlerTest = () => {
     
     if (result?.success) {
       setCurrentCrawl(prev => prev ? { ...prev, status: result.status || 'unknown' } : null);
+      setRealTimeProgress({
+        totalPages: result.total || 0,
+        crawledPages: result.completed || 0,
+        status: result.status || 'unknown'
+      });
       addConsoleMessage(`Status check complete: ${result.status}`, 'success');
       
       if (result.completed && result.total) {
@@ -141,6 +181,7 @@ const CrawlerTest = () => {
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'crawling':
+      case 'scraping':
         return <Clock className="w-4 h-4 text-blue-600" />;
       case 'failed':
         return <AlertCircle className="w-4 h-4 text-red-600" />;
@@ -154,6 +195,7 @@ const CrawlerTest = () => {
       case 'completed':
         return 'bg-green-100 text-green-800';
       case 'crawling':
+      case 'scraping':
         return 'bg-blue-100 text-blue-800';
       case 'failed':
         return 'bg-red-100 text-red-800';
@@ -203,9 +245,9 @@ const CrawlerTest = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Progress Card */}
           <CrawlProgress
-            totalPages={websiteMap?.total_pages || 0}
-            crawledPages={websiteMap?.crawled_pages || 0}
-            status={currentCrawl.status}
+            totalPages={realTimeProgress.totalPages}
+            crawledPages={realTimeProgress.crawledPages}
+            status={realTimeProgress.status}
             startTime={currentCrawl.startTime}
             websiteUrl={url}
           />
@@ -244,24 +286,43 @@ const CrawlerTest = () => {
         </Card>
       )}
 
-      {/* Discovered Pages */}
-      {pages.length > 0 && (
+      {/* Results View - Graph and Pages */}
+      {currentCrawl && realTimeProgress.status === 'completed' && pages.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Discovered Pages ({pages.length})</CardTitle>
+            <CardTitle>Crawl Results</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="max-h-60 overflow-y-auto space-y-1">
-              {pages.map((page) => (
-                <div key={page.id} className="p-2 bg-gray-50 rounded text-sm">
-                  <div className="font-medium truncate">{page.title || 'Untitled'}</div>
-                  <div className="text-gray-600 text-xs truncate">{page.url}</div>
-                  <div className="text-gray-500 text-xs">
-                    {page.word_count} words • {page.internal_links?.length || 0} internal links
-                  </div>
+            <Tabs defaultValue="graph" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="graph" className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Connection Map
+                </TabsTrigger>
+                <TabsTrigger value="pages" className="flex items-center gap-2">
+                  <List className="w-4 h-4" />
+                  Pages List
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="graph" className="mt-6">
+                <WebsiteMapGraph websiteMapId={currentCrawl.websiteMapId} />
+              </TabsContent>
+              
+              <TabsContent value="pages" className="mt-6">
+                <div className="max-h-60 overflow-y-auto space-y-1">
+                  {pages.map((page) => (
+                    <div key={page.id} className="p-2 bg-gray-50 rounded text-sm">
+                      <div className="font-medium truncate">{page.title || 'Untitled'}</div>
+                      <div className="text-gray-600 text-xs truncate">{page.url}</div>
+                      <div className="text-gray-500 text-xs">
+                        {page.word_count} words • {page.internal_links?.length || 0} internal links
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       )}

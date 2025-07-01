@@ -30,6 +30,19 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Get authenticated user if not provided
+    let actualUserId = userId;
+    if (!actualUserId) {
+      const authHeader = req.headers.get('authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        actualUserId = user?.id;
+      }
+    }
+    
+    console.log('Using user ID:', actualUserId);
+    
     // Step 1: Try to get sitemap first (much faster)
     console.log('Attempting to fetch sitemap for:', websiteUrl);
     const sitemapUrl = `${websiteUrl.replace(/\/$/, '')}/sitemap.xml`;
@@ -82,7 +95,7 @@ serve(async (req) => {
     const { data: websiteMap, error: mapError } = await supabase
       .from('website_maps')
       .insert({
-        user_id: userId,
+        user_id: actualUserId,
         website_url: websiteUrl,
         sitemap_url: sitemapUrl,
         crawl_status: 'crawling',
@@ -92,7 +105,10 @@ serve(async (req) => {
       .select()
       .single();
       
-    if (mapError) throw mapError;
+    if (mapError) {
+      console.error('Error creating website map:', mapError);
+      throw mapError;
+    }
     
     console.log('Created website map:', websiteMap.id);
     
@@ -113,6 +129,7 @@ serve(async (req) => {
             formats: ['markdown', 'links'],
             onlyMainContent: true,
             includeTags: ['title', 'meta'],
+            includeLinks: true, // Ensure links are included
           },
         }),
       });
@@ -130,6 +147,10 @@ serve(async (req) => {
             crawl_data: crawlData 
           })
           .eq('id', websiteMap.id);
+          
+        console.log('Started crawl job:', crawlJobId);
+      } else {
+        console.error('Failed to start crawl job:', crawlData);
       }
     }
     

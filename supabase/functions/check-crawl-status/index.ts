@@ -39,6 +39,8 @@ serve(async (req) => {
       if (!statusData.success) {
         throw new Error(`Status check failed: ${statusData.error}`);
       }
+      
+      console.log('Crawl status:', statusData.status, 'Completed:', statusData.completed, 'Total:', statusData.total);
     }
     
     // Update website map with current status
@@ -58,6 +60,7 @@ serve(async (req) => {
     
     // If completed, process the crawled data
     if (statusData && statusData.status === 'completed' && statusData.data) {
+      console.log('Processing completed crawl data...');
       await processCrawledData(supabase, websiteMapId, statusData.data);
     }
     
@@ -88,36 +91,48 @@ async function processCrawledData(supabase: any, websiteMapId: string, crawlData
   console.log(`Processing ${crawlData.length} crawled pages`);
   
   // Insert page data
-  const pages = crawlData.map(page => ({
-    website_map_id: websiteMapId,
-    url: page.metadata?.sourceURL || page.url,
-    title: page.metadata?.title || '',
-    meta_description: page.metadata?.description || '',
-    content_summary: page.markdown?.substring(0, 500) || '',
-    word_count: page.markdown ? page.markdown.split(' ').length : 0,
-    internal_links: page.linksOnPage?.filter((link: string) => {
-      try {
-        const pageHost = new URL(page.metadata?.sourceURL || page.url).hostname;
-        const linkHost = new URL(link).hostname;
-        return linkHost === pageHost;
-      } catch {
-        return false;
-      }
-    }) || [],
-    external_links: page.linksOnPage?.filter((link: string) => {
-      try {
-        const pageHost = new URL(page.metadata?.sourceURL || page.url).hostname;
-        const linkHost = new URL(link).hostname;
-        return linkHost !== pageHost;
-      } catch {
-        return false;
-      }
-    }) || [],
-    crawl_data: {
-      metadata: page.metadata,
-      linksOnPage: page.linksOnPage,
-    },
-  }));
+  const pages = crawlData.map(page => {
+    const sourceUrl = page.metadata?.sourceURL || page.url;
+    const linksOnPage = page.linksOnPage || [];
+    
+    // Filter internal vs external links
+    let internalLinks: string[] = [];
+    let externalLinks: string[] = [];
+    
+    try {
+      const sourceHost = new URL(sourceUrl).hostname;
+      
+      linksOnPage.forEach((link: string) => {
+        try {
+          const linkUrl = new URL(link, sourceUrl); // Handle relative URLs
+          if (linkUrl.hostname === sourceHost) {
+            internalLinks.push(linkUrl.href);
+          } else {
+            externalLinks.push(linkUrl.href);
+          }
+        } catch {
+          // Invalid URL, skip
+        }
+      });
+    } catch (error) {
+      console.error('Error processing links for:', sourceUrl, error);
+    }
+    
+    return {
+      website_map_id: websiteMapId,
+      url: sourceUrl,
+      title: page.metadata?.title || '',
+      meta_description: page.metadata?.description || '',
+      content_summary: page.markdown?.substring(0, 500) || '',
+      word_count: page.markdown ? page.markdown.split(' ').length : 0,
+      internal_links: internalLinks,
+      external_links: externalLinks,
+      crawl_data: {
+        metadata: page.metadata,
+        linksOnPage: page.linksOnPage,
+      },
+    };
+  });
   
   const { data: insertedPages, error } = await supabase
     .from('website_pages')
@@ -129,7 +144,9 @@ async function processCrawledData(supabase: any, websiteMapId: string, crawlData
     return;
   }
   
-  // Create page connections
+  console.log(`Inserted ${insertedPages.length} pages`);
+  
+  // Create page connections based on internal links
   const connections = [];
   for (const page of insertedPages) {
     const internalLinks = page.internal_links || [];
@@ -147,9 +164,15 @@ async function processCrawledData(supabase: any, websiteMapId: string, crawlData
   }
   
   if (connections.length > 0) {
-    await supabase
+    const { error: connectionsError } = await supabase
       .from('page_connections')
       .upsert(connections, { onConflict: 'source_page_id,target_page_id' });
+      
+    if (connectionsError) {
+      console.error('Error inserting connections:', connectionsError);
+    } else {
+      console.log(`Created ${connections.length} page connections`);
+    }
   }
   
   // Update website map status
@@ -158,5 +181,5 @@ async function processCrawledData(supabase: any, websiteMapId: string, crawlData
     .update({ crawl_status: 'completed' })
     .eq('id', websiteMapId);
     
-  console.log(`Processed ${pages.length} pages and ${connections.length} connections`);
+  console.log(`Processing complete: ${pages.length} pages, ${connections.length} connections`);
 }
