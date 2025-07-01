@@ -3,7 +3,7 @@
 
 ## Current Status Overview
 **Phase**: Phase 1 Complete ✅, Phase 2 Clean UI Implementation in Progress  
-**Priority Focus**: Clean interface implementation and progressive disclosure  
+**Priority Focus**: Clean interface implementation and progressive disclosure matching reference screenshots  
 **Next Milestone**: Complete Phase 2 clean UI updates before AI SDK migration
 
 ---
@@ -61,34 +61,51 @@
 **Priority**: HIGH  
 **Component**: Overall Article Studio interface
 
-**Required Changes**:
+**Required Changes** (Updated with User Specifications):
 - [ ] Remove "Control Panel" and "Live Preview" headers
-- [ ] Remove gray background dividers between panels
+- [ ] Remove visual separators between panels
+- [ ] Hide resizable handle by default
+- [ ] Match color schema from reference screenshots
 - [ ] Hide statistics until article generation is complete
 - [ ] Hide SEO analysis until substantial content exists
 - [ ] Hide publishing options until article is ready
-- [ ] Update step workflow to 3 steps: Title → Outline → Article
+- [ ] Update step workflow to 3 steps: "Title" → "Outline" → "Article" (keep descriptions)
 - [ ] Add visual checkmarks for completed steps
 
-**Expected Outcome**: Clean, professional interface matching reference design
+**Expected Outcome**: Clean, professional interface matching reference design screenshots
 
 ### Issue #9: Progressive Content Display 🔄
 **Status**: 🔄 Phase 2 - In Progress  
 **Priority**: HIGH  
 **Component**: Right panel content management
 
-**Implementation Requirements**:
-- [ ] Step 1: Empty state with illustration and "Try example" button
+**Implementation Requirements** (Updated with User Specifications):
+- [ ] Step 1: Empty state with search icon in rounded square
+- [ ] Empty state copy: "No titles generated" + "Describe your topic to our AI to start generating creative article ideas and titles."
+- [ ] Title generation input field sits on right panel (not left)
 - [ ] Step 2: Title selection interface with fallback option
 - [ ] Step 3: Outline creation with structured display
 - [ ] Step 4: Article generation with conditional statistics
+- [ ] Loading screen overlays between each step
 - [ ] Progressive disclosure of relevant information only
+- [ ] All previews (Titles, Outline, Text) on right panel updating with left panel steps
+
+### Issue #10: Example Topics Implementation 🔄
+**Status**: 🔄 Phase 2 - In Progress  
+**Priority**: MEDIUM  
+**Component**: "Try Example" functionality
+
+**Updated Requirements**:
+- [ ] Random example topics (no dropdown needed)
+- [ ] No categories required yet
+- [ ] Examples don't need to be more specific
+- [ ] Simple random selection from general topic pool
 
 ---
 
 ## CRITICAL ISSUES - PENDING AFTER CLEAN UI
 
-### Issue #10: Streaming Architecture Failure 🚨
+### Issue #11: Streaming Architecture Failure 🚨
 **Status**: 🔴 Critical - Blocking Core Functionality  
 **Priority**: HIGHEST (After Phase 2)  
 **Root Cause**: Manual OpenAI API streaming implementation in `supabase/functions/generate-content/index.ts`
@@ -121,29 +138,31 @@
 
 ## OPEN ISSUES - PENDING IMPLEMENTATION
 
-### Issue #11: Empty State Implementation 🔶
+### Issue #12: Empty State Implementation 🔶
 **Status**: 🔶 Phase 2 - Pending  
 **Priority**: MEDIUM  
 **Component**: Right panel empty state
 
-**Requirements**:
-- [ ] Illustration for "No titles generated" state
-- [ ] "Write my own title" fallback option
-- [ ] "Try Example" button with Marketing/B2B/Sales/Startup topics
+**Updated Requirements**:
+- [ ] Search icon illustration in rounded square
+- [ ] Copy: "No titles generated"
+- [ ] Subtext: "Describe your topic to our AI to start generating creative article ideas and titles."
+- [ ] "Try Example" button with random topics
 - [ ] Clean, engaging empty state design
 
-### Issue #12: Step Indicator Update 🔶
+### Issue #13: Step Indicator Update 🔶
 **Status**: 🔶 Phase 2 - Pending  
 **Priority**: MEDIUM  
 **Component**: Step progress visualization
 
-**Changes Required**:
-- [ ] Update from 4-step to 3-step workflow
+**Updated Changes Required**:
+- [ ] Update labels to shorter versions: "Title", "Outline", "Article"
+- [ ] Keep descriptions for now
 - [ ] Add visual checkmarks for completed steps
 - [ ] Improve step completion indicators
 - [ ] Match reference design aesthetics
 
-### Issue #13: Conditional Statistics Display 🔶
+### Issue #14: Conditional Statistics Display 🔶
 **Status**: 🔶 Phase 2 - Pending  
 **Priority**: MEDIUM  
 **Component**: `LiveArticleStats`, `RealtimeSEOPanel`, `EnhancedPublishingOptions`
@@ -155,27 +174,43 @@
 - [ ] Hide SEO analysis panel until substantial content exists
 - [ ] Hide publishing options until article is ready for publication
 
-### Issue #14: Example Topics Integration 🔶
+### Issue #15: Article Length Matching 🔶
 **Status**: 🔶 Phase 2 - Pending  
-**Priority**: MEDIUM  
-**Component**: Topic input with "Try Example" button
+**Priority**: HIGH  
+**Component**: Content generation accuracy
 
 **Requirements**:
-- [ ] Marketing focus: "Content marketing strategies for B2B SaaS"
-- [ ] B2B SaaS focus: "Reducing churn in subscription businesses"
-- [ ] Sales focus: "Building sales funnel for B2B services"
-- [ ] Startup focus: "Fundraising strategies for pre-seed startups"
+- [ ] Final articles must match Target Article Length setting
+- [ ] Ensure generation algorithm respects length constraints
+- [ ] Add validation for generated content length
+- [ ] Provide feedback if content doesn't meet length requirements
+
+### Issue #16: Loading Screen Overlays 🔶
+**Status**: 🔶 Phase 2 - Pending  
+**Priority**: MEDIUM  
+**Component**: Step transition UX
+
+**Requirements**:
+- [ ] Loading screen overlays between each step
+- [ ] Smooth transitions between steps
+- [ ] Progress indicators during generation
+- [ ] Status messages during loading states
 
 ---
 
 ## IMPLEMENTATION PRIORITY QUEUE
 
 ### Current Phase (Phase 2) 🔄
-1. [ ] **Remove Panel Headers** - Clean interface implementation
-2. [ ] **Conditional Statistics Display** - Hide until relevant
-3. [ ] **Progressive Content Display** - Step-based right panel content
-4. [ ] **Empty State Implementation** - Engaging empty states with examples
-5. [ ] **Step Indicator Updates** - 3-step workflow with checkmarks
+1. [ ] **Remove Panel Headers & Visual Separators** - Clean interface implementation
+2. [ ] **Hide Resizable Handle by Default** - Seamless panel experience
+3. [ ] **Empty State with Search Icon** - Rounded square illustration
+4. [ ] **Update Empty State Copy** - "No titles generated" messaging
+5. [ ] **Move Title Input to Right Panel** - Match reference screenshots  
+6. [ ] **Random Example Topics** - No dropdown, simple selection
+7. [ ] **Update Step Labels** - "Title", "Outline", "Article"
+8. [ ] **Loading Screen Overlays** - Between step transitions
+9. [ ] **Article Length Matching** - Respect target length settings
+10. [ ] **Color Schema Updates** - Match reference screenshots
 
 ### Next Phase (Phase 3) ⏳
 1. [ ] **AI SDK Migration** - Replace manual OpenAI streaming (CRITICAL)
@@ -195,11 +230,19 @@
 
 ### Phase 2 Validation (Current) 🔄
 - [ ] Panel headers completely removed
+- [ ] Visual separators between panels removed
+- [ ] Resizable handle hidden by default
+- [ ] Empty state displays search icon in rounded square
+- [ ] Empty state copy matches: "No titles generated" + descriptive text
+- [ ] Title generation input sits on right panel
+- [ ] "Try example" shows random topics (no dropdown)
+- [ ] Step labels show "Title", "Outline", "Article"
+- [ ] Loading overlays appear between steps
 - [ ] Statistics hidden until article generation complete
 - [ ] SEO analysis hidden until substantial content exists
 - [ ] Publishing options hidden until article ready
-- [ ] Empty state displays correctly with examples
-- [ ] Step workflow shows 3 steps with proper indicators
+- [ ] Generated articles match target length setting
+- [ ] Color schema matches reference screenshots
 - [ ] Progressive disclosure works as expected
 
 ### Phase 3 Critical Tests (Next) 🔴
@@ -211,6 +254,7 @@
 
 ### Integration Testing 🔶
 - [ ] Complete 3-step workflow functional
+- [ ] Right panel updates with left panel steps
 - [ ] SEO settings affect content generation
 - [ ] Simultaneous editing works during streaming
 - [ ] Article saving and navigation preserved
@@ -231,12 +275,14 @@
 2. [ ] **Mobile Experience** - Complex layout on small screens
 3. [ ] **Content Quality** - SEO optimization effectiveness
 4. [ ] **Migration Strategy** - User adoption of new interface
+5. [ ] **Article Length Accuracy** - Matching target length requirements
 
 ### Mitigation Strategies ✅
 1. [ ] **Clean UI First** - Establish solid foundation before complex features
 2. [ ] **Progressive Implementation** - Phase-based approach with validation
 3. [ ] **AI SDK Implementation** - Proven solution for streaming issues
 4. [ ] **Comprehensive Testing** - Each phase validated before next
+5. [ ] **Reference Design Matching** - Follow provided screenshots exactly
 
 ---
 
@@ -245,8 +291,10 @@
 ### Phase 2 Goals (Current)
 - [ ] **Interface Cleanliness**: Remove all visual noise and unnecessary elements
 - [ ] **Progressive Disclosure**: Show only relevant information at each step
-- [ ] **User Guidance**: Clear empty states and example topics
+- [ ] **User Guidance**: Clear empty states with proper messaging
 - [ ] **Step Clarity**: Obvious 3-step workflow progression
+- [ ] **Design Consistency**: Match reference screenshots exactly
+- [ ] **Content Accuracy**: Generated articles match target length
 
 ### Technical Performance Goals (Phase 3+)
 - [ ] **Streaming Success Rate**: Target 99%+ (Current: 0%)
@@ -265,11 +313,12 @@
 - [ ] **Content Accuracy**: Target <20% manual editing required
 - [ ] **Keyword Integration**: Target 1-3% density automatically
 - [ ] **Readability**: Target >70 score automatically
+- [ ] **Length Accuracy**: Target 95%+ articles match target length
 
 ---
 
 **Last Updated**: 2025-07-01  
 **Next Review**: After Phase 2 clean UI implementation completion  
-**Current Focus**: Clean interface implementation and progressive disclosure
+**Current Focus**: Clean interface implementation matching reference screenshots with progressive disclosure
 
 **Critical Path**: Clean UI Implementation → AI SDK Migration → Enhanced Generation → Advanced Features

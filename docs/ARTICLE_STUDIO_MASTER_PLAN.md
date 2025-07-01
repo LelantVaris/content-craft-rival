@@ -11,7 +11,7 @@
 ### Core Experience
 Transform article creation from a basic form-based approach to an AI-powered, interactive experience with:
 - **3-Step Workflow**: Title → Outline → Article Generation
-- **Clean Dual-Panel Layout**: 40/60 resizable panels without headers
+- **Clean Dual-Panel Layout**: 40/60 resizable panels without headers or visual separators
 - **Progressive Content Display**: Empty states, title selection, outline creation, article preview
 - **Conditional Statistics**: Stats/SEO/Publishing shown only when relevant
 - **Real-time Streaming**: Section-by-section content generation with progress indicators
@@ -36,6 +36,7 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [x] **Left Panel**: Step-based controls and forms (40% width)
 - [x] **Right Panel**: Dynamic content preview area (60% width)
 - [x] **Headers**: Removed "Control Panel" and "Live Preview" headers for clean interface
+- [x] **Visual Separators**: No visual separator between panels, hidden resizable handle by default
 - [x] **Conditional Display**: Stats, SEO, and Publishing options shown only when relevant
 - [ ] **Editor**: Novel WYSIWYG with simultaneous editing capabilities
 - [x] **Foundation**: Fixed SidebarInset integration ✅ COMPLETED
@@ -46,7 +47,7 @@ Transform article creation from a basic form-based approach to an AI-powered, in
   - [ ] **Phase 2**: Enhance each section with web search optimization
 - [ ] **Web Research**: Raw OpenAI (primary) with Tavily upgrade option
 - [ ] **Streaming**: Real-time section-by-section content insertion
-- [ ] **Progress Display**: Single line status updates that replace each other
+- [ ] **Progress Display**: Loading screen overlays between steps with status updates
 
 #### AI Integration Architecture
 - [ ] **Primary Choice**: AI SDK migration from manual OpenAI API streaming
@@ -60,7 +61,9 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [ ] **Article Storage**: Enhanced with scheduling and calendar integration
 
 ### Example Topics Strategy
-- [ ] **Focus Areas**: Marketing, B2B SaaS, Sales, Startups
+- [ ] **Random Selection**: No dropdown, simple random example topics
+- [ ] **No Categories**: Single pool of example topics for now
+- [ ] **General Topics**: Don't need to be more specific yet
 - [ ] **Examples**:
   - [ ] "How to reduce customer churn in B2B SaaS"
   - [ ] "Building a sales funnel for early-stage startups"
@@ -72,16 +75,17 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 ### Step 1: Title Input & Configuration
 **Left Panel**:
 - [ ] Large topic input field with "Write an article about..." prompt
-- [ ] "Try Example" button (Marketing/B2B/Sales/Startup topics)
+- [ ] "Try Example" button (random topics, no dropdown)
 - [ ] SEO Pro Mode toggle with inline sections:
   - [ ] Target Audience (text input)
   - [ ] Keywords (text input with tag functionality)
   - [ ] Tone (select dropdown: Professional, Casual, Technical)
   - [ ] Length (select dropdown: Short 500-800, Medium 800-1500, Long 1500+)
-- [ ] Generation controls with title count selector (3-10, default 5)
 
 **Right Panel**:
-- [ ] Empty state with illustration and help guidance
+- [ ] Empty state with search icon in rounded square
+- [ ] Copy: "No titles generated" + "Describe your topic to our AI to start generating creative article ideas and titles."
+- [ ] Title generation input field (sits on right panel)
 - [ ] "Write my own title" fallback option
 
 ### Step 2: Title Selection & Outline Creation
@@ -92,6 +96,7 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 **Right Panel**: 
 - [ ] Generated titles in selectable cards with auto-selection
 - [ ] Hierarchical outline preview with inline editing
+- [ ] Loading overlay between steps
 
 ### Step 3: Article Generation
 **Left Panel**: 
@@ -106,6 +111,7 @@ Transform article creation from a basic form-based approach to an AI-powered, in
   - [ ] Readiness percentage
 - [ ] SEO analysis panel (shown after substantial content)
 - [ ] Publishing options (shown when article is ready)
+- [ ] Article length must match target length setting
 
 ## Implementation Phases
 
@@ -121,12 +127,16 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [x] Set up conditional display architecture
 
 ### Phase 2: Clean UI Implementation 🔄 IN PROGRESS
-**Goal**: Implement clean, progressive interface
-- [ ] Create empty state display with illustration
-- [ ] Implement "Write my own title" fallback
-- [ ] Add "Try example" button with curated topics
-- [ ] Update step indicator to 3-step workflow
-- [ ] Implement conditional statistics display
+**Goal**: Implement clean, progressive interface with reference design matching
+- [ ] Remove visual separators and hide resizable handle by default
+- [ ] Create empty state display with search icon illustration
+- [ ] Update messaging: "No titles generated" with descriptive copy
+- [ ] Add "Try example" button with random topics (no dropdown)
+- [ ] Update step labels to "Title", "Outline", "Article" (keep descriptions)
+- [ ] Move title generation input to right panel
+- [ ] Implement loading screen overlays between steps
+- [ ] Ensure article length matches target setting
+- [ ] Match color schema from reference screenshots
 
 ### Phase 3: AI SDK Migration 🔲 NEXT PRIORITY
 **Goal**: Resolve streaming reliability issues
@@ -162,6 +172,7 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [ ] **Research Integration**: Up-to-date, research-backed content
 - [ ] **User Satisfaction**: Minimal editing required post-generation
 - [ ] **Variety**: Diverse, non-repetitive content suggestions
+- [ ] **Length Accuracy**: Generated articles match target length settings
 
 ### User Adoption
 - [ ] **Workflow Completion**: >90% of started articles completed

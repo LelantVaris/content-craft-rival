@@ -12,22 +12,74 @@
 
 #### 2.1 Remove Visual Noise (CRITICAL)
 **Files to Update**:
-- [ ] `src/pages/ArticleStudio.tsx` - Remove panel headers
+- [ ] `src/pages/ArticleStudio.tsx` - Remove panel headers and visual separators
 - [ ] `src/components/ArticleStudio/LivePreviewPanel.tsx` - Conditional component rendering
 - [ ] `src/components/ArticleStudio/UnifiedControlPanel.tsx` - Clean form layout
 
-**Key Changes**:
+**Key Changes** (Updated with User Specifications):
 - [ ] Remove "Control Panel" header with pen tool icon
 - [ ] Remove "Live Preview" header with sparkles icon
-- [ ] Remove gray background dividers between panels
+- [ ] Remove visual separators between left and right panels
+- [ ] Hide resizable handle by default
+- [ ] Match color schema from reference screenshots
 - [ ] Create seamless, borderless panel experience
 
-#### 2.2 Conditional Statistics Display (HIGH PRIORITY)
+#### 2.2 Empty State Implementation (HIGH PRIORITY)
+**Component Updates Required**:
+```typescript
+// Empty state specifications from user feedback
+const EmptyStateDisplay = () => (
+  <div className="text-center py-12">
+    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+      <Search className="w-8 h-8 text-gray-400" />
+    </div>
+    <h3 className="text-lg font-medium text-gray-900 mb-2">No titles generated</h3>
+    <p className="text-gray-500 mb-6">
+      Describe your topic to our AI to start generating creative article ideas and titles.
+    </p>
+    <Button onClick={handleTryExample}>Try Example</Button>
+  </div>
+);
+```
+
+**Empty State Requirements**:
+- [ ] Search icon in rounded square illustration
+- [ ] Copy: "No titles generated"
+- [ ] Subtext: "Describe your topic to our AI to start generating creative article ideas and titles."
+- [ ] "Try Example" button with random topics (no dropdown)
+
+#### 2.3 Step Workflow Update (HIGH PRIORITY)
+**Component**: `src/components/ArticleStudio/StepNavigation.tsx`
+```typescript
+const STEPS = [
+  { id: 1, title: 'Title', icon: Lightbulb, description: 'AI-powered title suggestions' },
+  { id: 2, title: 'Outline', icon: FileText, description: 'Structure your content' },
+  { id: 3, title: 'Article', icon: PenTool, description: 'Generate your article' }
+];
+```
+
+**Updated Requirements**:
+- [ ] Use shorter labels: "Title", "Outline", "Article"
+- [ ] Keep descriptions for now
+- [ ] Add visual checkmarks for completed steps
+- [ ] Match reference design aesthetics
+
+#### 2.4 Progressive Content Display (HIGH PRIORITY)
+**Right Panel Content Flow** (Updated with User Specifications):
+- [ ] **Step 1**: Empty state with search icon and "Try example" button
+- [ ] **Title Generation Input**: Moves to right panel (not left)
+- [ ] **Step 2**: Title selection interface with "Write my own title" fallback
+- [ ] **Step 3**: Outline creation with structured display
+- [ ] **Step 4**: Article generation with conditional statistics after completion
+- [ ] **Loading Overlays**: Between each step transition
+- [ ] **All Previews**: Titles, Outline, Text on right panel updating with left panel
+
+#### 2.5 Conditional Statistics Display (MEDIUM PRIORITY)
 **Component Updates Required**:
 ```typescript
 // In LivePreviewPanel.tsx - Add conditional rendering logic
-const showStats = finalContent && finalContent.length > 500;
-const showSEO = finalContent && finalContent.length > 1000;
+const showStats = finalContent && finalContent.length > 500 && !isGenerating;
+const showSEO = finalContent && finalContent.length > 1000 && !isGenerating;
 const showPublishing = finalContent && finalContent.length > 800 && !isGenerating;
 
 // Hide until article generation is complete:
@@ -44,22 +96,25 @@ const showPublishing = finalContent && finalContent.length > 800 && !isGeneratin
 - [ ] Structure analysis (0H/0P)
 - [ ] Readiness percentage (20%)
 
-#### 2.3 Progressive Content Display (HIGH PRIORITY)
-**Right Panel Content Flow**:
-- [ ] **Step 1**: Empty state with illustration and "Try example" button
-- [ ] **Step 2**: Title selection interface with "Write my own title" fallback
-- [ ] **Step 3**: Outline creation with structured display
-- [ ] **Step 4**: Article generation with conditional statistics after completion
+#### 2.6 Article Length Matching (HIGH PRIORITY)
+**Requirements**:
+- [ ] Final articles must match Target Article Length setting
+- [ ] Implement length validation in generation process
+- [ ] Add feedback if content doesn't meet length requirements
+- [ ] Ensure generation algorithm respects length constraints
 
-#### 2.4 Step Workflow Update (MEDIUM PRIORITY)
-**Component**: `src/components/ArticleStudio/StepNavigation.tsx`
-```typescript
-const STEPS = [
-  { id: 1, title: 'Title', icon: Lightbulb, description: 'Generate title options' },
-  { id: 2, title: 'Outline', icon: FileText, description: 'Structure your content' },
-  { id: 3, title: 'Article', icon: PenTool, description: 'Generate your article' }
-];
-```
+#### 2.7 Example Topics Implementation (MEDIUM PRIORITY)
+**Updated Requirements**:
+- [ ] Random example topics (no dropdown needed)
+- [ ] No categories required yet
+- [ ] Examples don't need to be more specific
+- [ ] Simple random selection from general topic pool
+
+**Example Topics**:
+- [ ] "How to reduce customer churn in B2B SaaS"
+- [ ] "Building a sales funnel for early-stage startups"
+- [ ] "Content marketing strategies for technical products"
+- [ ] "Pricing strategies for subscription businesses"
 
 ### Phase 3: AI SDK Migration (CRITICAL FIX - AFTER PHASE 2)
 
@@ -135,20 +190,13 @@ const progressMessages = [
 
 ### Phase 5: Advanced Features Implementation
 
-#### 5.1 Empty State Components
+#### 5.1 Loading Screen Implementation
 **New Components to Create**:
-- [ ] `EmptyStateDisplay.tsx` - Illustration and help guidance
-- [ ] `ExampleTopicsButton.tsx` - "Try Example" with curated topics
-- [ ] `TitleFallbackOption.tsx` - "Write my own title" interface
+- [ ] `LoadingOverlay.tsx` - Between step transitions
+- [ ] `StepTransitionLoader.tsx` - Progress indicators
+- [ ] `GenerationProgress.tsx` - Article generation status
 
-#### 5.2 Example Topics Integration
-**Topics to Include**:
-- [ ] Marketing: "Content marketing strategies for B2B SaaS"
-- [ ] B2B SaaS: "Reducing churn in subscription businesses"  
-- [ ] Sales: "Building sales funnel for B2B services"
-- [ ] Startup: "Fundraising strategies for pre-seed startups"
-
-#### 5.3 Enhanced Outline Creation
+#### 5.2 Enhanced Outline Creation
 - [ ] `OutlineEditor.tsx` - Drag-and-drop outline management
 - [ ] Hierarchical display with character count estimates
 - [ ] Add/remove/reorder sections with visual feedback
@@ -158,14 +206,15 @@ const progressMessages = [
 ### File Structure for Phase 2 (Clean UI)
 
 #### Core Components to Update
-- [ ] `src/pages/ArticleStudio.tsx` - Remove headers, clean layout
-- [ ] `src/components/ArticleStudio/LivePreviewPanel.tsx` - Conditional rendering
-- [ ] `src/components/ArticleStudio/UnifiedControlPanel.tsx` - Streamlined form
-- [ ] `src/components/ArticleStudio/StepNavigation.tsx` - 3-step workflow
+- [ ] `src/pages/ArticleStudio.tsx` - Remove headers, visual separators, hide resizable handle
+- [ ] `src/components/ArticleStudio/LivePreviewPanel.tsx` - Conditional rendering, right panel updates
+- [ ] `src/components/ArticleStudio/UnifiedControlPanel.tsx` - Move title input to right panel
+- [ ] `src/components/ArticleStudio/StepNavigation.tsx` - Update to 3-step workflow with shorter labels
 
 #### New Components to Create
-- [ ] `src/components/ArticleStudio/EmptyStateDisplay.tsx` - Right panel empty state
-- [ ] `src/components/ArticleStudio/ExampleTopicsButton.tsx` - Try example functionality
+- [ ] `src/components/ArticleStudio/EmptyStateDisplay.tsx` - Right panel empty state with search icon
+- [ ] `src/components/ArticleStudio/LoadingOverlay.tsx` - Step transition loading
+- [ ] `src/components/ArticleStudio/RandomExampleButton.tsx` - Try example functionality
 - [ ] `src/components/ArticleStudio/ConditionalStatsWrapper.tsx` - Statistics management
 
 ### Conditional Display Logic
@@ -186,9 +235,38 @@ const getDisplayState = ({ content, isGenerating, hasTitle, hasOutline }: Condit
   showEmpty: !hasTitle && !isGenerating,
   showTitleSelection: hasTitle && !hasOutline,
   showOutline: hasTitle && hasOutline && !content,
-  showArticle: hasTitle && hasOutline && content
+  showArticle: hasTitle && hasOutline && content,
+  showLoading: isGenerating
 });
 ```
+
+### Layout Updates
+
+#### Panel Configuration
+```typescript
+// Updated panel configuration
+const PanelConfig = {
+  leftPanel: {
+    defaultSize: 40,
+    minSize: 30,
+    maxSize: 60
+  },
+  rightPanel: {
+    defaultSize: 60,
+    minSize: 40
+  },
+  resizableHandle: {
+    visible: false, // Hidden by default
+    className: "opacity-0 hover:opacity-100 transition-opacity"
+  }
+};
+```
+
+#### Color Schema Updates
+- [ ] Match reference screenshots exactly
+- [ ] Update button colors, backgrounds, text colors
+- [ ] Ensure consistent color scheme across all components
+- [ ] Update loading states and progress indicators
 
 ### Performance Optimization Strategy
 
@@ -208,9 +286,19 @@ const getDisplayState = ({ content, isGenerating, hasTitle, hasOutline }: Condit
 
 ### Phase 2 Testing (Clean UI)
 - [ ] Verify headers are completely removed
+- [ ] Confirm visual separators are removed
+- [ ] Test resizable handle is hidden by default
+- [ ] Validate empty state displays search icon correctly
+- [ ] Check empty state copy matches specifications
+- [ ] Confirm title input moves to right panel
+- [ ] Test "Try example" shows random topics
+- [ ] Verify step labels show "Title", "Outline", "Article"
+- [ ] Test loading overlays appear between steps
 - [ ] Confirm statistics hide until appropriate content length
-- [ ] Test empty state displays correctly
-- [ ] Validate step workflow shows 3 steps
+- [ ] Validate SEO analysis hidden until substantial content
+- [ ] Check publishing options hidden until article ready
+- [ ] Test generated articles match target length
+- [ ] Verify color schema matches reference screenshots
 - [ ] Check progressive disclosure works as expected
 
 ### Phase 3 Testing (AI SDK Migration)
@@ -221,6 +309,7 @@ const getDisplayState = ({ content, isGenerating, hasTitle, hasOutline }: Condit
 
 ### Integration Testing
 - [ ] Complete 3-step workflow functional
+- [ ] Right panel updates with left panel steps
 - [ ] SEO settings affect content generation
 - [ ] Article saving and navigation preserved
 - [ ] Mobile responsiveness maintained
@@ -240,9 +329,9 @@ const getDisplayState = ({ content, isGenerating, hasTitle, hasOutline }: Condit
 - [ ] Comprehensive monitoring and alerting
 
 ### Success Metrics
-- [ ] **Phase 2**: Clean interface with 100% noise reduction
+- [ ] **Phase 2**: Clean interface matching reference screenshots 100%
 - [ ] **Phase 3**: 99%+ streaming reliability
 - [ ] **Phase 4**: <2 minute generation times
 - [ ] **Phase 5**: >90% workflow completion rates
 
-This implementation guide provides the detailed technical roadmap for executing the updated Article Studio layout with clean UI, progressive disclosure, and enhanced user experience.
+This implementation guide provides the detailed technical roadmap for executing the updated Article Studio layout with clean UI, progressive disclosure, enhanced user experience, and exact reference design matching.
