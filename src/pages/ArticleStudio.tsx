@@ -86,7 +86,7 @@ const ArticleStudio = () => {
           
           <ResizablePanel defaultSize={60} minSize={40}>
             <div className="h-full overflow-auto">
-              <LivePreviewPanel {...articleStudio} />
+              <LivePreviewPanel {...articleStudio} updateArticleData={articleStudio.updateArticleData} />
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

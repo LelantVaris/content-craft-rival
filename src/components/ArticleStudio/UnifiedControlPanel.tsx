@@ -31,7 +31,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   setIsGenerating,
   setStreamingStatus
 }) => {
-  const [titleCount, setTitleCount] = useState(5);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
   const [seoPreferences, setSeoPreferences] = useState<SEOPreferences>({
     defaultTone: 'professional',
@@ -328,42 +327,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Collapsible sections */}
-      <Accordion type="multiple" defaultValue={["title", "outline"]} className="space-y-2">
-        {/* Title Generation Section */}
-        <AccordionItem value="title" className="border rounded-lg">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-600" />
-              <span className="font-medium">Title Generation</span>
-              {hasTitle && (
-                <div className="w-2 h-2 bg-green-500 rounded-full ml-2" />
-              )}
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="space-y-4">
-              <TitleSelector
-                hasTopic={!!articleData.topic}
-                titleCount={titleCount}
-                onTitleCountChange={setTitleCount}
-                onGenerateTitles={() => {}}
-                isGenerating={isGenerating}
-                generatedTitles={[]}
-                selectedTitle={articleData.selectedTitle}
-                onTitleSelect={(title) => updateArticleData({ selectedTitle: title })}
-                topic={articleData.topic}
-                keywords={articleData.keywords}
-                audience={articleData.audience}
-              />
-              
-              {hasTitle && (
-                <TitleSummary selectedTitle={articleData.customTitle || articleData.selectedTitle} />
-              )}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
+      {/* Collapsible sections - Only show outline section */}
+      <Accordion type="multiple" defaultValue={["outline"]} className="space-y-2">
         {/* Outline Creation Section */}
         <AccordionItem value="outline" className="border rounded-lg">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
