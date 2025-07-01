@@ -19,62 +19,110 @@ export const RealtimeSEOPanel: React.FC<RealtimeSEOPanelProps> = ({
   targetAudience
 }) => {
   const seoAnalysis = useMemo(() => {
-    const wordCount = content ? content.split(/\s+/).filter(w => w.length > 0).length : 0;
+    // Clean content by removing markdown formatting for accurate analysis
+    const cleanContent = content.replace(/[#*`_~\[\]()]/g, '').replace(/\n+/g, ' ').trim();
+    const words = cleanContent.split(/\s+/).filter(w => w.length > 0);
+    const wordCount = words.length;
     const titleLength = title ? title.length : 0;
     
-    // Calculate keyword density
+    // Calculate keyword density - check both exact matches and partial matches
     let keywordDensity = 0;
-    if (keywords.length > 0 && content) {
-      const totalKeywordMentions = keywords.reduce((count, keyword) => {
-        const regex = new RegExp(keyword.toLowerCase(), 'gi');
-        const matches = content.toLowerCase().match(regex);
-        return count + (matches ? matches.length : 0);
-      }, 0);
+    let totalKeywordMentions = 0;
+    
+    if (keywords.length > 0 && cleanContent) {
+      const contentLower = cleanContent.toLowerCase();
+      const titleLower = title.toLowerCase();
+      
+      keywords.forEach(keyword => {
+        const keywordLower = keyword.toLowerCase();
+        
+        // Count in content
+        const contentMatches = (contentLower.match(new RegExp(keywordLower, 'g')) || []).length;
+        // Count in title (weighted more heavily)
+        const titleMatches = (titleLower.match(new RegExp(keywordLower, 'g')) || []).length;
+        
+        totalKeywordMentions += contentMatches + (titleMatches * 2); // Title keywords count double
+      });
+      
       keywordDensity = wordCount > 0 ? (totalKeywordMentions / wordCount) * 100 : 0;
     }
 
-    // Readability score (simplified)
-    const avgWordsPerSentence = content ? content.split(/[.!?]+/).filter(s => s.trim()).length : 1;
-    const readabilityScore = Math.max(0, Math.min(100, 100 - (avgWordsPerSentence - 15) * 2));
+    // Enhanced readability score calculation
+    const sentences = cleanContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentenceCount = sentences.length || 1;
+    const avgWordsPerSentence = wordCount / sentenceCount;
+    const avgSyllablesPerWord = words.reduce((sum, word) => {
+      // Simple syllable estimation
+      const syllables = word.toLowerCase().match(/[aeiouy]+/g)?.length || 1;
+      return sum + syllables;
+    }, 0) / (wordCount || 1);
+    
+    // Flesch Reading Ease approximation
+    const fleschScore = Math.max(0, Math.min(100, 
+      206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord)
+    ));
 
+    // Title SEO analysis
+    const titleHasKeywords = keywords.some(keyword => 
+      title.toLowerCase().includes(keyword.toLowerCase())
+    );
+
+    // Content structure analysis
+    const headingMatches = content.match(/^#{1,6}\s+.+$/gm) || [];
+    const headingCount = headingMatches.length;
+    
     const checks = [
       {
         name: 'Title Length',
         status: titleLength >= 30 && titleLength <= 60 ? 'good' : 
-                titleLength > 0 ? 'warning' : 'error',
+                titleLength > 0 && titleLength >= 20 ? 'warning' : 'error',
         description: title ? `${titleLength} characters` : 'No title set',
         recommendation: 'Optimal title length is 30-60 characters',
-        score: titleLength >= 30 && titleLength <= 60 ? 25 : titleLength > 0 ? 15 : 0
+        score: titleLength >= 30 && titleLength <= 60 ? 25 : 
+               titleLength >= 20 ? 15 : 0
       },
       {
         name: 'Content Length',
-        status: wordCount > 300 ? 'good' : 
-                wordCount > 100 ? 'warning' : 'error',
+        status: wordCount >= 800 ? 'good' : 
+                wordCount >= 300 ? 'warning' : 'error',
         description: `${wordCount} words`,
-        recommendation: 'Aim for at least 300 words for better SEO',
-        score: wordCount > 300 ? 25 : wordCount > 100 ? 15 : 0
+        recommendation: 'Aim for at least 800 words for better SEO',
+        score: wordCount >= 800 ? 25 : 
+               wordCount >= 300 ? 15 : 
+               wordCount >= 100 ? 8 : 0
       },
       {
         name: 'Keyword Optimization',
         status: keywordDensity >= 1 && keywordDensity <= 3 ? 'good' : 
-                keywordDensity > 0 ? 'warning' : 'error',
-        description: `${keywordDensity.toFixed(1)}% density`,
+                keywordDensity > 0 && keywordDensity <= 5 ? 'warning' : 'error',
+        description: `${keywordDensity.toFixed(1)}% density (${totalKeywordMentions} mentions)`,
         recommendation: 'Target keyword density between 1-3%',
-        score: keywordDensity >= 1 && keywordDensity <= 3 ? 25 : keywordDensity > 0 ? 15 : 0
+        score: keywordDensity >= 1 && keywordDensity <= 3 ? 25 : 
+               keywordDensity > 0 ? 15 : 0
       },
       {
         name: 'Readability',
-        status: readabilityScore >= 70 ? 'good' : 
-                readabilityScore >= 50 ? 'warning' : 'error',
-        description: `${Math.round(readabilityScore)}/100 score`,
-        recommendation: 'Keep sentences clear and concise',
-        score: readabilityScore >= 70 ? 25 : readabilityScore >= 50 ? 15 : 0
+        status: fleschScore >= 60 ? 'good' : 
+                fleschScore >= 40 ? 'warning' : 'error',
+        description: `${Math.round(fleschScore)}/100 score`,
+        recommendation: 'Keep sentences clear and concise for better readability',
+        score: fleschScore >= 60 ? 25 : 
+               fleschScore >= 40 ? 15 : 
+               fleschScore >= 20 ? 8 : 0
       }
     ];
 
     const totalScore = checks.reduce((sum, check) => sum + check.score, 0);
 
-    return { checks, totalScore, keywordDensity, readabilityScore };
+    return { 
+      checks, 
+      totalScore, 
+      keywordDensity, 
+      readabilityScore: fleschScore,
+      titleHasKeywords,
+      headingCount,
+      totalKeywordMentions 
+    };
   }, [title, content, keywords, targetAudience]);
 
   const getStatusIcon = (status: string) => {
@@ -135,6 +183,22 @@ export const RealtimeSEOPanel: React.FC<RealtimeSEOPanelProps> = ({
             </div>
           </div>
         ))}
+        
+        {/* Keyword insights */}
+        {keywords.length > 0 && (
+          <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-purple-600" />
+              <span className="text-sm font-medium text-purple-900">Keyword Insights</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-purple-700">
+              <div>Keywords: {keywords.length}</div>
+              <div>Mentions: {seoAnalysis.totalKeywordMentions}</div>
+              <div>In Title: {seoAnalysis.titleHasKeywords ? 'Yes' : 'No'}</div>
+              <div>Headings: {seoAnalysis.headingCount}</div>
+            </div>
+          </div>
+        )}
         
         {targetAudience && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">

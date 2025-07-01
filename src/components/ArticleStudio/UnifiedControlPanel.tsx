@@ -111,41 +111,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       };
       console.log('📤 REQUEST BODY PREPARED:', requestBody);
 
-      // Try using supabase.functions.invoke first
-      console.log('🔄 ATTEMPTING SUPABASE FUNCTION INVOKE...');
-      try {
-        const { data: functionData, error: functionError } = await supabase.functions.invoke('generate-content', {
-          body: requestBody
-        });
-
-        console.log('📥 SUPABASE FUNCTION RESULT:', {
-          hasData: !!functionData,
-          hasError: !!functionError,
-          error: functionError,
-          data: functionData
-        });
-
-        if (functionError) {
-          console.error('❌ SUPABASE FUNCTION ERROR:', functionError);
-          throw new Error(`Function error: ${functionError.message}`);
-        }
-
-        if (functionData?.content) {
-          console.log('✅ CONTENT RECEIVED FROM FUNCTION:', {
-            contentLength: functionData.content.length,
-            contentPreview: functionData.content.substring(0, 200)
-          });
-          
-          setStreamingContent(functionData.content);
-          updateArticleData({ generatedContent: functionData.content });
-          setStreamingStatus('✅ Article generation complete!');
-          return;
-        }
-      } catch (functionError) {
-        console.warn('⚠️ SUPABASE FUNCTION FAILED, TRYING DIRECT FETCH:', functionError);
-      }
-
-      // Fallback to direct fetch for streaming
+      // Use direct fetch for streaming response
       const fetchUrl = `https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`;
       const fetchHeaders = {
         'Authorization': `Bearer ${session.access_token}`,
@@ -202,7 +168,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         console.log(`📖 READING CHUNK ${chunkCount + 1}...`);
         
         const { done, value } = await reader.read();
-        console.log(`📖 CHUNK ${chunkCount + 1} READ result:`, {
+        console.log(`📖 CHUNK ${chunkCount + 1} read result:`, {
           done,
           hasValue: !!value,
           valueLength: value?.length
@@ -235,6 +201,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           if (line.startsWith('data: ')) {
             try {
               const dataContent = line.slice(6);
+              
+              if (dataContent === '[DONE]') {
+                console.log('✅ RECEIVED [DONE] SIGNAL');
+                break;
+              }
+              
               console.log('🔄 PROCESSING SSE DATA:', { 
                 dataContent: dataContent.substring(0, 100)
               });

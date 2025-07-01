@@ -78,9 +78,10 @@ Requirements:
 - Aim for 1200-2000 words total
 - Use proper heading structure (# ## ###)
 - Start with the title as an H1 heading
-- Create valuable, informative content that serves the target audience`;
+- Create valuable, informative content that serves the target audience
+- Naturally incorporate the target keywords throughout the content for SEO optimization`;
 
-    console.log('Starting content generation for:', title);
+    console.log('Starting streaming content generation for:', title);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -91,11 +92,12 @@ Requirements:
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are an expert content writer who creates comprehensive, SEO-optimized articles. Always use proper markdown formatting and structure.' },
+          { role: 'system', content: 'You are an expert content writer who creates comprehensive, SEO-optimized articles. Always use proper markdown formatting and structure. Naturally incorporate keywords throughout the content for better SEO.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
         max_tokens: 4000,
+        stream: true,
       }),
     });
 
@@ -105,25 +107,67 @@ Requirements:
       throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    // Create a ReadableStream for Server-Sent Events
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        
+        if (!reader) {
+          controller.close();
+          return;
+        }
 
-    if (!content) {
-      throw new Error('No content generated from OpenAI');
-    }
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              controller.enqueue(`data: [DONE]\n\n`);
+              controller.close();
+              break;
+            }
 
-    // Generate meta description
-    const metaDescription = `${title} - ${content.substring(0, 150).replace(/[#*]/g, '').trim()}...`;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                if (data === '[DONE]') {
+                  controller.enqueue(`data: [DONE]\n\n`);
+                  continue;
+                }
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  
+                  if (content) {
+                    controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
+                  }
+                } catch (parseError) {
+                  // Skip invalid JSON
+                  continue;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Streaming error:', error);
+          controller.error(error);
+        }
+      }
+    });
 
-    console.log('Content generated successfully, length:', content.length);
-
-    return new Response(JSON.stringify({ 
-      content,
-      metaDescription,
-      wordCount: content.split(' ').length,
-      readingTime: Math.ceil(content.split(' ').length / 200)
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
 
   } catch (error) {
