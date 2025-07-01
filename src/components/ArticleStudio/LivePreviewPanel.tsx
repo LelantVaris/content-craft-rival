@@ -27,15 +27,22 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   // Ensure streamingStatus is always a string
   const safeStreamingStatus = typeof streamingStatus === 'string' ? streamingStatus : '';
 
+  // Conditional display logic based on content readiness
+  const showStats = finalContent && finalContent.length > 500 && !isGenerating;
+  const showSEO = finalContent && finalContent.length > 1000 && !isGenerating;
+  const showPublishing = finalContent && finalContent.length > 800 && !isGenerating && finalTitle;
+
   return (
     <div className="p-4 space-y-4 h-full">
-      {/* Live Statistics Bar */}
-      <LiveArticleStats
-        title={finalTitle}
-        content={finalContent}
-        keywords={articleData.keywords}
-        isGenerating={isGenerating}
-      />
+      {/* Live Statistics Bar - Only show when content is substantial */}
+      {showStats && (
+        <LiveArticleStats
+          title={finalTitle}
+          content={finalContent}
+          keywords={articleData.keywords}
+          isGenerating={isGenerating}
+        />
+      )}
       
       {/* Main Article Preview */}
       <div className="flex-1 min-h-0">
@@ -48,22 +55,28 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
         />
       </div>
       
-      {/* Bottom panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RealtimeSEOPanel
-          title={finalTitle}
-          content={finalContent}
-          keywords={articleData.keywords}
-          targetAudience={articleData.audience}
-        />
-        
-        <EnhancedPublishingOptions
-          onSave={saveAndComplete}
-          onPublish={saveAndComplete}
-          disabled={!finalTitle || isGenerating}
-          isGenerating={isGenerating}
-        />
-      </div>
+      {/* Bottom panels - Only show when content is ready */}
+      {(showSEO || showPublishing) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {showSEO && (
+            <RealtimeSEOPanel
+              title={finalTitle}
+              content={finalContent}
+              keywords={articleData.keywords}
+              targetAudience={articleData.audience}
+            />
+          )}
+          
+          {showPublishing && (
+            <EnhancedPublishingOptions
+              onSave={saveAndComplete}
+              onPublish={saveAndComplete}
+              disabled={!finalTitle || isGenerating}
+              isGenerating={isGenerating}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
