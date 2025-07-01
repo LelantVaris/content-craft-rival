@@ -2,17 +2,95 @@
 # Article Studio Issues Tracker
 
 ## Current Status Overview
-**Phase**: Phase 0 Complete ✅, Phase 1 Database Setup in Progress  
-**Priority Focus**: Critical streaming reliability issues and foundation setup  
-**Next Milestone**: Complete Phase 1 database and core layout implementation
+**Phase**: Phase 1 Complete ✅, Phase 2 Clean UI Implementation in Progress  
+**Priority Focus**: Clean interface implementation and progressive disclosure  
+**Next Milestone**: Complete Phase 2 clean UI updates before AI SDK migration
 
 ---
 
-## CRITICAL ISSUES - IMMEDIATE ACTION REQUIRED
+## RESOLVED ISSUES ✅
 
-### Issue #1: Streaming Architecture Failure 🚨
+### Issue #1: Database Schema Missing ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: SEO settings persistence  
+**Resolution**: `user_seo_preferences` table exists and functional with proper RLS policies
+**Test Results**: ✅ Database schema confirmed working
+
+### Issue #2: Layout Foundation Fix ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: Article Studio layout integration  
+**Resolution**: Fixed SidebarInset integration for proper content resizing
+**Test Results**: ✅ Content area properly resizes when sidebar collapses/expands
+
+### Issue #3: AI Generate Button for Keywords ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: `KeywordGenerator` component  
+**Resolution**: Fixed in `UnifiedControlPanel.tsx` - implemented `handleGenerateKeywords` function
+**Test Results**: ✅ Button works correctly, generates keywords successfully
+
+### Issue #4: Tone Select in SEO Pro Mode ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: `SEOSettings` component  
+**Resolution**: Fixed SEO preference state management with `handleSEOPreferenceUpdate`
+**Test Results**: ✅ Tone dropdown updates correctly in UI
+
+### Issue #5: Target Article Length Select ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: `SEOSettings` component  
+**Resolution**: Same SEO preference implementation as tone selection
+**Test Results**: ✅ Article length dropdown updates correctly
+
+### Issue #6: Title Count Generation ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: `TitleSelector` / `generate-titles` function  
+**Resolution**: Fixed edge function to properly use `count` parameter
+**Test Results**: ✅ Title count slider generates specified number of titles
+
+### Issue #7: Duplicate Settings UI ✅ RESOLVED
+**Status**: ✅ Complete  
+**Component**: `ContentGenerationPanel`  
+**Resolution**: Removed duplicate settings, streamlined UI
+**Test Results**: ✅ Single source of truth for settings
+
+---
+
+## CURRENT ISSUES - IN PROGRESS
+
+### Issue #8: Clean UI Implementation 🔄
+**Status**: 🔄 Phase 2 - In Progress  
+**Priority**: HIGH  
+**Component**: Overall Article Studio interface
+
+**Required Changes**:
+- [ ] Remove "Control Panel" and "Live Preview" headers
+- [ ] Remove gray background dividers between panels
+- [ ] Hide statistics until article generation is complete
+- [ ] Hide SEO analysis until substantial content exists
+- [ ] Hide publishing options until article is ready
+- [ ] Update step workflow to 3 steps: Title → Outline → Article
+- [ ] Add visual checkmarks for completed steps
+
+**Expected Outcome**: Clean, professional interface matching reference design
+
+### Issue #9: Progressive Content Display 🔄
+**Status**: 🔄 Phase 2 - In Progress  
+**Priority**: HIGH  
+**Component**: Right panel content management
+
+**Implementation Requirements**:
+- [ ] Step 1: Empty state with illustration and "Try example" button
+- [ ] Step 2: Title selection interface with fallback option
+- [ ] Step 3: Outline creation with structured display
+- [ ] Step 4: Article generation with conditional statistics
+- [ ] Progressive disclosure of relevant information only
+
+---
+
+## CRITICAL ISSUES - PENDING AFTER CLEAN UI
+
+### Issue #10: Streaming Architecture Failure 🚨
 **Status**: 🔴 Critical - Blocking Core Functionality  
-**Priority**: HIGHEST  
+**Priority**: HIGHEST (After Phase 2)  
 **Root Cause**: Manual OpenAI API streaming implementation in `supabase/functions/generate-content/index.ts`
 
 **Technical Details**:
@@ -32,7 +110,7 @@
 - ❌ No visual feedback during failures
 - ❌ Poor user experience and trust
 
-**Solution**: AI SDK Migration (Phase 2 Priority)
+**Solution**: AI SDK Migration (Phase 3 Priority)
 - [ ] Replace manual streaming with `@ai-sdk/react` and `@ai-sdk/openai`
 - [ ] Implement proper type safety with AI SDK message formats
 - [ ] Add comprehensive error boundaries and recovery
@@ -41,83 +119,44 @@
 
 ---
 
-### Issue #2: Database Schema Missing 🔴
-**Status**: 🔴 Open - Foundation Blocker  
-**Priority**: HIGH  
-**Component**: SEO settings persistence
-
-**Description**: `user_seo_preferences` table needs to be created for SEO Pro Mode functionality
-**Expected Behavior**: Save and restore user SEO preferences across sessions
-**Impact**: SEO Pro Mode cannot persist settings, users lose preferences
-
-**Required Schema**:
-- [ ] Create `user_seo_preferences` table
-- [ ] Add RLS policies for user data security
-- [ ] Implement unique constraint per user
-- [ ] Add default values for all preference fields
-
-**Next Action**: SQL migration approval and execution
-
----
-
-## RESOLVED ISSUES ✅
-
-### Issue #1: AI Generate Button for Keywords ✅ RESOLVED
-**Status**: ✅ Complete  
-**Component**: `KeywordGenerator` component  
-**Resolution**: Fixed in `UnifiedControlPanel.tsx` - implemented `handleGenerateKeywords` function
-**Test Results**: ✅ Button works correctly, generates keywords successfully
-
-### Issue #2: Tone Select in SEO Pro Mode ✅ RESOLVED
-**Status**: ✅ Complete  
-**Component**: `SEOSettings` component  
-**Resolution**: Fixed SEO preference state management with `handleSEOPreferenceUpdate`
-**Test Results**: ✅ Tone dropdown updates correctly in UI
-
-### Issue #3: Target Article Length Select ✅ RESOLVED
-**Status**: ✅ Complete  
-**Component**: `SEOSettings` component  
-**Resolution**: Same SEO preference implementation as tone selection
-**Test Results**: ✅ Article length dropdown updates correctly
-
-### Issue #4: Title Count Generation ✅ RESOLVED
-**Status**: ✅ Complete  
-**Component**: `TitleSelector` / `generate-titles` function  
-**Resolution**: Fixed edge function to properly use `count` parameter
-**Test Results**: ✅ Title count slider generates specified number of titles
-
-### Issue #5: Duplicate Settings UI ✅ RESOLVED
-**Status**: ✅ Complete  
-**Component**: `ContentGenerationPanel`  
-**Resolution**: Removed duplicate settings, streamlined UI
-**Test Results**: ✅ Single source of truth for settings
-
-### Issue #6: Layout Foundation Fix ✅ RESOLVED
-**Status**: ✅ Complete  
-**Component**: Article Studio layout integration  
-**Resolution**: Fixed SidebarInset integration for proper content resizing
-**Test Results**: ✅ Content area properly resizes when sidebar collapses/expands
-
----
-
 ## OPEN ISSUES - PENDING IMPLEMENTATION
 
-### Issue #7: Missing Core Layout Components 🔶
-**Status**: 🔶 Phase 1 - In Progress  
-**Priority**: HIGH  
-**Dependencies**: Database schema completion
+### Issue #11: Empty State Implementation 🔶
+**Status**: 🔶 Phase 2 - Pending  
+**Priority**: MEDIUM  
+**Component**: Right panel empty state
 
-**Missing Components**:
-- [ ] `ArticleStudioLayout.tsx` - Main resizable 40/60 layout
-- [ ] `StepProgress.tsx` - Progress indicator
-- [ ] `TitleInputStep.tsx` - Step 1 form with example topics
-- [ ] `SEOProModeToggle.tsx` - Collapsible SEO settings
-- [ ] `EmptyStateDisplay.tsx` - Right panel empty state
+**Requirements**:
+- [ ] Illustration for "No titles generated" state
+- [ ] "Write my own title" fallback option
+- [ ] "Try Example" button with Marketing/B2B/Sales/Startup topics
+- [ ] Clean, engaging empty state design
 
-**Expected Implementation**: After database schema approval
+### Issue #12: Step Indicator Update 🔶
+**Status**: 🔶 Phase 2 - Pending  
+**Priority**: MEDIUM  
+**Component**: Step progress visualization
 
-### Issue #8: Example Topics Integration 🔶
-**Status**: 🔶 Phase 1 - Pending  
+**Changes Required**:
+- [ ] Update from 4-step to 3-step workflow
+- [ ] Add visual checkmarks for completed steps
+- [ ] Improve step completion indicators
+- [ ] Match reference design aesthetics
+
+### Issue #13: Conditional Statistics Display 🔶
+**Status**: 🔶 Phase 2 - Pending  
+**Priority**: MEDIUM  
+**Component**: `LiveArticleStats`, `RealtimeSEOPanel`, `EnhancedPublishingOptions`
+
+**Logic Required**:
+- [ ] Hide word count, read time, SEO score until article complete
+- [ ] Hide keywords analysis, structure analysis until content exists
+- [ ] Hide readiness percentage until meaningful content generated
+- [ ] Hide SEO analysis panel until substantial content exists
+- [ ] Hide publishing options until article is ready for publication
+
+### Issue #14: Example Topics Integration 🔶
+**Status**: 🔶 Phase 2 - Pending  
 **Priority**: MEDIUM  
 **Component**: Topic input with "Try Example" button
 
@@ -127,39 +166,24 @@
 - [ ] Sales focus: "Building sales funnel for B2B services"
 - [ ] Startup focus: "Fundraising strategies for pre-seed startups"
 
-### Issue #9: SEO Metrics Auto-Optimization 🔶
-**Status**: 🔶 Phase 3 - Planned  
-**Priority**: MEDIUM  
-**Component**: Content generation algorithm
-
-**Description**: Generated articles should automatically meet SEO criteria
-**Current Issues**: 
-- [ ] 0% keyword density in generated content
-- [ ] 0/100 readability scores
-- [ ] Keywords not naturally incorporated
-
-**Solution Strategy**:
-- [ ] Post-processing optimization in content generation
-- [ ] Real-time SEO feedback during generation
-- [ ] Keyword integration validation
-
 ---
 
 ## IMPLEMENTATION PRIORITY QUEUE
 
-### Next Up (Phase 1) 🔄
-1. [ ] **Database Schema Creation** - SQL migration for `user_seo_preferences`
-2. [ ] **Core Layout Implementation** - Resizable 40/60 panels with components
-3. [ ] **SEO Pro Mode Integration** - Collapsible settings with persistence
-4. [ ] **Example Topics System** - "Try Example" button with curated topics
+### Current Phase (Phase 2) 🔄
+1. [ ] **Remove Panel Headers** - Clean interface implementation
+2. [ ] **Conditional Statistics Display** - Hide until relevant
+3. [ ] **Progressive Content Display** - Step-based right panel content
+4. [ ] **Empty State Implementation** - Engaging empty states with examples
+5. [ ] **Step Indicator Updates** - 3-step workflow with checkmarks
 
-### Following (Phase 2) ⏳
+### Next Phase (Phase 3) ⏳
 1. [ ] **AI SDK Migration** - Replace manual OpenAI streaming (CRITICAL)
 2. [ ] **Type Safety Improvements** - Fix React Error #31 completely
 3. [ ] **Enhanced Title Generation** - SEO parameter integration
 4. [ ] **Robust Error Handling** - Comprehensive error boundaries
 
-### Future (Phase 3-4) 📋
+### Future (Phase 4-5) 📋
 1. [ ] **Two-Phase Content Generation** - Skeleton → Enhanced approach
 2. [ ] **Web Research Integration** - OpenAI with Tavily upgrade option
 3. [ ] **Advanced Outline Creation** - Drag-and-drop interface
@@ -169,14 +193,16 @@
 
 ## TESTING & VALIDATION CHECKLIST
 
-### Phase 1 Validation ✅
-- [ ] Database schema created and tested
-- [ ] Core layout components functional
-- [ ] SEO settings persist across sessions
-- [ ] Example topics populate correctly
-- [ ] Resizable panels work on all screen sizes
+### Phase 2 Validation (Current) 🔄
+- [ ] Panel headers completely removed
+- [ ] Statistics hidden until article generation complete
+- [ ] SEO analysis hidden until substantial content exists
+- [ ] Publishing options hidden until article ready
+- [ ] Empty state displays correctly with examples
+- [ ] Step workflow shows 3 steps with proper indicators
+- [ ] Progressive disclosure works as expected
 
-### Phase 2 Critical Tests 🔴
+### Phase 3 Critical Tests (Next) 🔴
 - [ ] Zero React Error #31 occurrences
 - [ ] 99%+ successful streaming completion rate
 - [ ] Real-time content appears without delays
@@ -184,7 +210,7 @@
 - [ ] Type-safe streaming implementation
 
 ### Integration Testing 🔶
-- [ ] Complete 4-step workflow functional
+- [ ] Complete 3-step workflow functional
 - [ ] SEO settings affect content generation
 - [ ] Simultaneous editing works during streaming
 - [ ] Article saving and navigation preserved
@@ -195,28 +221,34 @@
 ## RISK MONITORING
 
 ### High Risk Areas 🚨
-1. [ ] **Streaming Reliability** - Currently 0% success rate
-2. [ ] **Type Safety Violations** - Causing React rendering errors
-3. [ ] **Database Migration** - Foundation for all functionality
-4. [ ] **User Experience** - Multiple workflow interruptions
+1. [ ] **Streaming Reliability** - Currently 0% success rate (Post Phase 2)
+2. [ ] **Type Safety Violations** - Causing React rendering errors (Post Phase 2)
+3. [ ] **User Experience** - Multiple workflow interruptions
+4. [ ] **Interface Cleanliness** - Visual noise and confusion (Phase 2)
 
 ### Medium Risk Areas 🔶
-1. [ ] **Performance** - Large content generation times
+1. [ ] **Progressive Disclosure** - Information overload prevention
 2. [ ] **Mobile Experience** - Complex layout on small screens
 3. [ ] **Content Quality** - SEO optimization effectiveness
 4. [ ] **Migration Strategy** - User adoption of new interface
 
 ### Mitigation Strategies ✅
-1. [ ] **AI SDK Implementation** - Proven solution for streaming issues
-2. [ ] **Gradual Rollout** - Feature flags for safe migration
-3. [ ] **Comprehensive Testing** - Each phase validated before next
-4. [ ] **Rollback Plans** - Maintain existing functionality during transition
+1. [ ] **Clean UI First** - Establish solid foundation before complex features
+2. [ ] **Progressive Implementation** - Phase-based approach with validation
+3. [ ] **AI SDK Implementation** - Proven solution for streaming issues
+4. [ ] **Comprehensive Testing** - Each phase validated before next
 
 ---
 
 ## SUCCESS METRICS TRACKING
 
-### Technical Performance Goals
+### Phase 2 Goals (Current)
+- [ ] **Interface Cleanliness**: Remove all visual noise and unnecessary elements
+- [ ] **Progressive Disclosure**: Show only relevant information at each step
+- [ ] **User Guidance**: Clear empty states and example topics
+- [ ] **Step Clarity**: Obvious 3-step workflow progression
+
+### Technical Performance Goals (Phase 3+)
 - [ ] **Streaming Success Rate**: Target 99%+ (Current: 0%)
 - [ ] **Error Rate**: Target <1% React errors (Current: High)
 - [ ] **Generation Speed**: Target <2 minutes per article
@@ -237,7 +269,7 @@
 ---
 
 **Last Updated**: 2025-07-01  
-**Next Review**: After Phase 1 database setup completion  
-**Current Focus**: Database schema approval and core layout implementation
+**Next Review**: After Phase 2 clean UI implementation completion  
+**Current Focus**: Clean interface implementation and progressive disclosure
 
-**Critical Path**: Database Schema → Core Layout → AI SDK Migration → Enhanced Generation
+**Critical Path**: Clean UI Implementation → AI SDK Migration → Enhanced Generation → Advanced Features

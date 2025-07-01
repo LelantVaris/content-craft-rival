@@ -2,24 +2,28 @@
 # Article Studio Master Plan
 
 ## Project Overview
-**Goal**: Create a modern 4-step Article Studio with web research, simultaneous editing, and SEO optimization  
-**Current Status**: Phase 0 Complete ✅, Phase 1 in Progress  
-**Target**: Complete MVP with real-time streaming and enhanced UX
+**Goal**: Create a modern 3-step Article Studio with web research, simultaneous editing, and SEO optimization  
+**Current Status**: Phase 0 Complete ✅, Phase 1 Database Complete ✅, Layout Updates in Progress  
+**Target**: Complete MVP with clean UI, real-time streaming and enhanced UX
 
 ## Strategic Vision
 
 ### Core Experience
 Transform article creation from a basic form-based approach to an AI-powered, interactive experience with:
-- **4-Step Workflow**: Title → Selection → Outline → Generation
+- **3-Step Workflow**: Title → Outline → Article Generation
+- **Clean Dual-Panel Layout**: 40/60 resizable panels without headers
+- **Progressive Content Display**: Empty states, title selection, outline creation, article preview
+- **Conditional Statistics**: Stats/SEO/Publishing shown only when relevant
 - **Real-time Streaming**: Section-by-section content generation with progress indicators
 - **Simultaneous Editing**: Users can edit while content streams using Novel WYSIWYG editor
 - **Web Research Integration**: Enhanced content quality through automated research
 - **SEO Optimization**: Built-in SEO scoring and keyword optimization
 
 ### Key Design Principles
-- [ ] **Unified Interface**: Single-page experience eliminating navigation issues
+- [x] **Clean Interface**: Removed panel headers and visual noise
+- [ ] **Progressive Disclosure**: Each step reveals appropriate content
+- [ ] **Conditional Display**: Hide irrelevant information until needed
 - [ ] **Real-time Feedback**: Live preview and streaming content generation
-- [ ] **Progressive Enhancement**: Each step builds upon the previous
 - [ ] **User Control**: Ability to edit, customize, and override AI suggestions
 - [ ] **Quality Focus**: Research-backed content with SEO optimization
 
@@ -31,6 +35,8 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [x] **Layout**: 40/60 resizable panels using `react-resizable-panels`
 - [x] **Left Panel**: Step-based controls and forms (40% width)
 - [x] **Right Panel**: Dynamic content preview area (60% width)
+- [x] **Headers**: Removed "Control Panel" and "Live Preview" headers for clean interface
+- [x] **Conditional Display**: Stats, SEO, and Publishing options shown only when relevant
 - [ ] **Editor**: Novel WYSIWYG with simultaneous editing capabilities
 - [x] **Foundation**: Fixed SidebarInset integration ✅ COMPLETED
 
@@ -49,8 +55,8 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [ ] **Benefits**: Better error handling, type safety, reduced maintenance
 
 #### Database & Persistence
-- [ ] **SEO Settings**: Save to `user_seo_preferences` table for user preferences
-- [ ] **Session Management**: Maintain settings across sessions
+- [x] **SEO Settings**: Save to `user_seo_preferences` table for user preferences ✅ COMPLETED
+- [x] **Session Management**: Maintain settings across sessions ✅ COMPLETED
 - [ ] **Article Storage**: Enhanced with scheduling and calendar integration
 
 ### Example Topics Strategy
@@ -61,13 +67,13 @@ Transform article creation from a basic form-based approach to an AI-powered, in
   - [ ] "Content marketing strategies for technical products"
   - [ ] "Pricing strategies for subscription businesses"
 
-## 4-Step Workflow Design
+## 3-Step Workflow Design
 
 ### Step 1: Title Input & Configuration
 **Left Panel**:
 - [ ] Large topic input field with "Write an article about..." prompt
 - [ ] "Try Example" button (Marketing/B2B/Sales/Startup topics)
-- [ ] SEO Pro Mode toggle with collapsible sections:
+- [ ] SEO Pro Mode toggle with inline sections:
   - [ ] Target Audience (text input)
   - [ ] Keywords (text input with tag functionality)
   - [ ] Tone (select dropdown: Professional, Casual, Technical)
@@ -75,20 +81,31 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [ ] Generation controls with title count selector (3-10, default 5)
 
 **Right Panel**:
-- [ ] Empty state with help guidance
+- [ ] Empty state with illustration and help guidance
 - [ ] "Write my own title" fallback option
 
-### Step 2: Title Selection
-- [ ] **Left Panel**: Form in review mode with edit capability
-- [ ] **Right Panel**: Generated titles in selectable cards with auto-selection
+### Step 2: Title Selection & Outline Creation
+**Left Panel**: 
+- [ ] Form in review mode with edit capability
+- [ ] Outline management with drag-and-drop controls
 
-### Step 3: Outline Creation
-- [ ] **Left Panel**: Outline management with drag-and-drop controls
-- [ ] **Right Panel**: Hierarchical outline preview with inline editing
+**Right Panel**: 
+- [ ] Generated titles in selectable cards with auto-selection
+- [ ] Hierarchical outline preview with inline editing
 
-### Step 4: Article Generation
-- [ ] **Left Panel**: Generation progress tracking and controls
-- [ ] **Right Panel**: Novel editor with real-time streaming and simultaneous editing
+### Step 3: Article Generation
+**Left Panel**: 
+- [ ] Generation progress tracking and controls
+- [ ] Step completion indicators
+
+**Right Panel**: 
+- [ ] Novel editor with real-time streaming and simultaneous editing
+- [ ] Conditional display of statistics after generation complete:
+  - [ ] Word count, read time, SEO score
+  - [ ] Keywords analysis, structure analysis
+  - [ ] Readiness percentage
+- [ ] SEO analysis panel (shown after substantial content)
+- [ ] Publishing options (shown when article is ready)
 
 ## Implementation Phases
 
@@ -97,28 +114,35 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [x] Content area fills full available width dynamically
 - [x] Header with SidebarTrigger and breadcrumbs implemented
 
-### Phase 1: Database Setup & Core Layout 🔄 IN PROGRESS
-**Priority**: Critical Foundation
-- [ ] Create `user_seo_preferences` table with RLS policies
-- [ ] Implement resizable 40/60 panel layout
-- [ ] Create Step 1 components (topic input, SEO Pro mode, examples)
-- [ ] Add empty state display and generation controls
+### Phase 1: Database Setup & Core Layout ✅ COMPLETED
+- [x] Create `user_seo_preferences` table with RLS policies
+- [x] Implement resizable 40/60 panel layout
+- [x] Remove panel headers for clean interface
+- [x] Set up conditional display architecture
 
-### Phase 2: AI SDK Migration 🔲 NEXT PRIORITY
+### Phase 2: Clean UI Implementation 🔄 IN PROGRESS
+**Goal**: Implement clean, progressive interface
+- [ ] Create empty state display with illustration
+- [ ] Implement "Write my own title" fallback
+- [ ] Add "Try example" button with curated topics
+- [ ] Update step indicator to 3-step workflow
+- [ ] Implement conditional statistics display
+
+### Phase 3: AI SDK Migration 🔲 NEXT PRIORITY
 **Goal**: Resolve streaming reliability issues
 - [ ] Replace manual OpenAI streaming with AI SDK
 - [ ] Fix React Error #31 through proper type handling
 - [ ] Implement reliable title generation with SEO parameters
 - [ ] Add comprehensive error handling and recovery
 
-### Phase 3: Enhanced Content Generation 🔲 PENDING
+### Phase 4: Enhanced Content Generation 🔲 PENDING
 **Goal**: Two-phase generation with web research
 - [ ] Implement skeleton → enhanced content pipeline
 - [ ] Add web search integration per section
 - [ ] Create section-by-section streaming with progress indicators
 - [ ] Enable simultaneous editing during generation
 
-### Phase 4: Advanced Features & Polish 🔲 PENDING
+### Phase 5: Advanced Features & Polish 🔲 PENDING
 **Goal**: Production-ready experience
 - [ ] Complete outline creation with drag-and-drop
 - [ ] Add comprehensive SEO optimization
