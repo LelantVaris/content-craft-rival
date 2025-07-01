@@ -136,7 +136,7 @@ Requirements:
                 const data = line.slice(6);
                 
                 if (data === '[DONE]') {
-                  controller.enqueue(`data: [DONE]\n\n`);
+                  // Don't enqueue [DONE] here - we'll handle it when the stream actually ends
                   continue;
                 }
                 
@@ -148,7 +148,7 @@ Requirements:
                     controller.enqueue(`data: ${JSON.stringify({ content })}\n\n`);
                   }
                 } catch (parseError) {
-                  // Skip invalid JSON
+                  // Skip invalid JSON - don't log as it's normal for SSE format
                   continue;
                 }
               }
@@ -156,7 +156,12 @@ Requirements:
           }
         } catch (error) {
           console.error('Streaming error:', error);
-          controller.error(error);
+          try {
+            controller.error(error);
+          } catch (controllerError) {
+            // Controller might already be closed
+            console.error('Controller error:', controllerError);
+          }
         }
       }
     });
