@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { AudioWaveform, BookOpen, Bot, Command, Frame, GalleryVerticalEnd, Map, PieChart, Settings2, SquareTerminal, Home, FileEdit, Calendar, BarChart3, Search } from "lucide-react";
+import { AudioWaveform, BookOpen, Bot, Command, Frame, GalleryVerticalEnd, Map, PieChart, Settings2, SquareTerminal, Home, FileEdit, Calendar, BarChart3, Search, Globe } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
@@ -68,6 +68,10 @@ const topNavItems = [{
   title: "Article Writer",
   url: "/article/new",
   icon: FileEdit
+}, {
+  title: "Crawler Test",
+  url: "/crawler-test",
+  icon: Globe
 }];
 
 export function AppSidebar({

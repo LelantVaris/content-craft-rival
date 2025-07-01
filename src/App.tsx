@@ -15,6 +15,7 @@ import Calendar from "./pages/Calendar";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import CrawlerTest from "./pages/CrawlerTest";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -44,6 +45,7 @@ function App() {
                             <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
                             <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
                             <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                            <Route path="/crawler-test" element={<ProtectedRoute><CrawlerTest /></ProtectedRoute>} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </SidebarInset>
