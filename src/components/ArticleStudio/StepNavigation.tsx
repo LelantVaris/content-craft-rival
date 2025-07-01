@@ -15,21 +15,21 @@ import {
 const STEPS = [
   { 
     id: 1, 
-    title: 'Generate Title', 
+    title: 'Title', 
     icon: Lightbulb, 
-    description: 'AI-powered title suggestions' 
+    description: 'Generate title' 
   },
   { 
     id: 2, 
-    title: 'Create Outline', 
+    title: 'Outline', 
     icon: FileText, 
-    description: 'Structure your content' 
+    description: 'Create structure' 
   },
   { 
     id: 3, 
-    title: 'Generate Content', 
+    title: 'Article', 
     icon: PenTool, 
-    description: 'AI writes your article' 
+    description: 'Generate content' 
   }
 ];
 
@@ -70,7 +70,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
             return (
               <div key={step.id} className="flex items-center">
                 <div 
-                  className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
+                  className={`flex flex-col items-center p-3 rounded-lg border transition-all ${
                     isCurrent 
                       ? 'border-purple-500 bg-purple-50 shadow-md scale-105' 
                       : isCompleted 
@@ -78,7 +78,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
                       : 'border-gray-200 bg-white'
                   }`}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 transition-all ${
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
                     isCurrent 
                       ? 'bg-purple-600 text-white' 
                       : isCompleted 
@@ -86,25 +86,28 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
                       : 'bg-gray-400 text-white'
                   }`}>
                     {isCompleted ? (
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-5 h-5" />
                     ) : (
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-5 h-5" />
                     )}
                   </div>
                   
                   <div className="text-center">
-                    <h4 className="font-medium text-xs mb-1">{step.title}</h4>
+                    <h4 className="font-semibold text-sm mb-1">{step.title}</h4>
                     <Badge 
                       variant={isCurrent ? 'default' : isCompleted ? 'secondary' : 'outline'} 
                       className="text-xs"
                     >
-                      {isCompleted ? 'Complete' : isCurrent ? 'Active' : 'Pending'}
+                      {isCompleted ? (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      ) : null}
+                      {isCompleted ? 'Done' : isCurrent ? 'Active' : 'Pending'}
                     </Badge>
                   </div>
                 </div>
 
                 {index < STEPS.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-1 transition-all ${
+                  <div className={`w-12 h-0.5 mx-2 transition-all ${
                     isCompleted ? 'bg-green-400' : 'bg-gray-200'
                   }`} />
                 )}

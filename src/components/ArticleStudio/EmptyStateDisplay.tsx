@@ -17,21 +17,29 @@ export const EmptyStateDisplay: React.FC<EmptyStateDisplayProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center py-12">
-      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-        <Search className="w-8 h-8 text-gray-400" />
+    <div className="flex flex-col items-center justify-center text-center py-12 px-6 max-w-md mx-auto">
+      <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-sm">
+        <Search className="w-10 h-10 text-gray-400" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">No titles generated</h3>
-      <p className="text-gray-500 mb-6 max-w-sm">
-        Describe your topic to our AI to start generating creative article ideas and titles.
+      
+      <h3 className="text-xl font-semibold text-gray-900 mb-3">No content yet</h3>
+      
+      <p className="text-gray-500 mb-8 leading-relaxed">
+        Start by entering your topic in the left panel. Our AI will help you create engaging article titles and content.
       </p>
+      
       <Button 
         onClick={handleTryExample}
         variant="outline"
-        className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100"
+        className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100 transition-all duration-200"
+        size="lg"
       >
-        Try Example
+        Try Example Topic
       </Button>
+      
+      <div className="mt-6 text-xs text-gray-400">
+        AI-powered • SEO optimized • Real-time preview
+      </div>
     </div>
   );
 };

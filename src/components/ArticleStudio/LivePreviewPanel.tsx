@@ -36,13 +36,12 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const hasTopic = !!articleData.topic;
   const hasGeneratedTitles = generatedTitles.length > 0;
   const hasSelectedTitle = !!finalTitle;
-  const hasOutline = articleData.outline.length > 0;
   const hasContent = !!finalContent;
 
   // Conditional display logic based on content readiness
   const showStats = finalContent && finalContent.length > 500 && !isGenerating;
-  const showSEO = finalContent && finalContent.length > 1000 && !isGenerating;
-  const showPublishing = finalContent && finalContent.length > 800 && !isGenerating && finalTitle;
+  const showSEO = finalContent && finalContent.length > 800 && !isGenerating;
+  const showPublishing = finalContent && finalContent.length > 600 && !isGenerating && finalTitle;
 
   const handleTryExample = (topic: string) => {
     updateArticleData({ topic });
@@ -59,19 +58,25 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const renderContent = () => {
     // Step 1: Empty state when no topic
     if (!hasTopic) {
-      return <EmptyStateDisplay onTryExample={handleTryExample} />;
+      return (
+        <div className="flex items-center justify-center h-full">
+          <EmptyStateDisplay onTryExample={handleTryExample} />
+        </div>
+      );
     }
 
     // Step 2: Title generation input when topic exists but no titles generated
     if (hasTopic && !hasGeneratedTitles) {
       return (
-        <div className="p-4">
-          <TitleGenerationInput
-            topic={articleData.topic}
-            keywords={articleData.keywords}
-            audience={articleData.audience}
-            onTitlesGenerated={handleTitlesGenerated}
-          />
+        <div className="p-6 flex items-center justify-center h-full">
+          <div className="w-full max-w-md">
+            <TitleGenerationInput
+              topic={articleData.topic}
+              keywords={articleData.keywords}
+              audience={articleData.audience}
+              onTitlesGenerated={handleTitlesGenerated}
+            />
+          </div>
         </div>
       );
     }
@@ -79,7 +84,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     // Step 3: Title selection when titles are generated but none selected
     if (hasGeneratedTitles && !hasSelectedTitle) {
       return (
-        <div className="p-4">
+        <div className="p-6">
           <TitleSelectionPanel
             generatedTitles={generatedTitles}
             selectedTitle={articleData.selectedTitle}
@@ -144,7 +149,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   return (
-    <div className="h-full">
+    <div className="h-full bg-gray-50/30">
       {renderContent()}
     </div>
   );

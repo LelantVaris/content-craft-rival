@@ -4,11 +4,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { TopicInput } from './TopicInput';
 import { SEOProMode } from './SEOProMode';
-import { TitleSelector } from './TitleSelector';
-import { TitleSummary } from './TitleSummary';
 import { OutlineCreationPanel } from './OutlineCreationPanel';
 import { Card, CardContent } from '@/components/ui/card';
-import { Lightbulb, FileText, PenTool, Sparkles } from 'lucide-react';
+import { FileText, PenTool, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SEOPreferences } from '@/hooks/useSEOConfiguration';
 
@@ -301,7 +299,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
   return (
     <div className="p-4 space-y-4">
-      {/* Always visible topic and SEO section */}
+      {/* Topic and SEO Configuration */}
       <Card className="border-2 border-purple-100">
         <CardContent className="p-4 space-y-4">
           <TopicInput
@@ -327,9 +325,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Collapsible sections - Only show outline section */}
+      {/* Outline Creation Section */}
       <Accordion type="multiple" defaultValue={["outline"]} className="space-y-2">
-        {/* Outline Creation Section */}
         <AccordionItem value="outline" className="border rounded-lg">
           <AccordionTrigger className="px-4 py-3 hover:no-underline">
             <div className="flex items-center gap-2">
@@ -349,7 +346,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         </AccordionItem>
       </Accordion>
 
-      {/* Action buttons */}
+      {/* Generation Actions */}
       <div className="space-y-2 pt-4 border-t">
         <Button
           onClick={generateStreamingArticle}
@@ -373,7 +370,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         </Button>
       </div>
 
-      {/* Simple generation info */}
+      {/* Generation Status */}
       {hasTitle && hasOutline && !isGenerating && (
         <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
           <div className="text-sm text-purple-800">
