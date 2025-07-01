@@ -93,7 +93,9 @@ async function processCrawledData(supabase: any, websiteMapId: string, crawlData
   // Insert page data
   const pages = crawlData.map(page => {
     const sourceUrl = page.metadata?.sourceURL || page.url;
-    const linksOnPage = page.linksOnPage || [];
+    
+    // Handle links from the new format - check both linksOnPage and links array
+    const linksOnPage = page.linksOnPage || page.links || [];
     
     // Filter internal vs external links
     let internalLinks: string[] = [];
@@ -129,7 +131,7 @@ async function processCrawledData(supabase: any, websiteMapId: string, crawlData
       external_links: externalLinks,
       crawl_data: {
         metadata: page.metadata,
-        linksOnPage: page.linksOnPage,
+        linksOnPage: linksOnPage,
       },
     };
   });

@@ -126,10 +126,7 @@ serve(async (req) => {
           url: websiteUrl,
           limit: Math.min(urls.length, 50), // Limit for initial implementation
           scrapeOptions: {
-            formats: ['markdown', 'links'],
-            onlyMainContent: true,
-            includeTags: ['title', 'meta'],
-            includeLinks: true, // Ensure links are included
+            formats: ['markdown', 'links'], // Only use valid formats
           },
         }),
       });
