@@ -31,6 +31,12 @@ interface PageData {
   meta_description: string;
 }
 
+interface NodeData {
+  label: string;
+  page: PageData;
+  nodeType: string;
+}
+
 export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -66,7 +72,7 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
       }
 
       // Create nodes with positioning
-      const graphNodes: Node[] = pages.map((page, index) => {
+      const graphNodes: Node<NodeData>[] = pages.map((page, index) => {
         const isHomepage = isHomePage(page.url);
         const linkCount = (page.internal_links || []).length;
         const nodeType = isHomepage ? 'homepage' : linkCount > 5 ? 'hub' : 'regular';
@@ -84,7 +90,7 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
           },
           data: {
             label: getNodeLabel(page.title, page.url),
-            page: page,
+            page: page as PageData,
             nodeType: nodeType,
           },
           style: {
@@ -162,7 +168,7 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
     }
   };
 
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node<NodeData>) => {
     setSelectedNode(node.data.page);
   }, []);
 
@@ -203,7 +209,10 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
           <Background />
           <Controls />
           <MiniMap 
-            nodeColor={(node) => getNodeColor(node.data.nodeType)}
+            nodeColor={(node) => {
+              const nodeData = node.data as NodeData;
+              return getNodeColor(nodeData.nodeType);
+            }}
             nodeStrokeWidth={3}
             zoomable
             pannable
