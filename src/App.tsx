@@ -1,57 +1,62 @@
 
-import { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { WebsiteProvider } from "./contexts/WebsiteContext";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Onboarding from "./pages/Onboarding";
 import ArticleStudio from "./pages/ArticleStudio";
-import Calendar from "./pages/Calendar";
-import ArticleForm from "./pages/ArticleForm";
+import ArticleEditor from "./pages/ArticleEditor";
 import ArticleEditorRoute from "./pages/ArticleEditorRoute";
-import CrawlerTest from "./pages/CrawlerTest";
+import Calendar from "./pages/Calendar";
+import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import "./App.css";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 3,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <WebsiteProvider>
-          <TooltipProvider>
-            <Toaster />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-                <Route path="/article-studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
-                <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-                <Route path="/article/new" element={<ProtectedRoute><ArticleForm /></ProtectedRoute>} />
-                <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
-                <Route path="/crawler-test" element={<ProtectedRoute><CrawlerTest /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </WebsiteProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <div className="min-h-screen w-full">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <WebsiteProvider>
+            <TooltipProvider>
+              <Toaster />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                  <Route path="/*" element={
+                    <SidebarProvider>
+                      <div className="flex min-h-screen w-full">
+                        <AppSidebar />
+                        <SidebarInset className="flex-1">
+                          <Routes>
+                            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                            <Route path="/article/new" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                            <Route path="/article/studio" element={<ProtectedRoute><ArticleStudio /></ProtectedRoute>} />
+                            <Route path="/article/:id/edit" element={<ProtectedRoute><ArticleEditor /></ProtectedRoute>} />
+                            <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
+                            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </SidebarInset>
+                      </div>
+                    </SidebarProvider>
+                  } />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </WebsiteProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </div>
   );
 }
 
