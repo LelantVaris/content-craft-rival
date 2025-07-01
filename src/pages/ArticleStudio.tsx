@@ -73,36 +73,20 @@ const ArticleStudio = () => {
         </div>
       </header>
 
-      {/* Main Content Area - Unified Layout */}
+      {/* Main Content Area - Clean Layout without Headers */}
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
-            <div className="h-full flex flex-col">
-              <div className="py-3 px-4 border-b bg-gray-50/50">
-                <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
-                  <PenTool className="w-4 h-4 text-purple-600" />
-                  Control Panel
-                </h2>
-              </div>
-              <div className="flex-1 overflow-auto">
-                <UnifiedControlPanel {...articleStudio} />
-              </div>
+            <div className="h-full overflow-auto">
+              <UnifiedControlPanel {...articleStudio} />
             </div>
           </ResizablePanel>
           
-          <ResizableHandle withHandle className="bg-gray-200 hover:bg-gray-300 transition-colors" />
+          <ResizableHandle className="opacity-0 hover:opacity-100 transition-opacity w-px bg-gray-200" />
           
           <ResizablePanel defaultSize={60} minSize={40}>
-            <div className="h-full flex flex-col">
-              <div className="py-3 px-4 border-b bg-gray-50/50">
-                <h2 className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  Live Preview
-                </h2>
-              </div>
-              <div className="flex-1 overflow-auto">
-                <LivePreviewPanel {...articleStudio} />
-              </div>
+            <div className="h-full overflow-auto">
+              <LivePreviewPanel {...articleStudio} />
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
