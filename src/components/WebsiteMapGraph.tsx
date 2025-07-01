@@ -31,7 +31,7 @@ interface PageData {
   meta_description: string;
 }
 
-interface NodeData {
+interface NodeData extends Record<string, unknown> {
   label: string;
   page: PageData;
   nodeType: string;
@@ -210,8 +210,10 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
           <Controls />
           <MiniMap 
             nodeColor={(node) => {
-              const nodeData = node.data as NodeData;
-              return getNodeColor(nodeData.nodeType);
+              if (node.data && typeof node.data === 'object' && 'nodeType' in node.data) {
+                return getNodeColor(node.data.nodeType as string);
+              }
+              return '#6b7280'; // Default gray
             }}
             nodeStrokeWidth={3}
             zoomable
