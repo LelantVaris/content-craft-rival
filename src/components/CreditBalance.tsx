@@ -4,10 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
+import { useTestCredits } from '@/hooks/useTestCredits';
 import { Coins, Crown, Zap } from 'lucide-react';
 
 const CreditBalance = () => {
   const { profile, loading } = useProfile();
+  const { addTestCredits, loading: creditsLoading } = useTestCredits();
 
   if (loading) {
     return (
@@ -62,9 +64,19 @@ const CreditBalance = () => {
           <span className="text-2xl font-bold text-green-600">
             {profile?.credits || 0}
           </span>
-          <Button variant="outline" size="sm">
-            Buy Credits
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={addTestCredits}
+              disabled={creditsLoading}
+            >
+              {creditsLoading ? 'Adding...' : 'Add Test Credits'}
+            </Button>
+            <Button variant="outline" size="sm">
+              Buy Credits
+            </Button>
+          </div>
         </div>
         
         <div className="text-xs text-gray-500 mt-2">
