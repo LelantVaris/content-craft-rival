@@ -17,6 +17,7 @@ interface TitleGenerationSectionProps {
   setStreamingContent: (content: string) => void;
   setStreamingStatus: (status: any) => void;
   setMainIsGenerating: (generating: boolean) => void;
+  loadingState?: { isLoading: boolean; operation?: string };
 }
 
 export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
@@ -29,17 +30,23 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   hasOutline,
   setStreamingContent,
   setStreamingStatus,
-  setMainIsGenerating
+  setMainIsGenerating,
+  loadingState
 }) => {
   const [titleCount, setTitleCount] = useState(4);
 
   const getButtonText = () => {
+    if (loadingState?.isLoading) {
+      const operation = loadingState.operation || 'Processing';
+      return `${operation}...`;
+    }
+    
     if (currentStep === 1) {
-      return isGenerating ? 'Generating titles...' : 'Generate titles';
+      return 'Generate titles';
     } else if (currentStep === 2) {
-      return isGenerating ? 'Generating outline...' : 'Generate outline';
+      return 'Generate outline';
     } else {
-      return isGenerating ? 'Generating article...' : 'Generate article';
+      return 'Generate article';
     }
   };
 
@@ -178,10 +185,10 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
     setStreamingContent('');
     
     try {
-      const response = await fetch(`https://wpezdklekbanfcctswbz.supabase.co/functions/v1/generate-content`, {
+      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -290,11 +297,11 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
         {/* Generate Button */}
         <Button
           onClick={handleGenerate}
-          disabled={!canGenerate() || isGenerating}
+          disabled={!canGenerate() || isGenerating || loadingState?.isLoading}
           className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
           size="lg"
         >
-          {isGenerating ? (
+          {(isGenerating || loadingState?.isLoading) ? (
             <div className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               {getButtonText()}
