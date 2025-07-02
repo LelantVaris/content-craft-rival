@@ -5,6 +5,7 @@ import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { TopicInput } from './TopicInput';
 import { SEOProMode } from './SEOProMode';
 import { OutlineCreationPanel } from './OutlineCreationPanel';
+import { StepNavigation } from './StepNavigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, PenTool, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +40,45 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
+  const hasContent = !!articleData.generatedContent;
+
+  // Step navigation logic
+  const getCurrentStep = () => {
+    if (!hasTitle) return 1;
+    if (!hasOutline) return 2;
+    return 3;
+  };
+
+  const currentStep = getCurrentStep();
+
+  const handleNextStep = () => {
+    // Step navigation is handled by completion of requirements
+    console.log('Next step - requirements will be checked automatically');
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep === 3) {
+      // Clear generated content to go back to outline
+      updateArticleData({ generatedContent: '' });
+      setStreamingContent('');
+    } else if (currentStep === 2) {
+      // Clear outline to go back to title
+      updateArticleData({ outline: [] });
+    }
+  };
+
+  const canProceedToNext = () => {
+    switch (currentStep) {
+      case 1:
+        return hasTitle;
+      case 2:
+        return hasOutline;
+      case 3:
+        return hasContent;
+      default:
+        return false;
+    }
+  };
 
   const generateStreamingArticle = async () => {
     console.log('🚀 FUNCTION START: generateStreamingArticle called');
@@ -299,6 +339,16 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
   return (
     <div className="p-4 space-y-4">
+      {/* Step Navigation */}
+      <StepNavigation
+        currentStep={currentStep}
+        onNext={handleNextStep}
+        onPrev={handlePrevStep}
+        canProceed={canProceedToNext()}
+        onComplete={generateStreamingArticle}
+        isGenerating={isGenerating}
+      />
+
       {/* Topic and SEO Configuration */}
       <Card className="border-2 border-purple-100">
         <CardContent className="p-4 space-y-4">
