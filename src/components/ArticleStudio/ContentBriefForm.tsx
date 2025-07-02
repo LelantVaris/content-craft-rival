@@ -7,9 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Shuffle, Plus, X } from 'lucide-react';
+import { Shuffle, Plus, X, Sparkles, Loader2 } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { getRandomExampleTopic } from '@/utils/exampleTopics';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContentBriefFormProps {
   articleData: ArticleStudioData;
@@ -25,6 +26,7 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
   onSeoProModeChange
 }) => {
   const [currentKeyword, setCurrentKeyword] = React.useState('');
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = React.useState(false);
 
   const handleTryExample = () => {
     const { topic } = getRandomExampleTopic();
@@ -42,6 +44,43 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
   const handleKeywordRemove = (keywordToRemove: string) => {
     const newKeywords = articleData.keywords.filter(k => k !== keywordToRemove);
     onUpdate({ keywords: newKeywords });
+  };
+
+  const handleGenerateKeywords = async () => {
+    if (!articleData.topic || isGeneratingKeywords) return;
+
+    console.log('Starting keyword generation with:', {
+      topic: articleData.topic,
+      audience: articleData.audience
+    });
+
+    setIsGeneratingKeywords(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-keywords', {
+        body: {
+          topic: articleData.topic,
+          audience: articleData.audience
+        }
+      });
+
+      console.log('Keyword generation response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data?.keywords && Array.isArray(data.keywords)) {
+        console.log('Generated keywords:', data.keywords);
+        onUpdate({ keywords: [...articleData.keywords, ...data.keywords] });
+      } else {
+        throw new Error('Invalid response format from keyword generation');
+      }
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+    } finally {
+      setIsGeneratingKeywords(false);
+    }
   };
 
   return (
@@ -71,61 +110,61 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
         />
       </div>
 
-      {/* SEO Pro Mode Toggle */}
-      <div className="flex items-center justify-between">
+      {/* Keywords Section - Always Visible */}
+      <div className="space-y-4">
         <label className="text-sm font-semibold text-[rgb(16,24,40)]">
-          ⚡ SEO pro mode
+          Keywords
         </label>
-        <Switch
-          checked={seoProMode}
-          onCheckedChange={onSeoProModeChange}
-        />
-      </div>
-
-      {/* Keywords Section (Collapsible) */}
-      {seoProMode && (
-        <div className="bg-white rounded-xl border border-[rgb(208,213,221)] p-4 space-y-4">
-          <label className="text-sm font-semibold text-[rgb(16,24,40)]">
-            Keywords
-          </label>
-          <div className="flex gap-2">
-            <Input
-              placeholder="best writing tools"
-              value={currentKeyword}
-              onChange={(e) => setCurrentKeyword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleKeywordAdd()}
-              className="flex-1"
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleKeywordAdd}
-              disabled={!currentKeyword.trim()}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-          {articleData.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {articleData.keywords.map((keyword, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="flex items-center gap-1"
-                >
-                  {keyword}
-                  <button
-                    onClick={() => handleKeywordRemove(keyword)}
-                    className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+        <div className="flex gap-2">
+          <Input
+            placeholder="best writing tools"
+            value={currentKeyword}
+            onChange={(e) => setCurrentKeyword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleKeywordAdd()}
+            className="flex-1"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleKeywordAdd}
+            disabled={!currentKeyword.trim()}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleGenerateKeywords}
+            disabled={!articleData.topic || isGeneratingKeywords}
+            className="flex items-center gap-2"
+          >
+            {isGeneratingKeywords ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            AI Generate
+          </Button>
         </div>
-      )}
+        {articleData.keywords.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {articleData.keywords.map((keyword, index) => (
+              <Badge
+                key={index}
+                variant="secondary"
+                className="flex items-center gap-1"
+              >
+                {keyword}
+                <button
+                  onClick={() => handleKeywordRemove(keyword)}
+                  className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Tone & Length Section */}
       <div className="grid grid-cols-2 gap-4">
@@ -160,6 +199,17 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* SEO Pro Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-semibold text-[rgb(16,24,40)]">
+          ⚡ SEO pro mode
+        </label>
+        <Switch
+          checked={seoProMode}
+          onCheckedChange={onSeoProModeChange}
+        />
       </div>
 
       {/* Advanced Customizations */}

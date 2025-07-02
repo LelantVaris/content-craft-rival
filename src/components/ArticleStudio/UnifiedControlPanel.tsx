@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
 import { TitleGenerationSection } from './TitleGenerationSection';
-import { StepNavigation } from './StepNavigation';
 
 interface UnifiedControlPanelProps {
   articleData: ArticleStudioData;
@@ -25,7 +24,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   setStreamingStatus
 }) => {
   const [seoProMode, setSeoProMode] = useState(true);
-  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [isTitleGenerating, setIsTitleGenerating] = useState(false);
 
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
@@ -41,14 +39,14 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   const currentStep = getCurrentStep();
 
   const handleTitlesGenerated = (titles: string[]) => {
-    setGeneratedTitles(titles);
-    // Auto-progress step will be handled by the right panel
+    // This will be handled by the LivePreviewPanel
+    console.log('Titles generated:', titles);
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Step Navigation Breadcrumb */}
-      <div className="p-6 pb-4 border-b border-gray-200">
+    <div className="flex flex-col h-full max-h-screen">
+      {/* Step Navigation - Fixed top */}
+      <div className="flex-shrink-0 p-6 pb-4 border-b border-gray-200">
         <nav className="flex items-center space-x-2 text-sm">
           <span className={`font-medium ${currentStep >= 1 ? 'text-purple-600' : 'text-gray-400'}`}>
             Title
@@ -64,8 +62,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         </nav>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto p-6">
         <ContentBriefForm
           articleData={articleData}
           onUpdate={updateArticleData}
@@ -74,13 +72,15 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         />
       </div>
 
-      {/* Fixed Bottom Section */}
-      <TitleGenerationSection
-        articleData={articleData}
-        onTitlesGenerated={handleTitlesGenerated}
-        isGenerating={isTitleGenerating}
-        setIsGenerating={setIsTitleGenerating}
-      />
+      {/* Fixed Bottom Section - Always Visible */}
+      <div className="flex-shrink-0">
+        <TitleGenerationSection
+          articleData={articleData}
+          onTitlesGenerated={handleTitlesGenerated}
+          isGenerating={isTitleGenerating}
+          setIsGenerating={setIsTitleGenerating}
+        />
+      </div>
     </div>
   );
 };

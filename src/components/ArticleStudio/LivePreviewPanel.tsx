@@ -48,6 +48,28 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const hasOutline = articleData.outline.length > 0;
   const hasContent = !!finalContent;
 
+  // Listen for title generation events from UnifiedControlPanel
+  useEffect(() => {
+    const handleTitleGeneration = (event: CustomEvent) => {
+      const titles = event.detail;
+      setGeneratedTitles(titles);
+      setIsLoadingTitles(false);
+    };
+
+    // Listen for title generation start
+    const handleTitleGenerationStart = () => {
+      setIsLoadingTitles(true);
+    };
+
+    window.addEventListener('titles-generated', handleTitleGeneration as EventListener);
+    window.addEventListener('title-generation-start', handleTitleGenerationStart as EventListener);
+
+    return () => {
+      window.removeEventListener('titles-generated', handleTitleGeneration as EventListener);
+      window.removeEventListener('title-generation-start', handleTitleGenerationStart as EventListener);
+    };
+  }, []);
+
   // Determine current step
   const getCurrentStep = () => {
     if (!hasSelectedTitle) return 1;
@@ -292,7 +314,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   return (
-    <div className="h-full bg-gray-50/30 flex flex-col">
+    <div className="h-full bg-gray-50/30 flex flex-col max-h-screen">
       <div className="flex-1 overflow-auto">
         {renderContent()}
       </div>

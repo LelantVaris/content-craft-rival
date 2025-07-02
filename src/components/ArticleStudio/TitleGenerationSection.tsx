@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Loader2 } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,7 +22,20 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   const [titleCount, setTitleCount] = useState(4);
 
   const handleGenerateTitles = async () => {
-    if (!articleData.topic) return;
+    if (!articleData.topic) {
+      console.error('No topic provided');
+      return;
+    }
+
+    console.log('Starting title generation with:', {
+      topic: articleData.topic,
+      keywords: articleData.keywords,
+      audience: articleData.audience,
+      count: titleCount
+    });
+
+    // Dispatch event to notify LivePreviewPanel that generation is starting
+    window.dispatchEvent(new CustomEvent('title-generation-start'));
 
     setIsGenerating(true);
     try {
@@ -35,10 +48,28 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
         }
       });
 
-      if (error) throw error;
-      onTitlesGenerated(data.titles || []);
+      console.log('Title generation response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data?.titles && Array.isArray(data.titles)) {
+        console.log('Generated titles:', data.titles);
+        
+        // Dispatch event to notify LivePreviewPanel with the titles
+        window.dispatchEvent(new CustomEvent('titles-generated', { 
+          detail: data.titles 
+        }));
+        
+        onTitlesGenerated(data.titles);
+      } else {
+        throw new Error('Invalid response format from title generation');
+      }
     } catch (error) {
       console.error('Error generating titles:', error);
+      // Add user-visible error handling here if needed
     } finally {
       setIsGenerating(false);
     }
@@ -56,7 +87,14 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
         className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
         size="lg"
       >
-        {isGenerating ? 'Generating titles...' : 'Generate titles'}
+        {isGenerating ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Generating titles...
+          </div>
+        ) : (
+          'Generate titles'
+        )}
       </Button>
       
       <div className="flex items-center justify-between">
