@@ -83,11 +83,11 @@ export function useArticleStudio() {
       case 2:
         return articleData.outline.length > 0;
       case 3:
-        return articleData.generatedContent.length > 0;
+        return articleData.generatedContent.length > 0 || streamingContent.length > 0;
       default:
         return false;
     }
-  }, [articleData]);
+  }, [articleData, streamingContent]);
 
   const saveAndComplete = useCallback(async () => {
     const finalTitle = articleData.customTitle || articleData.selectedTitle;

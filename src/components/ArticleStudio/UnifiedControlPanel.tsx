@@ -44,7 +44,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-screen">
+    <div className="flex flex-col h-[calc(100vh-56px)] max-h-[calc(100vh-56px)]">
       {/* Step Navigation - Fixed top */}
       <div className="flex-shrink-0 p-6 pb-4 border-b border-gray-200">
         <nav className="flex items-center justify-center space-x-8">
@@ -93,8 +93,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         />
       </div>
 
-      {/* Fixed Bottom Section - Always Visible */}
-      <div className="flex-shrink-0">
+      {/* Fixed Bottom Section - Always Visible with fixed height */}
+      <div className="flex-shrink-0 h-20">
         <TitleGenerationSection
           articleData={articleData}
           onTitlesGenerated={handleTitlesGenerated}
@@ -103,6 +103,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           currentStep={currentStep}
           hasTitle={hasTitle}
           hasOutline={hasOutline}
+          setStreamingContent={setStreamingContent}
+          setStreamingStatus={setStreamingStatus}
+          setMainIsGenerating={setIsGenerating}
         />
       </div>
     </div>

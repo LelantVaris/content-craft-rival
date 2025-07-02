@@ -14,6 +14,9 @@ interface TitleGenerationSectionProps {
   currentStep: number;
   hasTitle: boolean;
   hasOutline: boolean;
+  setStreamingContent: (content: string) => void;
+  setStreamingStatus: (status: any) => void;
+  setMainIsGenerating: (generating: boolean) => void;
 }
 
 export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
@@ -23,7 +26,10 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   setIsGenerating,
   currentStep,
   hasTitle,
-  hasOutline
+  hasOutline,
+  setStreamingContent,
+  setStreamingStatus,
+  setMainIsGenerating
 }) => {
   const [titleCount, setTitleCount] = useState(4);
 
@@ -102,13 +108,137 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   };
 
   const handleGenerateOutline = async () => {
-    // TODO: Implement outline generation
-    console.log('Generate outline not implemented yet');
+    if (!hasTitle) {
+      console.error('No title selected');
+      return;
+    }
+
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    console.log('Starting outline generation with:', {
+      title: finalTitle,
+      topic: articleData.topic,
+      keywords: articleData.keywords,
+      audience: articleData.audience
+    });
+
+    // Dispatch event to notify LivePreviewPanel that outline generation is starting
+    window.dispatchEvent(new CustomEvent('outline-generation-start'));
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-outline', {
+        body: {
+          title: finalTitle,
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      console.log('Outline generation response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data?.sections && Array.isArray(data.sections)) {
+        console.log('Generated outline:', data.sections);
+        
+        // Dispatch event to notify LivePreviewPanel with the outline
+        window.dispatchEvent(new CustomEvent('outline-generated', { 
+          detail: data.sections 
+        }));
+      } else {
+        throw new Error('Invalid response format from outline generation');
+      }
+    } catch (error) {
+      console.error('Error generating outline:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleGenerateArticle = async () => {
-    // TODO: Implement article generation
-    console.log('Generate article not implemented yet');
+    if (!hasOutline) {
+      console.error('No outline available');
+      return;
+    }
+
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    console.log('Starting article generation with:', {
+      title: finalTitle,
+      outline: articleData.outline,
+      keywords: articleData.keywords,
+      audience: articleData.audience
+    });
+
+    setIsGenerating(true);
+    setMainIsGenerating(true);
+    setStreamingContent('');
+    
+    try {
+      const response = await fetch(`https://wpezdklekbanfcctswbz.supabase.co/functions/v1/generate-content`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: finalTitle,
+          outline: articleData.outline,
+          keywords: articleData.keywords,
+          audience: articleData.audience,
+          tone: 'professional' // You might want to get this from form data
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              
+              if (data === '[DONE]') {
+                console.log('Article generation completed');
+                break;
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  accumulatedContent += parsed.content;
+                  setStreamingContent(accumulatedContent);
+                }
+              } catch (parseError) {
+                // Skip invalid JSON
+                continue;
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating article:', error);
+    } finally {
+      setIsGenerating(false);
+      setMainIsGenerating(false);
+    }
   };
 
   const adjustTitleCount = (delta: number) => {
@@ -123,8 +253,8 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   };
 
   return (
-    <div className="sticky bottom-0 bg-white border-t border-[rgb(208,213,221)] p-6 space-y-4">
-      <div className="flex items-center gap-4">
+    <div className="sticky bottom-0 bg-white border-t border-[rgb(208,213,221)] p-6 h-20 flex items-center">
+      <div className="flex items-center gap-4 w-full">
         {/* Title Count Controls - Only show in step 1 */}
         {currentStep === 1 && (
           <div className="flex items-center gap-2">

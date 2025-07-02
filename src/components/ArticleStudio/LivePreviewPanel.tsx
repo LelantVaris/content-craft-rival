@@ -56,19 +56,32 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
       setIsLoadingTitles(false);
     };
 
-    // Listen for title generation start
     const handleTitleGenerationStart = () => {
       setIsLoadingTitles(true);
     };
 
+    const handleOutlineGenerated = (event: CustomEvent) => {
+      const sections = event.detail;
+      updateArticleData({ outline: sections });
+      setIsLoadingOutline(false);
+    };
+
+    const handleOutlineGenerationStart = () => {
+      setIsLoadingOutline(true);
+    };
+
     window.addEventListener('titles-generated', handleTitleGeneration as EventListener);
     window.addEventListener('title-generation-start', handleTitleGenerationStart as EventListener);
+    window.addEventListener('outline-generated', handleOutlineGenerated as EventListener);
+    window.addEventListener('outline-generation-start', handleOutlineGenerationStart as EventListener);
 
     return () => {
       window.removeEventListener('titles-generated', handleTitleGeneration as EventListener);
       window.removeEventListener('title-generation-start', handleTitleGenerationStart as EventListener);
+      window.removeEventListener('outline-generated', handleOutlineGenerated as EventListener);
+      window.removeEventListener('outline-generation-start', handleOutlineGenerationStart as EventListener);
     };
-  }, []);
+  }, [updateArticleData]);
 
   // Determine current step
   const getCurrentStep = () => {
@@ -78,34 +91,6 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   const currentStep = getCurrentStep();
-
-  // Auto-generate outline when title is selected
-  useEffect(() => {
-    if (hasSelectedTitle && !hasOutline && !isLoadingOutline) {
-      generateOutline();
-    }
-  }, [hasSelectedTitle, hasOutline]);
-
-  const generateOutline = async () => {
-    setIsLoadingOutline(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-outline', {
-        body: {
-          title: finalTitle,
-          topic: articleData.topic,
-          keywords: articleData.keywords,
-          audience: articleData.audience
-        }
-      });
-
-      if (error) throw error;
-      updateArticleData({ outline: data.sections || [] });
-    } catch (error) {
-      console.error('Error generating outline:', error);
-    } finally {
-      setIsLoadingOutline(false);
-    }
-  };
 
   const handleTitleSelect = (title: string) => {
     updateArticleData({ selectedTitle: title, customTitle: '' });
@@ -138,6 +123,12 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
       updateArticleData({ outline: [], selectedTitle: '', customTitle: '' });
       setGeneratedTitles([]);
     }
+  };
+
+  const handleContinue = () => {
+    // This will trigger the next step generation automatically
+    // The step logic is handled by the TitleGenerationSection
+    console.log('Continue to next step');
   };
 
   const renderContent = () => {
@@ -314,14 +305,14 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   return (
-    <div className="h-full bg-gray-50/30 flex flex-col max-h-screen">
+    <div className="h-[calc(100vh-56px)] bg-gray-50/30 flex flex-col max-h-[calc(100vh-56px)]">
       <div className="flex-1 overflow-auto">
         {renderContent()}
       </div>
       
-      {/* Continue/Back Buttons at Bottom */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-        <div className="flex justify-between">
+      {/* Continue/Back Buttons at Bottom with fixed height */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 h-20 flex items-center">
+        <div className="flex justify-between w-full">
           <Button
             variant="outline"
             onClick={handleBack}
@@ -333,7 +324,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
           </Button>
 
           <Button
-            onClick={() => {/* Handle continue */}}
+            onClick={handleContinue}
             disabled={!canContinue() || isGenerating}
             className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600"
           >
