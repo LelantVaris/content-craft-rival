@@ -11,6 +11,10 @@ interface UnifiedControlPanelProps {
   setStreamingContent: (content: string) => void;
   setIsGenerating: (generating: boolean) => void;
   setStreamingStatus: (status: any) => void;
+  getPrimaryKeyword: () => string;
+  getSecondaryKeywords: () => string[];
+  getTargetWordCount: () => number;
+  streamingContent: string;
 }
 
 export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
@@ -20,7 +24,11 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   isGenerating,
   setStreamingContent,
   setIsGenerating,
-  setStreamingStatus
+  setStreamingStatus,
+  getPrimaryKeyword,
+  getSecondaryKeywords,
+  getTargetWordCount,
+  streamingContent
 }) => {
   const [seoProMode, setSeoProMode] = useState(true);
   const [isTitleGenerating, setIsTitleGenerating] = useState(false);

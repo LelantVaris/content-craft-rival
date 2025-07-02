@@ -5,6 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/components/ui/breadcrumb';
 import { useWebsiteCrawler } from '@/hooks/useWebsiteCrawler';
 import { useCrawlStatus } from '@/hooks/useCrawlStatus';
 import { useWebsiteMap } from '@/hooks/useWebsiteMap';
@@ -205,14 +213,50 @@ const CrawlerTest = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Globe className="w-8 h-8 text-blue-600" />
-        <div>
-          <h1 className="text-3xl font-bold">Website Crawler Test</h1>
-          <p className="text-gray-600">Test the website crawling functionality with real-time updates</p>
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-white sticky top-0 z-50">
+        <div className="flex flex-1 items-center gap-2 px-4">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage className="line-clamp-1">
+                  Website Crawler
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
-      </div>
+        <div className="ml-auto px-4">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Search className="w-3 h-3 text-blue-600" />
+              <span>Real-time</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <BarChart3 className="w-3 h-3 text-green-600" />
+              <span>Analytics</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Globe className="w-3 h-3 text-purple-600" />
+              <span>Site Mapping</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Globe className="w-8 h-8 text-blue-600" />
+            <div>
+              <h1 className="text-3xl font-bold">Website Crawler Test</h1>
+              <p className="text-gray-600">Test the website crawling functionality with real-time updates</p>
+            </div>
+          </div>
 
       {/* Crawl Form */}
       <Card>
@@ -366,6 +410,8 @@ const CrawlerTest = () => {
           </div>
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 };

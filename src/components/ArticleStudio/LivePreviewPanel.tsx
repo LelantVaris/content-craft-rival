@@ -224,20 +224,27 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
       );
     }
 
-    // State 4: Outline Display
-    if (hasSelectedTitle && (!hasOutline || isLoadingOutline)) {
+    // State 4: Outline Display - Auto-trigger generation when title is selected
+    if (hasSelectedTitle && !hasOutline) {
+      // Auto-trigger outline generation immediately when title is selected
+      React.useEffect(() => {
+        if (hasSelectedTitle && !hasOutline && !isLoadingOutline) {
+          window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
+        }
+      }, [hasSelectedTitle, hasOutline, isLoadingOutline]);
+
       return (
         <div className="p-6">
           <div className="text-center mb-8">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {isLoadingOutline ? 'Generating outline...' : 'Outline ready'}
+              Generating your outline...
             </h3>
             <p className="text-gray-600">
-              Creating a structured outline for your article
+              AI is creating a structured outline for your article
             </p>
           </div>
           
-          {isLoadingOutline && <AnimatedLoadingSkeleton />}
+          <AnimatedLoadingSkeleton />
         </div>
       );
     }

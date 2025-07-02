@@ -283,39 +283,7 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
 
   return (
     <div className="sticky bottom-0 bg-white border-t border-[rgb(208,213,221)] p-6 h-20 flex items-center">
-      <div className="flex items-center gap-4 w-full">
-        {/* Title Count Controls - Only show in step 1 */}
-        {currentStep === 1 && (
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-semibold text-[rgb(16,24,40)] whitespace-nowrap">
-              # of titles
-            </label>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => adjustTitleCount(-1)}
-              disabled={titleCount <= 1}
-              className="h-8 w-8"
-            >
-              <Minus className="w-4 h-4" />
-            </Button>
-            <Input
-              value={titleCount}
-              onChange={(e) => setTitleCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-              className="w-16 text-center"
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => adjustTitleCount(1)}
-              disabled={titleCount >= 10}
-              className="h-8 w-8"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-        
+      <div className="flex items-center justify-between gap-4 w-full">
         {/* Generate Button */}
         <Button
           onClick={handleGenerate}
@@ -332,6 +300,40 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
             getButtonText()
           )}
         </Button>
+        
+        {/* Title Count Controls - Only show in step 1 */}
+        {currentStep === 1 && (
+          <div className="flex flex-col items-center gap-1">
+            <label className="text-xs font-semibold text-[rgb(16,24,40)] whitespace-nowrap">
+              # of titles
+            </label>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => adjustTitleCount(-1)}
+                disabled={titleCount <= 1}
+                className="h-8 w-8"
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <Input
+                value={titleCount}
+                onChange={(e) => setTitleCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                className="w-16 text-center h-8"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => adjustTitleCount(1)}
+                disabled={titleCount >= 10}
+                className="h-8 w-8"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

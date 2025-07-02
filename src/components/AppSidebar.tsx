@@ -87,7 +87,7 @@ export function AppSidebar({
         <SidebarMenu>
           {topNavItems.map(item => <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild isActive={location.pathname === item.url} tooltip={item.title}>
-                <Link to={item.url} className="px-[12px]">
+                <Link to={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
                 </Link>
