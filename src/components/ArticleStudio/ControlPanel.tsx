@@ -17,6 +17,9 @@ interface ControlPanelProps {
   setStreamingContent: (content: string) => void;
   setIsGenerating: (generating: boolean) => void;
   setStreamingStatus: (status: string) => void;
+  getPrimaryKeyword: () => string;
+  getSecondaryKeywords: () => string[];
+  getTargetWordCount: () => number;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -29,7 +32,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   isGenerating,
   setStreamingContent,
   setIsGenerating,
-  setStreamingStatus
+  setStreamingStatus,
+  getPrimaryKeyword,
+  getSecondaryKeywords,
+  getTargetWordCount
 }) => {
   const renderStepContent = () => {
     switch (articleData.currentStep) {
@@ -56,6 +62,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             setStreamingContent={setStreamingContent}
             setIsGenerating={setIsGenerating}
             setStreamingStatus={setStreamingStatus}
+            getPrimaryKeyword={getPrimaryKeyword}
+            getSecondaryKeywords={getSecondaryKeywords}
+            getTargetWordCount={getTargetWordCount}
           />
         );
       default:
