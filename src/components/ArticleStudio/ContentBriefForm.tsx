@@ -27,10 +27,41 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
 }) => {
   const [currentKeyword, setCurrentKeyword] = React.useState('');
   const [isGeneratingKeywords, setIsGeneratingKeywords] = React.useState(false);
+  const [tone, setTone] = React.useState('professional');
+  const [length, setLength] = React.useState('medium');
+  const [pointOfView, setPointOfView] = React.useState('');
+  const [brand, setBrand] = React.useState('');
+  const [product, setProduct] = React.useState('');
 
   const handleTryExample = () => {
     const { topic } = getRandomExampleTopic();
-    onUpdate({ topic });
+    
+    // Generate example data for all fields
+    const exampleKeywords = [
+      'content marketing',
+      'digital strategy',
+      'growth hacking',
+      'SEO optimization'
+    ];
+    
+    const exampleTone = 'professional';
+    const exampleLength = 'medium';
+    const exampleAudience = 'Marketing professionals and business owners looking to grow their online presence';
+    const exampleBrand = 'A modern marketing agency that helps businesses scale through digital channels';
+    const exampleProduct = 'Comprehensive digital marketing services including SEO, content marketing, and social media management';
+    
+    // Update all fields
+    onUpdate({ 
+      topic,
+      keywords: exampleKeywords,
+      audience: exampleAudience
+    });
+    
+    // Update local state
+    setTone(exampleTone);
+    setLength(exampleLength);
+    setBrand(exampleBrand);
+    setProduct(exampleProduct);
   };
 
   const handleKeywordAdd = () => {
@@ -112,9 +143,24 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
 
       {/* Keywords Section - Always Visible */}
       <div className="space-y-4">
-        <label className="text-sm font-semibold text-[rgb(16,24,40)]">
-          Keywords
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-semibold text-[rgb(16,24,40)]">
+            Keywords
+          </label>
+          <Button
+            variant="outline"
+            onClick={handleGenerateKeywords}
+            disabled={!articleData.topic || isGeneratingKeywords}
+            className="flex items-center gap-2"
+          >
+            {isGeneratingKeywords ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            AI Generate
+          </Button>
+        </div>
         <div className="flex gap-2">
           <Input
             placeholder="best writing tools"
@@ -130,19 +176,6 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
             disabled={!currentKeyword.trim()}
           >
             <Plus className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleGenerateKeywords}
-            disabled={!articleData.topic || isGeneratingKeywords}
-            className="flex items-center gap-2"
-          >
-            {isGeneratingKeywords ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            AI Generate
           </Button>
         </div>
         {articleData.keywords.length > 0 && (
@@ -172,7 +205,7 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
           <label className="text-sm font-semibold text-[rgb(16,24,40)]">
             Tone
           </label>
-          <Select defaultValue="professional">
+          <Select value={tone} onValueChange={setTone}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -188,7 +221,7 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
           <label className="text-sm font-semibold text-[rgb(16,24,40)]">
             Length
           </label>
-          <Select defaultValue="medium">
+          <Select value={length} onValueChange={setLength}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -225,9 +258,27 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
                 Point of view
               </label>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">First person</Button>
-                <Button variant="outline" size="sm">Second person</Button>
-                <Button variant="outline" size="sm">Third person</Button>
+                <Button 
+                  variant={pointOfView === 'first' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setPointOfView('first')}
+                >
+                  First person
+                </Button>
+                <Button 
+                  variant={pointOfView === 'second' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setPointOfView('second')}
+                >
+                  Second person
+                </Button>
+                <Button 
+                  variant={pointOfView === 'third' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setPointOfView('third')}
+                >
+                  Third person
+                </Button>
               </div>
             </div>
 
@@ -251,6 +302,8 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
               </label>
               <Textarea
                 placeholder="EasyKitchen is an appliance company that makes easy to use kitchenware"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
                 rows={2}
               />
             </div>
@@ -262,6 +315,8 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
               </label>
               <Textarea
                 placeholder="Lightweight and fast freezing 1.5 quartz frozen yogurt, ice-cream and sorbet maker"
+                value={product}
+                onChange={(e) => setProduct(e.target.value)}
                 rows={2}
               />
             </div>
