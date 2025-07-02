@@ -7,7 +7,15 @@ import { toast } from 'sonner';
 export interface ArticleStudioData {
   topic: string;
   keywords: string[];
+  primaryKeyword: string;
+  searchIntent: 'informational' | 'transactional' | 'navigational' | 'commercial' | 'auto';
   audience: string;
+  tone: string;
+  length: string;
+  customWordCount?: number;
+  pointOfView: string;
+  brand: string;
+  product: string;
   selectedTitle: string;
   customTitle?: string;
   outline: OutlineSection[];
@@ -28,7 +36,15 @@ export function useArticleStudio() {
   const [articleData, setArticleData] = useState<ArticleStudioData>({
     topic: '',
     keywords: [],
+    primaryKeyword: '',
+    searchIntent: 'auto',
     audience: '',
+    tone: 'professional',
+    length: 'medium',
+    customWordCount: undefined,
+    pointOfView: 'second',
+    brand: '',
+    product: '',
     selectedTitle: '',
     customTitle: '',
     outline: [],
@@ -47,6 +63,41 @@ export function useArticleStudio() {
   const updateArticleData = useCallback((updates: Partial<ArticleStudioData>) => {
     setArticleData(prev => ({ ...prev, ...updates }));
   }, []);
+
+  // Helper to get primary keyword (use explicit or first from list)
+  const getPrimaryKeyword = useCallback(() => {
+    return articleData.primaryKeyword || articleData.keywords[0] || '';
+  }, [articleData.primaryKeyword, articleData.keywords]);
+
+  // Helper to get secondary keywords (all except primary)
+  const getSecondaryKeywords = useCallback(() => {
+    const primary = getPrimaryKeyword();
+    return articleData.keywords.filter(k => k !== primary);
+  }, [articleData.keywords, getPrimaryKeyword]);
+
+  // Helper to get target word count
+  const getTargetWordCount = useCallback(() => {
+    if (articleData.length === 'custom') {
+      return articleData.customWordCount || 4000;
+    }
+    
+    const wordCountMap = {
+      short: 2000,
+      medium: 4000,
+      long: 6000
+    };
+    
+    return wordCountMap[articleData.length as keyof typeof wordCountMap] || 4000;
+  }, [articleData.length, articleData.customWordCount]);
+
+  // Form validation
+  const isFormValid = useCallback(() => {
+    return (
+      articleData.topic.trim().length > 0 &&
+      (articleData.keywords.length > 0 || articleData.primaryKeyword.trim().length > 0) &&
+      articleData.audience.trim().length > 0
+    );
+  }, [articleData]);
 
   // Auto-progression logic
   useEffect(() => {
@@ -105,7 +156,7 @@ export function useArticleStudio() {
         content: finalContent,
         status: 'draft',
         content_type: 'blog-post',
-        tone: 'professional',
+        tone: articleData.tone,
         target_audience: articleData.audience || undefined,
         keywords: articleData.keywords.length > 0 ? articleData.keywords : undefined,
       });
@@ -155,6 +206,10 @@ export function useArticleStudio() {
     streamingStatus,
     setStreamingContent,
     setIsGenerating,
-    setStreamingStatus
+    setStreamingStatus,
+    getPrimaryKeyword,
+    getSecondaryKeywords,
+    getTargetWordCount,
+    isFormValid
   };
 }

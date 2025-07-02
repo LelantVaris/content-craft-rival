@@ -28,11 +28,6 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
 }) => {
   const [currentKeyword, setCurrentKeyword] = React.useState('');
   const [isGeneratingKeywords, setIsGeneratingKeywords] = React.useState(false);
-  const [tone, setTone] = React.useState('professional');
-  const [length, setLength] = React.useState('medium');
-  const [pointOfView, setPointOfView] = React.useState('');
-  const [brand, setBrand] = React.useState('');
-  const [product, setProduct] = React.useState('');
 
   const handleTryExample = () => {
     const { topic } = getRandomExampleTopic();
@@ -45,26 +40,24 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
       'SEO optimization'
     ];
     
-    const exampleTone = 'professional';
-    const exampleLength = 'medium';
     const exampleAudience = 'Marketing professionals and business owners looking to grow their online presence through effective digital strategies';
     const exampleBrand = 'A modern digital marketing agency that specializes in data-driven growth strategies and helps businesses scale through innovative online channels';
     const exampleProduct = 'Comprehensive digital marketing services including SEO optimization, content marketing, social media management, and conversion rate optimization';
-    const examplePointOfView = 'second';
     
     // Update all fields with comprehensive example data
     onUpdate({ 
       topic,
       keywords: exampleKeywords,
-      audience: exampleAudience
+      primaryKeyword: 'content marketing strategy',
+      searchIntent: 'informational',
+      audience: exampleAudience,
+      tone: 'professional',
+      length: 'medium',
+      pointOfView: 'second',
+      brand: exampleBrand,
+      product: exampleProduct,
+      customWordCount: undefined
     });
-    
-    // Update local state for all form fields
-    setTone(exampleTone);
-    setLength(exampleLength);
-    setBrand(exampleBrand);
-    setProduct(exampleProduct);
-    setPointOfView(examplePointOfView);
   };
 
   const handleKeywordAdd = () => {
@@ -94,9 +87,9 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
         body: {
           topic: articleData.topic,
           audience: articleData.audience,
-          tone: tone,
-          brand: brand,
-          product: product
+          tone: articleData.tone,
+          brand: articleData.brand,
+          product: articleData.product
         }
       });
 
@@ -206,13 +199,54 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
           )}
         </div>
 
+        {/* Primary Keyword Section */}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-[rgb(16,24,40)]">
+            Primary Keyword
+          </label>
+          <Input
+            placeholder="content marketing strategy"
+            value={articleData.primaryKeyword}
+            onChange={(e) => onUpdate({ primaryKeyword: e.target.value })}
+            className="text-base"
+          />
+          <p className="text-xs text-gray-500">
+            Leave empty to use the first keyword in your list
+          </p>
+        </div>
+
+        {/* Search Intent Section */}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-[rgb(16,24,40)]">
+            Search Intent
+          </label>
+          <Select 
+            value={articleData.searchIntent} 
+            onValueChange={(value: any) => onUpdate({ searchIntent: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Auto-detect</SelectItem>
+              <SelectItem value="informational">Informational</SelectItem>
+              <SelectItem value="transactional">Transactional</SelectItem>
+              <SelectItem value="navigational">Navigational</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Tone & Length Section */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-[rgb(16,24,40)]">
               Tone
             </label>
-            <Select value={tone} onValueChange={setTone}>
+            <Select 
+              value={articleData.tone} 
+              onValueChange={(value) => onUpdate({ tone: value })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -226,18 +260,37 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
           </div>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-[rgb(16,24,40)]">
-              Length
+              Target Length
             </label>
-            <Select value={length} onValueChange={setLength}>
+            <Select 
+              value={articleData.length} 
+              onValueChange={(value) => onUpdate({ length: value })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="short">Short (~800 words)</SelectItem>
-                <SelectItem value="medium">Medium (~1,500 words)</SelectItem>
-                <SelectItem value="long">Long (~2,500 words)</SelectItem>
+                <SelectItem value="short">Short (~2,000 words)</SelectItem>
+                <SelectItem value="medium">Medium (~4,000 words)</SelectItem>
+                <SelectItem value="long">Long (~6,000 words)</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
+            
+            {articleData.length === 'custom' && (
+              <div className="mt-2">
+                <Input
+                  type="number"
+                  placeholder="Enter word count"
+                  value={articleData.customWordCount || ''}
+                  onChange={(e) => onUpdate({ 
+                    customWordCount: parseInt(e.target.value) || undefined 
+                  })}
+                  min="500"
+                  max="15000"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -281,23 +334,23 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
                   </label>
                   <div className="flex gap-2">
                     <Button 
-                      variant={pointOfView === 'first' ? 'default' : 'outline'} 
+                      variant={articleData.pointOfView === 'first' ? 'default' : 'outline'} 
                       size="sm"
-                      onClick={() => setPointOfView('first')}
+                      onClick={() => onUpdate({ pointOfView: 'first' })}
                     >
                       First person
                     </Button>
                     <Button 
-                      variant={pointOfView === 'second' ? 'default' : 'outline'} 
+                      variant={articleData.pointOfView === 'second' ? 'default' : 'outline'} 
                       size="sm"
-                      onClick={() => setPointOfView('second')}
+                      onClick={() => onUpdate({ pointOfView: 'second' })}
                     >
                       Second person
                     </Button>
                     <Button 
-                      variant={pointOfView === 'third' ? 'default' : 'outline'} 
+                      variant={articleData.pointOfView === 'third' ? 'default' : 'outline'} 
                       size="sm"
-                      onClick={() => setPointOfView('third')}
+                      onClick={() => onUpdate({ pointOfView: 'third' })}
                     >
                       Third person
                     </Button>
@@ -324,8 +377,8 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
                   </label>
                   <Textarea
                     placeholder="EasyKitchen is an appliance company that makes easy to use kitchenware"
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
+                    value={articleData.brand}
+                    onChange={(e) => onUpdate({ brand: e.target.value })}
                     rows={2}
                   />
                 </div>
@@ -337,8 +390,8 @@ export const ContentBriefForm: React.FC<ContentBriefFormProps> = ({
                   </label>
                   <Textarea
                     placeholder="Lightweight and fast freezing 1.5 quartz frozen yogurt, ice-cream and sorbet maker"
-                    value={product}
-                    onChange={(e) => setProduct(e.target.value)}
+                    value={articleData.product}
+                    onChange={(e) => onUpdate({ product: e.target.value })}
                     rows={2}
                   />
                 </div>
