@@ -15,7 +15,14 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, keywords = [], audience = '', count = 5 } = await req.json();
+    const { 
+      topic, 
+      keywords = [], 
+      primaryKeyword = '',
+      audience = '', 
+      searchIntent = 'informational',
+      count = 5 
+    } = await req.json();
 
     if (!topic) {
       return new Response(JSON.stringify({ error: 'Topic is required' }), {
@@ -24,23 +31,42 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Generating ${count} titles for topic: ${topic}`);
+    console.log(`Generating ${count} PVOD titles for topic: ${topic}`);
 
-    const keywordText = keywords.length > 0 ? `Keywords to include: ${keywords.join(', ')}` : '';
+    const effectivePrimaryKeyword = primaryKeyword || keywords[0] || '';
+    const keywordText = effectivePrimaryKeyword ? `Primary keyword: ${effectivePrimaryKeyword}` : '';
+    const secondaryText = keywords.length > 1 ? `Secondary keywords: ${keywords.slice(1).join(', ')}` : '';
     const audienceText = audience ? `Target audience: ${audience}` : '';
 
-    const prompt = `Generate ${count} compelling, SEO-optimized article titles for the following topic:
+    // PVOD Title Generation Prompt
+    const prompt = `Generate ${count} compelling, PVOD-style article titles for the following topic:
 
 Topic: ${topic}
 ${keywordText}
+${secondaryText}
 ${audienceText}
+Search Intent: ${searchIntent}
 
-Requirements:
-- Each title should be 50-60 characters for optimal SEO
-- Include power words and numbers where appropriate
-- Make them engaging and click-worthy
-- Ensure they accurately represent the topic
-- Vary the style (how-to, list, guide, etc.)
+PVOD Title Requirements:
+- PERSONALITY: Include relatable, human elements
+- VALUE: Promise clear benefits or solutions
+- OPINION: Hint at expert insights or unique perspectives
+- DIRECT: Use conversational, direct language
+
+Title Guidelines:
+- 50-60 characters for optimal SEO
+- Include power words (Ultimate, Complete, Essential, Proven, etc.)
+- Use numbers when appropriate (5 Ways, 10 Tips, etc.)
+- Make them click-worthy but accurate
+- Vary the style: how-to, lists, guides, questions
+- Naturally incorporate the primary keyword
+- Address the ${searchIntent} search intent
+
+Examples of PVOD titles:
+- "The Complete Guide to [Topic]: What I Learned After [Experience]"
+- "Why Most People Get [Topic] Wrong (And How You Can Get It Right)"
+- "5 Game-Changing [Topic] Strategies That Actually Work"
+- "[Number] [Topic] Mistakes I Made So You Don't Have To"
 
 Return only the titles, one per line, without numbering or bullets.`;
 
@@ -53,7 +79,7 @@ Return only the titles, one per line, without numbering or bullets.`;
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are an expert SEO copywriter who creates compelling article titles that drive clicks and rank well in search engines.' },
+          { role: 'system', content: 'You are an expert copywriter specializing in PVOD content creation. You create titles that are personal, valuable, opinionated, and direct while being SEO-optimized.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.8,
@@ -73,9 +99,9 @@ Return only the titles, one per line, without numbering or bullets.`;
       .split('\n')
       .map(title => title.trim())
       .filter(title => title.length > 0)
-      .slice(0, count); // Use the actual count parameter instead of hardcoded 5
+      .slice(0, count);
 
-    console.log(`Generated ${titles.length} titles:`, titles);
+    console.log(`Generated ${titles.length} PVOD titles:`, titles);
 
     return new Response(JSON.stringify({ titles }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

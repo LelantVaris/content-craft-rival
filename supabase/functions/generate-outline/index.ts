@@ -15,7 +15,15 @@ serve(async (req) => {
   }
 
   try {
-    const { title, topic, keywords = [], audience = '' } = await req.json();
+    const { 
+      title, 
+      topic, 
+      keywords = [], 
+      primaryKeyword = '',
+      audience = '',
+      searchIntent = 'informational',
+      targetWordCount = 4000
+    } = await req.json();
 
     if (!title && !topic) {
       return new Response(JSON.stringify({ error: 'Title or topic is required' }), {
@@ -24,29 +32,52 @@ serve(async (req) => {
       });
     }
 
-    const keywordText = keywords.length > 0 ? `Keywords to include: ${keywords.join(', ')}` : '';
+    const effectivePrimaryKeyword = primaryKeyword || keywords[0] || '';
+    const secondaryKeywords = keywords.filter(k => k !== effectivePrimaryKeyword);
+    
+    const keywordText = effectivePrimaryKeyword ? `Primary keyword: ${effectivePrimaryKeyword}` : '';
+    const secondaryText = secondaryKeywords.length > 0 ? `Secondary keywords: ${secondaryKeywords.join(', ')}` : '';
     const audienceText = audience ? `Target audience: ${audience}` : '';
 
-    const prompt = `Create a detailed article outline for the following:
+    // PVOD Outline Generation Prompt
+    const prompt = `Create a detailed PVOD-style article outline for the following:
 
 Title: ${title || topic}
 ${keywordText}
+${secondaryText}
 ${audienceText}
+Search Intent: ${searchIntent}
+Target Word Count: ~${targetWordCount} words
 
-Requirements:
-- Create 5-8 main sections
-- Each section should have a clear, descriptive title
-- Include a brief description (1-2 sentences) of what each section will cover
-- Structure should flow logically from introduction to conclusion
-- Make it comprehensive and SEO-friendly
-- Include an introduction and conclusion section
+PVOD Outline Requirements:
+- PERSONALITY: Include sections for personal stories, relatable examples
+- VALUE: Ensure each section provides actionable takeaways
+- OPINION: Add sections for expert insights and industry perspectives
+- DIRECT: Structure content to speak directly to the reader's needs
+
+Outline Structure Guidelines:
+- Create 6-8 main sections for comprehensive coverage
+- Start with an engaging hook section
+- Include a "common mistakes" or "what not to do" section
+- Add a "practical tips" or "how-to" section
+- Include expert insights or case studies
+- End with actionable next steps
+- Balance educational content with practical application
+- Consider the ${searchIntent} search intent throughout
+
+Section Requirements:
+- Each section should have a clear, benefit-focused title
+- Include 2-3 sentences describing what the section will cover
+- Mention specific takeaways or value points
+- Consider keyword integration opportunities
+- Flow logically from introduction to conclusion
 
 Format your response as JSON with this structure:
 {
   "sections": [
     {
       "title": "Section Title",
-      "description": "Brief description of what this section covers"
+      "description": "Brief description of what this section covers and the value it provides"
     }
   ]
 }`;
@@ -60,7 +91,7 @@ Format your response as JSON with this structure:
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are an expert content strategist who creates well-structured article outlines that engage readers and perform well in search engines. Always respond with valid JSON.' },
+          { role: 'system', content: 'You are an expert content strategist specializing in PVOD content structure. You create outlines that are personal, valuable, opinionated, and direct while being SEO-optimized. Always respond with valid JSON.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -92,7 +123,7 @@ Format your response as JSON with this structure:
       expanded: false
     }));
 
-    console.log('Generated outline sections:', sections.length);
+    console.log('Generated PVOD outline sections:', sections.length);
 
     return new Response(JSON.stringify({ sections }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

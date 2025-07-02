@@ -15,6 +15,9 @@ interface ContentGenerationPanelProps {
   setStreamingContent: (content: string) => void;
   setIsGenerating: (generating: boolean) => void;
   setStreamingStatus: (status: string) => void;
+  getPrimaryKeyword: () => string;
+  getSecondaryKeywords: () => string[];
+  getTargetWordCount: () => number;
 }
 
 export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
@@ -23,7 +26,10 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   onComplete,
   setStreamingContent,
   setIsGenerating,
-  setStreamingStatus
+  setStreamingStatus,
+  getPrimaryKeyword,
+  getSecondaryKeywords,
+  getTargetWordCount
 }) => {
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -50,16 +56,22 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     setShowReasoning(true);
 
     try {
-      setReasoningText('Analyzing your article requirements...');
-      setStreamingStatus('Preparing to generate content...');
+      setReasoningText('Analyzing your PVOD article requirements...');
+      setStreamingStatus('Preparing to generate PVOD content...');
       
-      const { data, error } = await supabase.functions.invoke('generate-content', {
+      const { data, error } = await supabase.functions.invoke('generate-content-ai-sdk', {
         body: {
           title,
           outline: articleData.outline,
           keywords: articleData.keywords,
+          primaryKeyword: getPrimaryKeyword(),
           audience: articleData.audience,
-          tone: 'professional'
+          tone: articleData.tone,
+          targetWordCount: getTargetWordCount(),
+          searchIntent: articleData.searchIntent,
+          brand: articleData.brand,
+          product: articleData.product,
+          pointOfView: articleData.pointOfView
         }
       });
 
@@ -71,7 +83,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       if (data?.content) {
         onUpdate({ generatedContent: data.content });
         setStreamingContent(data.content);
-        setReasoningText('Content generation complete!');
+        setReasoningText('PVOD content generation complete!');
         setStreamingStatus('Ready to create article');
       } else {
         throw new Error('No content was generated');
@@ -101,12 +113,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <PenTool className="w-5 h-5 text-green-600" />
-            Generate Article Content  
+            Generate PVOD Article Content  
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Ready to generate your article content using AI.
+            Ready to generate your article content using PVOD principles (Personality, Value, Opinion, Direct).
           </p>
 
           <Reasoning 
@@ -145,12 +157,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             {isGeneratingContent ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating Content...
+                Generating PVOD Content...
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Generate Content
+                Generate PVOD Content
               </>
             )}
           </Button>
@@ -173,7 +185,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Your article content has been generated! Click "Create Article" to save it and continue editing.
+              Your PVOD article content has been generated! Click "Create Article" to save it and continue editing.
             </p>
             <Button
               onClick={onComplete}
