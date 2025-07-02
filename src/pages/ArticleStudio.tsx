@@ -40,8 +40,8 @@ const ArticleStudio = () => {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header with SidebarTrigger and Breadcrumbs */}
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-white">
+      {/* Sticky Header */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-white sticky top-0 z-50">
         <div className="flex flex-1 items-center gap-2 px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="mr-2 h-4" />
@@ -73,7 +73,7 @@ const ArticleStudio = () => {
         </div>
       </header>
 
-      {/* Main Content Area - Clean Layout without Headers */}
+      {/* Main Content Area */}
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
@@ -85,7 +85,7 @@ const ArticleStudio = () => {
           <ResizableHandle className="opacity-0 hover:opacity-100 transition-opacity w-px bg-gray-200" />
           
           <ResizablePanel defaultSize={60} minSize={40}>
-            <div className="h-full overflow-auto">
+            <div className="h-full overflow-auto max-h-screen">
               <LivePreviewPanel {...articleStudio} updateArticleData={articleStudio.updateArticleData} />
             </div>
           </ResizablePanel>

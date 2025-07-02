@@ -1,13 +1,19 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { StreamingArticlePreview } from './StreamingArticlePreview';
 import { LiveArticleStats } from './LiveArticleStats';
 import { RealtimeSEOPanel } from './RealtimeSEOPanel';
 import { EnhancedPublishingOptions } from './EnhancedPublishingOptions';
 import { EmptyStateDisplay } from './EmptyStateDisplay';
-import { TitleGenerationInput } from './TitleGenerationInput';
-import { TitleSelectionPanel } from './TitleSelectionPanel';
+import { AnimatedLoadingSkeleton } from './AnimatedLoadingSkeleton';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LivePreviewPanelProps {
   articleData: ArticleStudioData;
@@ -27,6 +33,9 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   updateArticleData
 }) => {
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
+  const [isLoadingOutline, setIsLoadingOutline] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
   
   const finalTitle = articleData.customTitle || articleData.selectedTitle;
   const finalContent = streamingContent || articleData.generatedContent;
@@ -36,27 +45,81 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const hasTopic = !!articleData.topic;
   const hasGeneratedTitles = generatedTitles.length > 0;
   const hasSelectedTitle = !!finalTitle;
+  const hasOutline = articleData.outline.length > 0;
   const hasContent = !!finalContent;
 
-  // Conditional display logic based on content readiness
-  const showStats = finalContent && finalContent.length > 500 && !isGenerating;
-  const showSEO = finalContent && finalContent.length > 800 && !isGenerating;
-  const showPublishing = finalContent && finalContent.length > 600 && !isGenerating && finalTitle;
+  // Determine current step
+  const getCurrentStep = () => {
+    if (!hasSelectedTitle) return 1;
+    if (!hasOutline) return 2;
+    return 3;
+  };
+
+  const currentStep = getCurrentStep();
+
+  // Auto-generate outline when title is selected
+  useEffect(() => {
+    if (hasSelectedTitle && !hasOutline && !isLoadingOutline) {
+      generateOutline();
+    }
+  }, [hasSelectedTitle, hasOutline]);
+
+  const generateOutline = async () => {
+    setIsLoadingOutline(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-outline', {
+        body: {
+          title: finalTitle,
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      if (error) throw error;
+      updateArticleData({ outline: data.sections || [] });
+    } catch (error) {
+      console.error('Error generating outline:', error);
+    } finally {
+      setIsLoadingOutline(false);
+    }
+  };
+
+  const handleTitleSelect = (title: string) => {
+    updateArticleData({ selectedTitle: title, customTitle: '' });
+  };
+
+  const handleCustomTitleSubmit = () => {
+    if (customTitle.trim()) {
+      updateArticleData({ customTitle: customTitle.trim(), selectedTitle: '' });
+    }
+  };
 
   const handleTryExample = (topic: string) => {
     updateArticleData({ topic });
   };
 
-  const handleTitlesGenerated = (titles: string[]) => {
-    setGeneratedTitles(titles);
+  const canGoBack = currentStep > 1;
+  const canContinue = () => {
+    switch (currentStep) {
+      case 1: return hasSelectedTitle;
+      case 2: return hasOutline;
+      case 3: return hasContent;
+      default: return false;
+    }
   };
 
-  const handleTitleSelect = (title: string) => {
-    updateArticleData({ selectedTitle: title });
+  const handleBack = () => {
+    if (currentStep === 3) {
+      updateArticleData({ generatedContent: '' });
+    } else if (currentStep === 2) {
+      updateArticleData({ outline: [], selectedTitle: '', customTitle: '' });
+      setGeneratedTitles([]);
+    }
   };
 
   const renderContent = () => {
-    // Step 1: Empty state when no topic
+    // State 1: Empty state when no topic
     if (!hasTopic) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -65,80 +128,160 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
       );
     }
 
-    // Step 2: Title generation input when topic exists but no titles generated
-    if (hasTopic && !hasGeneratedTitles) {
+    // State 2: Loading state (Title Generation)
+    if (isLoadingTitles) {
+      return <AnimatedLoadingSkeleton />;
+    }
+
+    // State 3: Title Selection
+    if (hasTopic && !hasSelectedTitle) {
+      if (generatedTitles.length === 0) {
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Ready to generate titles
+              </h3>
+              <p className="text-gray-600">
+                Click "Generate titles" in the left panel to get started
+              </p>
+            </div>
+          </div>
+        );
+      }
+
       return (
-        <div className="p-6 flex items-center justify-center h-full">
-          <div className="w-full max-w-md">
-            <TitleGenerationInput
-              topic={articleData.topic}
-              keywords={articleData.keywords}
-              audience={articleData.audience}
-              onTitlesGenerated={handleTitlesGenerated}
-            />
+        <div className="p-6 space-y-6">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Choose your article title
+            </h3>
+            <p className="text-gray-600">
+              Select from AI-generated titles or write your own
+            </p>
+          </div>
+
+          <RadioGroup value={articleData.selectedTitle} onValueChange={handleTitleSelect}>
+            <div className="space-y-3">
+              {generatedTitles.map((title, index) => (
+                <Card key={index} className="p-4 hover:bg-gray-50 cursor-pointer">
+                  <div className="flex items-start space-x-3">
+                    <RadioGroupItem value={title} id={`title-${index}`} className="mt-1" />
+                    <Label 
+                      htmlFor={`title-${index}`} 
+                      className="flex-1 cursor-pointer font-medium leading-relaxed"
+                    >
+                      {title}
+                    </Label>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </RadioGroup>
+
+          <div className="border-t pt-6">
+            <Label className="text-sm font-semibold text-gray-900 mb-2 block">
+              Or write your own title
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter your custom title..."
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCustomTitleSubmit()}
+                className="flex-1"
+              />
+              <Button onClick={handleCustomTitleSubmit} disabled={!customTitle.trim()}>
+                Use Title
+              </Button>
+            </div>
           </div>
         </div>
       );
     }
 
-    // Step 3: Title selection when titles are generated but none selected
-    if (hasGeneratedTitles && !hasSelectedTitle) {
+    // State 4: Outline Display
+    if (hasSelectedTitle && (!hasOutline || isLoadingOutline)) {
       return (
         <div className="p-6">
-          <TitleSelectionPanel
-            generatedTitles={generatedTitles}
-            selectedTitle={articleData.selectedTitle}
-            onTitleSelect={handleTitleSelect}
-          />
+          <div className="text-center mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {isLoadingOutline ? 'Generating outline...' : 'Outline ready'}
+            </h3>
+            <p className="text-gray-600">
+              Creating a structured outline for your article
+            </p>
+          </div>
+          
+          {isLoadingOutline && <AnimatedLoadingSkeleton />}
         </div>
       );
     }
 
-    // Step 4: Article preview when title is selected
-    if (hasSelectedTitle) {
+    // State 5: Article Preview with Outline
+    if (hasSelectedTitle && hasOutline) {
       return (
-        <div className="p-4 space-y-4 h-full">
-          {/* Live Statistics Bar - Only show when content is substantial */}
-          {showStats && (
-            <LiveArticleStats
-              title={finalTitle}
-              content={finalContent}
-              keywords={articleData.keywords}
-              isGenerating={isGenerating}
-            />
+        <div className="space-y-6 h-full flex flex-col">
+          {/* Article Stats */}
+          {finalContent && finalContent.length > 500 && !isGenerating && (
+            <div className="px-6 pt-6">
+              <LiveArticleStats
+                title={finalTitle}
+                content={finalContent}
+                keywords={articleData.keywords}
+                isGenerating={isGenerating}
+              />
+            </div>
           )}
           
-          {/* Main Article Preview */}
-          <div className="flex-1 min-h-0">
-            <StreamingArticlePreview
-              title={finalTitle}
-              content={finalContent}
-              isGenerating={isGenerating}
-              streamingContent={streamingContent}
-              streamingStatus={safeStreamingStatus}
-            />
+          {/* Main Content */}
+          <div className="flex-1 px-6">
+            {hasContent ? (
+              <StreamingArticlePreview
+                title={finalTitle}
+                content={finalContent}
+                isGenerating={isGenerating}
+                streamingContent={streamingContent}
+                streamingStatus={safeStreamingStatus}
+              />
+            ) : (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-gray-900">{finalTitle}</h2>
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Article Outline</h3>
+                  {articleData.outline.map((section, index) => (
+                    <Card key={section.id} className="p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {index + 1}. {section.title}
+                      </h4>
+                      <p className="text-gray-600 text-sm">{section.content}</p>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
-          {/* Bottom panels - Only show when content is ready */}
-          {(showSEO || showPublishing) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {showSEO && (
-                <RealtimeSEOPanel
-                  title={finalTitle}
-                  content={finalContent}
-                  keywords={articleData.keywords}
-                  targetAudience={articleData.audience}
-                />
-              )}
-              
-              {showPublishing && (
+          {/* Bottom Panels */}
+          {finalContent && finalContent.length > 600 && !isGenerating && (
+            <div className="px-6 pb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {finalContent.length > 800 && (
+                  <RealtimeSEOPanel
+                    title={finalTitle}
+                    content={finalContent}
+                    keywords={articleData.keywords}
+                    targetAudience={articleData.audience}
+                  />
+                )}
+                
                 <EnhancedPublishingOptions
                   onSave={saveAndComplete}
                   onPublish={saveAndComplete}
                   disabled={!finalTitle || isGenerating}
                   isGenerating={isGenerating}
                 />
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -149,8 +292,34 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   return (
-    <div className="h-full bg-gray-50/30">
-      {renderContent()}
+    <div className="h-full bg-gray-50/30 flex flex-col">
+      <div className="flex-1 overflow-auto">
+        {renderContent()}
+      </div>
+      
+      {/* Continue/Back Buttons at Bottom */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            disabled={!canGoBack || isGenerating}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+
+          <Button
+            onClick={() => {/* Handle continue */}}
+            disabled={!canContinue() || isGenerating}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600"
+          >
+            Continue
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

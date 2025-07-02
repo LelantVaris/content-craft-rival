@@ -34,7 +34,7 @@ function App() {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                   <Route path="/*" element={
-                    <SidebarProvider>
+                    <SidebarProvider defaultOpen={false}>
                       <div className="flex min-h-screen w-full">
                         <AppSidebar />
                         <SidebarInset className="flex-1">

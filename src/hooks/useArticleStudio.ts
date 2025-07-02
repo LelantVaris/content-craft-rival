@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useArticles } from '@/hooks/useArticles';
 import { toast } from 'sonner';
@@ -48,6 +48,20 @@ export function useArticleStudio() {
     setArticleData(prev => ({ ...prev, ...updates }));
   }, []);
 
+  // Auto-progression logic
+  useEffect(() => {
+    const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
+    const hasOutline = articleData.outline.length > 0;
+    
+    let newStep = 1;
+    if (hasTitle && hasOutline) newStep = 3;
+    else if (hasTitle) newStep = 2;
+    
+    if (newStep !== articleData.currentStep) {
+      setArticleData(prev => ({ ...prev, currentStep: newStep }));
+    }
+  }, [articleData.selectedTitle, articleData.customTitle, articleData.outline.length]);
+
   const nextStep = useCallback(() => {
     setArticleData(prev => ({ 
       ...prev, 
@@ -74,21 +88,6 @@ export function useArticleStudio() {
         return false;
     }
   }, [articleData]);
-
-  const autoSave = useCallback(async () => {
-    const finalTitle = articleData.customTitle || articleData.selectedTitle;
-    const finalContent = streamingContent || articleData.generatedContent;
-    
-    if (!finalTitle || finalTitle === 'Untitled Article' || !finalContent) {
-      return;
-    }
-    
-    try {
-      console.log('Auto-saving article...', { title: finalTitle, contentLength: finalContent.length });
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-    }
-  }, [articleData, streamingContent]);
 
   const saveAndComplete = useCallback(async () => {
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
@@ -123,23 +122,24 @@ export function useArticleStudio() {
   }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
 
   const generateFullArticle = useCallback(async () => {
-    if (!articleData.topic) {
-      console.error('Please enter a topic first');
+    // This will be handled by the streaming article generation in UnifiedControlPanel
+    console.info('Article generation will be handled by the streaming component');
+  }, []);
+
+  const autoSave = useCallback(async () => {
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    const finalContent = streamingContent || articleData.generatedContent;
+    
+    if (!finalTitle || finalTitle === 'Untitled Article' || !finalContent) {
       return;
     }
-
+    
     try {
-      setIsGenerating(true);
-      setStreamingContent('');
-      setStreamingStatus('Preparing to generate article...');
-      console.info('Enhanced article generation will be handled by the UnifiedControlPanel');
+      console.log('Auto-saving article...', { title: finalTitle, contentLength: finalContent.length });
     } catch (error) {
-      console.error('Error generating article:', error);
-      console.error('Failed to generate article. Please try again.');
-    } finally {
-      setIsGenerating(false);
+      console.error('Auto-save failed:', error);
     }
-  }, [articleData.topic]);
+  }, [articleData, streamingContent]);
 
   return {
     articleData,
