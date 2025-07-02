@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Minus, Loader2 } from 'lucide-react';
@@ -34,6 +33,29 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   loadingState
 }) => {
   const [titleCount, setTitleCount] = useState(4);
+
+  // Listen for continue button events from LivePreviewPanel
+  useEffect(() => {
+    const handleTriggerOutlineGeneration = () => {
+      if (hasTitle) {
+        handleGenerateOutline();
+      }
+    };
+
+    const handleTriggerArticleGeneration = () => {
+      if (hasOutline) {
+        handleGenerateArticle();
+      }
+    };
+
+    window.addEventListener('trigger-outline-generation', handleTriggerOutlineGeneration);
+    window.addEventListener('trigger-article-generation', handleTriggerArticleGeneration);
+
+    return () => {
+      window.removeEventListener('trigger-outline-generation', handleTriggerOutlineGeneration);
+      window.removeEventListener('trigger-article-generation', handleTriggerArticleGeneration);
+    };
+  }, [hasTitle, hasOutline, articleData]);
 
   const getButtonText = () => {
     if (loadingState?.isLoading) {

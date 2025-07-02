@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -118,17 +117,29 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 
   const handleBack = () => {
     if (currentStep === 3) {
+      // Go back to step 2 - clear article content but keep outline
       updateArticleData({ generatedContent: '' });
     } else if (currentStep === 2) {
-      updateArticleData({ outline: [], selectedTitle: '', customTitle: '' });
+      // Go back to step 1 - clear titles and outline
+      updateArticleData({ 
+        selectedTitle: '', 
+        customTitle: '', 
+        outline: []
+      });
       setGeneratedTitles([]);
     }
   };
 
   const handleContinue = () => {
-    // This will trigger the next step generation automatically
-    // The step logic is handled by the TitleGenerationSection
-    console.log('Continue to next step');
+    // The continue button should trigger the next step's generation
+    // This is handled by dispatching events that the TitleGenerationSection listens to
+    if (currentStep === 1 && hasSelectedTitle) {
+      // Trigger outline generation
+      window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
+    } else if (currentStep === 2 && hasOutline) {
+      // Trigger article generation
+      window.dispatchEvent(new CustomEvent('trigger-article-generation'));
+    }
   };
 
   const renderContent = () => {
