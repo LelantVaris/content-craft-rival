@@ -4,6 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useArticles } from '@/hooks/useArticles';
 import { toast } from 'sonner';
 
+export enum GenerationStep {
+  IDLE = 'idle',
+  GENERATING_TITLES = 'generating_titles',
+  GENERATING_OUTLINE = 'generating_outline',
+  GENERATING_ARTICLE = 'generating_article'
+}
+
 export interface ArticleStudioData {
   topic: string;
   keywords: string[];
@@ -53,9 +60,10 @@ export function useArticleStudio() {
     currentStep: 1
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState<GenerationStep>(GenerationStep.IDLE);
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingStatus, setStreamingStatus] = useState<string>('');
+  const [error, setError] = useState<string>('');
   
   const navigate = useNavigate();
   const { saveArticle, refreshArticles } = useArticles();
@@ -150,7 +158,7 @@ export function useArticleStudio() {
     }
     
     try {
-      setIsGenerating(true);
+      setGenerationStep(GenerationStep.GENERATING_ARTICLE);
       const savedArticle = await saveArticle({
         title: finalTitle,
         content: finalContent,
@@ -168,7 +176,7 @@ export function useArticleStudio() {
       console.error('Error saving article:', error);
       toast.error('Failed to save article. Please try again.');
     } finally {
-      setIsGenerating(false);
+      setGenerationStep(GenerationStep.IDLE);
     }
   }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
 
@@ -201,12 +209,14 @@ export function useArticleStudio() {
     saveAndComplete,
     generateFullArticle,
     autoSave,
-    isGenerating,
+    generationStep,
     streamingContent,
     streamingStatus,
+    error,
     setStreamingContent,
-    setIsGenerating,
+    setGenerationStep,
     setStreamingStatus,
+    setError,
     getPrimaryKeyword,
     getSecondaryKeywords,
     getTargetWordCount,
