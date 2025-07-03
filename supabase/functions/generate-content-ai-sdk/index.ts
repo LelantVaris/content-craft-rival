@@ -1,9 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { openai } from 'https://esm.sh/@ai-sdk/openai@1.3.22';
-import { streamText } from 'https://esm.sh/ai@4.3.16';
+import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.7.1';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -15,20 +13,47 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('=== CONTENT GENERATION AI SDK - PRODUCTION VERSION ===');
+  console.log('Request method:', req.method);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Check if API key is available
+    // Validate OpenAI API key
     if (!openAIApiKey) {
-      console.error('OPENAI_API_KEY environment variable is not set');
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+      console.error('OpenAI API key not found in environment');
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured. Please contact support.' 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Parse and validate request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request received:', { 
+        title: requestBody.title,
+        outlineLength: requestBody.outline?.length || 0,
+        keywordCount: requestBody.keywords?.length || 0,
+        audience: !!requestBody.audience 
+      });
+    } catch (parseError) {
+      console.error('Request parsing error:', parseError);
+      return new Response(JSON.stringify({
+        error: 'Invalid request format. Please check your request body.'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { 
       title, 
       outline, 
@@ -41,16 +66,19 @@ serve(async (req) => {
       brand = '',
       product = '',
       pointOfView = 'second'
-    } = await req.json();
+    } = requestBody;
 
-    if (!title) {
-      return new Response(JSON.stringify({ error: 'Title is required' }), {
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      console.error('Title missing or invalid');
+      return new Response(JSON.stringify({ 
+        error: 'Title is required and must be a non-empty string' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Deduct credits first
+    // Deduct credits first (if user is authenticated)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
@@ -58,23 +86,28 @@ serve(async (req) => {
       const { data: { user } } = await supabase.auth.getUser(token);
       
       if (user) {
+        console.log('Deducting credits for user:', user.id);
         const { data: creditResult } = await supabase.rpc('deduct_credits', {
           p_user_id: user.id,
           p_amount: 5,
           p_tool_used: 'content_generation',
-          p_description: `Generated article: ${title}`
+          p_description: `Generated content for: ${title.substring(0, 50)}${title.length > 50 ? '...' : ''}`
         });
 
         if (!creditResult) {
-          return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+          console.error('Insufficient credits for user:', user.id);
+          return new Response(JSON.stringify({ 
+            error: 'Insufficient credits. Please upgrade your plan or purchase more credits.' 
+          }), {
             status: 402,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        console.log('Credits deducted successfully');
       }
     }
 
-    // Build PVOD-based prompt
+    // Build enhanced prompt
     const effectivePrimaryKeyword = primaryKeyword || keywords[0] || '';
     const secondaryKeywords = keywords.filter(k => k !== effectivePrimaryKeyword);
     
@@ -99,7 +132,9 @@ VALUE: Provide actionable insights and practical takeaways
 OPINION: Include thoughtful perspectives and expert viewpoints
 DIRECT: Use clear, conversational language that speaks directly to the reader
 
-Write in ${pointOfView} person perspective with a ${tone} tone. Target word count: ~${targetWordCount} words.`;
+Write in ${pointOfView} person perspective with a ${tone} tone. Target word count: ~${targetWordCount} words.
+
+Use proper markdown formatting including headers (# ## ###), **bold text**, *italic text*, bullet points, and numbered lists for maximum readability.`;
 
     const userPrompt = `Write a comprehensive PVOD-style article based on these specifications:
 
@@ -132,50 +167,106 @@ Content Guidelines:
 - Use short paragraphs (2-3 sentences max)
 - Include bullet points and numbered lists for readability
 - Add relevant questions that readers might ask
-- Make it scannable with clear subheadings`;
+- Make it scannable with clear subheadings
 
-    console.log('Starting AI SDK streaming content generation for:', title);
+Write the complete article now:`;
 
-    const result = await streamText({
-      model: openai('gpt-4o-mini'),
-      system: systemPrompt,
-      prompt: userPrompt,
-      temperature: 0.7,
-      maxTokens: 4000,
-    });
+    console.log('Making direct OpenAI API call for content generation...');
+    
+    // Make API call with timeout and retry logic
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for content generation
+    
+    let openAIResponse;
+    try {
+      openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          max_tokens: 4000,
+          temperature: 0.7,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1
+        }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
-    // Create SSE stream
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const delta of result.textStream) {
-            const chunk = `data: ${JSON.stringify({ content: delta })}\n\n`;
-            controller.enqueue(new TextEncoder().encode(chunk));
-          }
-          
-          controller.enqueue(new TextEncoder().encode(`data: [DONE]\n\n`));
-          controller.close();
-        } catch (error) {
-          console.error('Streaming error:', error);
-          controller.error(error);
-        }
+    console.log('OpenAI API response status:', openAIResponse.status);
+
+    if (!openAIResponse.ok) {
+      const errorText = await openAIResponse.text();
+      console.error('OpenAI API error:', {
+        status: openAIResponse.status,
+        statusText: openAIResponse.statusText,
+        error: errorText
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: 'Failed to generate content. Please try again in a moment.',
+        details: openAIResponse.status === 429 ? 'Rate limit exceeded' : 'Service temporarily unavailable'
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const openAIData = await openAIResponse.json();
+    const generatedContent = openAIData.choices?.[0]?.message?.content;
+
+    if (!generatedContent) {
+      console.error('No content generated by OpenAI');
+      return new Response(JSON.stringify({ 
+        error: 'Failed to generate content. Please try again.' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Successfully generated content with ${generatedContent.length} characters`);
+
+    return new Response(JSON.stringify({ 
+      content: generatedContent,
+      metadata: {
+        title: title,
+        generatedAt: new Date().toISOString(),
+        wordCount: generatedContent.split(/\s+/).length,
+        characterCount: generatedContent.length
       }
-    });
-
-    return new Response(stream, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in generate-content-ai-sdk function:', error);
+    console.error('=== UNEXPECTED ERROR ===');
+    console.error('Error type:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Handle specific error types
+    if (error.name === 'AbortError') {
+      return new Response(JSON.stringify({ 
+        error: 'Request timed out. Please try again.' 
+      }), {
+        status: 408,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     return new Response(JSON.stringify({ 
-      error: error.message || 'Content generation failed',
-      details: error.toString()
+      error: 'An unexpected error occurred. Please try again.',
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

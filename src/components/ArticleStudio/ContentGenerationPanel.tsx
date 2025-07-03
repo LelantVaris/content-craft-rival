@@ -59,6 +59,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       setReasoningText('Analyzing your PVOD article requirements...');
       setStreamingStatus('Preparing to generate PVOD content...');
       
+      console.log('Invoking generate-content-ai-sdk function...');
       const { data, error } = await supabase.functions.invoke('generate-content-ai-sdk', {
         body: {
           title,
@@ -80,16 +81,18 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         throw new Error(error.message || 'Failed to generate content');
       }
 
+      console.log('Function response received:', { hasContent: !!data?.content });
+
       if (data?.content) {
         onUpdate({ generatedContent: data.content });
         setStreamingContent(data.content);
         setReasoningText('PVOD content generation complete!');
         setStreamingStatus('Ready to create article');
+        console.log('Content generated successfully with', data.metadata?.wordCount || 0, 'words');
       } else {
         throw new Error('No content was generated');
       }
       
-      console.log('Content generated successfully!');
     } catch (error) {
       console.error('Error generating content:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
