@@ -16,7 +16,6 @@ interface TitleGenerationSectionProps {
   setStreamingContent: (content: string) => void;
   setStreamingStatus: (status: any) => void;
   setMainIsGenerating: (generating: boolean) => void;
-  loadingState?: { isLoading: boolean; operation?: string };
 }
 
 export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
@@ -29,8 +28,7 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   hasOutline,
   setStreamingContent,
   setStreamingStatus,
-  setMainIsGenerating,
-  loadingState
+  setMainIsGenerating
 }) => {
   const [titleCount, setTitleCount] = useState(4);
 
@@ -58,9 +56,10 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   }, [hasTitle, hasOutline, articleData]);
 
   const getButtonText = () => {
-    if (loadingState?.isLoading) {
-      const operation = loadingState.operation || 'Processing';
-      return `${operation}...`;
+    if (isGenerating) {
+      if (currentStep === 1) return 'Generating titles...';
+      if (currentStep === 2) return 'Generating outline...';
+      if (currentStep === 3) return 'Generating article...';
     }
     
     if (currentStep === 1) {
@@ -287,11 +286,11 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
         {/* Generate Button */}
         <Button
           onClick={handleGenerate}
-          disabled={!canGenerate() || isGenerating || loadingState?.isLoading}
+          disabled={!canGenerate() || isGenerating}
           className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium"
           size="lg"
         >
-          {(isGenerating || loadingState?.isLoading) ? (
+          {isGenerating ? (
             <div className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               {getButtonText()}

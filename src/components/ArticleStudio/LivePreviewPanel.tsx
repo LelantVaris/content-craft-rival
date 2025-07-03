@@ -32,8 +32,10 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   updateArticleData
 }) => {
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
-  const [isLoadingTitles, setIsLoadingTitles] = useState(false);
-  const [isLoadingOutline, setIsLoadingOutline] = useState(false);
+  const [loadingState, setLoadingState] = useState<{ operation: 'titles' | 'outline' | 'article' | null; isLoading: boolean }>({
+    operation: null,
+    isLoading: false
+  });
   const [customTitle, setCustomTitle] = useState('');
   
   const finalTitle = articleData.customTitle || articleData.selectedTitle;
@@ -52,21 +54,21 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     const handleTitleGeneration = (event: CustomEvent) => {
       const titles = event.detail;
       setGeneratedTitles(titles);
-      setIsLoadingTitles(false);
+      setLoadingState({ operation: null, isLoading: false });
     };
 
     const handleTitleGenerationStart = () => {
-      setIsLoadingTitles(true);
+      setLoadingState({ operation: 'titles', isLoading: true });
     };
 
     const handleOutlineGenerated = (event: CustomEvent) => {
       const sections = event.detail;
       updateArticleData({ outline: sections });
-      setIsLoadingOutline(false);
+      setLoadingState({ operation: null, isLoading: false });
     };
 
     const handleOutlineGenerationStart = () => {
-      setIsLoadingOutline(true);
+      setLoadingState({ operation: 'outline', isLoading: true });
     };
 
     window.addEventListener('titles-generated', handleTitleGeneration as EventListener);
@@ -84,10 +86,10 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 
   // Auto-trigger outline generation when title is selected
   useEffect(() => {
-    if (hasSelectedTitle && !hasOutline && !isLoadingOutline) {
+    if (hasSelectedTitle && !hasOutline && !loadingState.isLoading) {
       window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
     }
-  }, [hasSelectedTitle, hasOutline, isLoadingOutline]);
+  }, [hasSelectedTitle, hasOutline, loadingState.isLoading]);
 
   // Determine current step
   const getCurrentStep = () => {
@@ -160,7 +162,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     }
 
     // State 2: Loading state (Title Generation)
-    if (isLoadingTitles) {
+    if (loadingState.isLoading && loadingState.operation === 'titles') {
       return <AnimatedLoadingSkeleton />;
     }
 
