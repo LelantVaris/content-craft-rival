@@ -3,181 +3,245 @@
 
 ## Project Overview
 **Goal**: Transform Article Studio into a comprehensive, multi-website AI content creation platform  
-**Current Status**: BROKEN - Requires Complete Rewrite ❌  
+**Current Status**: ✅ PHASE 2 COMPLETE - Ready for Phase 3 (AI SDK Migration)  
 **Issue Identified**: 2025-07-03  
 **Rewrite Plan Initiated**: 2025-07-03  
 **Target Completion**: 2025-01-15
 
-## 🚨 CRITICAL SYSTEM STATUS: BROKEN
+## 🎯 CURRENT PRIORITY: Phase 3 - AI SDK Migration for Streaming
 
-**Issue**: Article Studio is fundamentally broken due to incomplete AI SDK migration and broken data flow  
-**Root Cause**: Partial migration from manual OpenAI calls to AI SDK left system in inconsistent state  
-**Impact**: Users cannot successfully generate articles end-to-end  
-
-### Major Issues Identified
-1. **Broken Data Flow**: Generated titles don't reach right panel
-2. **Incomplete AI SDK Integration**: Mix of AI SDK and manual fetch calls causing inconsistency
-3. **Non-functional UI Flow**: Step progression doesn't work properly
-4. **State Management Issues**: Left and right panels out of sync
-5. **Hard-coded API Calls**: Manual fetch with hard-coded URLs instead of Supabase client
-
-### System Status: ❌ BROKEN
-- Core article generation workflow: **BROKEN**
-- AI title generation: **BROKEN** (doesn't flow to UI)
-- AI outline generation: **BROKEN** (inconsistent implementation)
-- AI content streaming: **PARTIALLY WORKING** (only `generate-content-ai-sdk`)
-- UI layout and navigation: **BROKEN** (data flow issues)
+**Next Immediate Task**: Implement AI SDK for streaming article generation while keeping direct API calls for titles/outlines
 
 ---
 
-## COMPLETE REWRITE PLAN
+## IMPLEMENTATION PHASES STATUS
 
-### 🎯 REWRITE PHASES
+### ✅ Phase 0: Layout Foundation - COMPLETED
+- [x] **SidebarInset Integration**: Fixed content resizing (`src/pages/ArticleStudio.tsx`)
+- [x] **Dynamic Content Width**: Full available width utilization
+- [x] **Header Implementation**: SidebarTrigger and breadcrumbs functional
 
-| Phase | Status | Priority | Focus Area | Estimated Time |
-|-------|--------|----------|------------|----------------|
-| **Phase 1: AI SDK Migration** | 🔄 **IN PROGRESS** | CRITICAL | Backend consistency | 2-3 hours |
-| **Phase 2: Data Flow Architecture** | 📋 Pending | CRITICAL | State management | 2-3 hours |  
-| **Phase 3: UI Components Rebuild** | 📋 Pending | HIGH | User interface | 3-4 hours |
-| **Phase 4: UX Enhancement** | 📋 Pending | MEDIUM | Polish & features | 2-3 hours |
+### ✅ Phase 1: Database Setup & Core Layout - COMPLETED  
+- [x] **Database Schema**: `user_seo_preferences` table with RLS policies
+- [x] **Resizable Layout**: 40/60 panel configuration (`react-resizable-panels`)
+- [x] **Clean Interface**: Headers removed, visual noise eliminated
 
----
+### ✅ Phase 2: Clean UI Implementation - COMPLETED
+- [x] **Visual Cleanup**: All panel headers and separators removed
+- [x] **Conditional Display**: Statistics show only when appropriate
+- [x] **Progressive Disclosure**: Step-based content revelation
+- [x] **Empty States**: Proper empty state with search icon
+- [x] **Step Navigation**: 3-step workflow with proper labels
+- [x] **Example Topics**: Random topic selection implemented
 
-## Phase 1: AI SDK Migration ⚡ CRITICAL
+#### Phase 2 Detailed Checklist ✅ ALL COMPLETED
+- [x] **Panel Headers Removed** (`src/pages/ArticleStudio.tsx`)
+  - [x] "Control Panel" header removed
+  - [x] "Live Preview" header removed
+  - [x] Visual separators hidden
+  - [x] Resizable handle opacity set to 0 by default
 
-### Status: 🔄 In Progress
-**Priority**: Must complete before any other work  
-**Estimated Time**: 2-3 hours  
-**Goal**: Replace all manual OpenAI calls with AI SDK for consistency
+- [x] **Conditional Statistics** (`src/components/ArticleStudio/LivePreviewPanel.tsx`)
+  - [x] `LiveArticleStats`: Shows when content >500 chars & not generating
+  - [x] `RealtimeSEOPanel`: Shows when content >1000 chars & not generating
+  - [x] `EnhancedPublishingOptions`: Shows when content >800 chars, has title, not generating
 
-### Critical Backend Issues to Fix
+- [x] **Empty State Implementation** (`src/components/ArticleStudio/EmptyStateDisplay.tsx`)
+  - [x] Search icon in rounded square illustration
+  - [x] "No titles generated" copy
+  - [x] Descriptive subtext about AI generation
+  - [x] "Try Example" button with random topics
 
-#### 1. Title Generation Edge Function 🔧
-- **Problem**: Uses manual OpenAI API calls instead of AI SDK
-- **Solution**: Migrate `generate-titles` to use AI SDK with streaming
-- **Files**: `supabase/functions/generate-titles/index.ts`
+- [x] **Step Navigation Updates** (`src/components/ArticleStudio/StepNavigation.tsx`)
+  - [x] Labels: "Title", "Outline", "Article"
+  - [x] Visual checkmarks for completed steps
+  - [x] Proper step progression logic
 
-#### 2. Outline Generation Edge Function 🔧
-- **Problem**: Uses manual OpenAI API calls, inconsistent with content generation
-- **Solution**: Migrate `generate-outline` to use AI SDK
-- **Files**: `supabase/functions/generate-outline/index.ts`
+### 🔄 Phase 3: AI SDK Migration - IN PROGRESS
+**Priority**: CRITICAL - Must complete before other work  
+**Current Challenge**: Implement streaming for article generation while maintaining speed for titles/outlines
 
-#### 3. Keywords Generation Edge Function 🔧
-- **Problem**: Uses manual OpenAI API calls
-- **Solution**: Migrate `generate-keywords` to use AI SDK
-- **Files**: `supabase/functions/generate-keywords/index.ts`
+#### Phase 3 Implementation Strategy
+- [ ] **Hybrid Approach Decision Made**:
+  - [x] Keep direct OpenAI API calls for `generate-titles` and `generate-outline` (speed)
+  - [ ] **NEXT**: Implement AI SDK streaming for `generate-content-ai-sdk` (UX)
 
-#### 4. Hard-coded API Calls in Frontend 🔧
-- **Problem**: Manual fetch calls with hard-coded URLs in `UnifiedControlPanel`
-- **Solution**: Use proper Supabase client calls
-- **Files**: `src/components/ArticleStudio/UnifiedControlPanel.tsx`
+#### Phase 3 Detailed Tasks
+- [ ] **Update Content Generation Function** (`supabase/functions/generate-content-ai-sdk/index.ts`)
+  - [ ] Replace manual streaming with `streamText()` from AI SDK
+  - [ ] Fix CDN import issues (switch to stable CDN)
+  - [ ] Maintain PVOD prompt structure and parameters
+  - [ ] Test streaming reliability
 
-### Implementation Strategy
-1. **Migrate all edge functions** to use AI SDK with consistent patterns
-2. **Standardize error handling** across all functions
-3. **Implement proper streaming** where beneficial
-4. **Remove hard-coded URLs** from frontend components
-5. **Use Supabase client** for all edge function calls
+- [ ] **Frontend Streaming Integration** (`src/components/ArticleStudio/ContentGenerationPanel.tsx`)
+  - [ ] Implement `useChat` or `useCompletion` from AI SDK
+  - [ ] Connect streaming to Novel Editor
+  - [ ] Add streaming status indicators
+  - [ ] Preserve existing error handling
 
-### Success Criteria
-- [ ] All edge functions use AI SDK consistently
-- [ ] No manual OpenAI API calls remain
-- [ ] All functions have proper error handling
-- [ ] Frontend uses Supabase client exclusively
-- [ ] Functions can be called successfully end-to-end
+- [ ] **Novel Editor Streaming** (`src/components/NovelEditor.tsx` - EXISTING)
+  - [ ] Review existing Novel Editor capabilities
+  - [ ] Implement real-time content insertion
+  - [ ] Maintain editor state during streaming
+  - [ ] Preserve formatting and extensions
 
----
+#### Success Criteria for Phase 3
+- [ ] Zero React Error #31 occurrences
+- [ ] 99%+ successful streaming completion rate
+- [ ] Real-time content appears in Novel Editor
+- [ ] Proper error messages and recovery
+- [ ] Seamless integration with existing workflow
 
-## Phase 2: Data Flow Architecture 🔍
+### 📋 Phase 4: Enhanced Content Generation - PENDING
+**Dependencies**: Phase 3 complete
+- [ ] **Two-Phase Generation**: Skeleton → Research enhancement
+- [ ] **Web Research Integration**: OpenAI/Tavily for section enhancement
+- [ ] **Progress Indicators**: Real-time status updates
+- [ ] **Novel Editor Full Integration**: Transaction-based updates
 
-### Status: 📋 Pending
-**Dependencies**: Phase 1 complete  
-**Estimated Time**: 2-3 hours  
-**Goal**: Fix communication between left and right panels
-
-### Critical Data Flow Issues
-- [ ] **Generated Titles Not Reaching UI**: Titles generated but never displayed in right panel
-- [ ] **State Synchronization**: Left and right panels show different states
-- [ ] **Missing Callbacks**: No proper data passing between components
-- [ ] **Step Progression**: Step navigation doesn't trigger proper state updates
-
----
-
-## Phase 3: UI Components Rebuild 🧠
-
-### Status: 📋 Pending  
-**Dependencies**: Phases 1-2 complete  
-**Estimated Time**: 3-4 hours  
-**Goal**: Create working 3-step workflow
-
-### UI Rebuild Areas
-- [ ] **Step Navigation**: Fix progression and validation logic
-- [ ] **Progressive Disclosure**: Show/hide content based on actual state
-- [ ] **Loading States**: Proper indicators for each generation phase
-- [ ] **Continue/Back Logic**: Make navigation buttons functional
-
----
-
-## Phase 4: UX Enhancement 🌐
-
-### Status: 📋 Pending
-**Dependencies**: Phases 1-3 complete  
-**Estimated Time**: 2-3 hours  
-**Goal**: Polish interface and add missing features
-
-### Enhancement Areas
-- [ ] **Empty States**: Proper empty states with "Try Example" functionality
-- [ ] **Error Handling**: Better error messages and recovery
-- [ ] **Real-time Validation**: Form validation with helpful feedback
-- [ ] **Performance**: Reduce unnecessary re-renders and API calls
+### 📋 Phase 5: Advanced Features & Polish - PENDING
+**Dependencies**: Phase 4 complete
+- [ ] **Loading Overlays**: Between step transitions
+- [ ] **Drag-and-Drop Outlines**: Enhanced outline management
+- [ ] **Performance Optimization**: Caching and memory management
+- [ ] **Comprehensive Testing**: End-to-end workflow validation
 
 ---
 
-## Technical Architecture Decisions
+## COMPONENT REFERENCE MAP
 
-### ✅ Finalized Technical Choices
+### Core Article Studio Components
+| Component | File Path | Status | Purpose |
+|-----------|-----------|--------|---------|
+| **Main Studio** | `src/pages/ArticleStudio.tsx` | ✅ Updated | Main layout with resizable panels |
+| **Control Panel** | `src/components/ArticleStudio/UnifiedControlPanel.tsx` | ✅ Working | Left panel with step controls |
+| **Live Preview** | `src/components/ArticleStudio/LivePreviewPanel.tsx` | ✅ Updated | Right panel with progressive content |
+| **Step Navigation** | `src/components/ArticleStudio/StepNavigation.tsx` | ✅ Updated | 3-step workflow navigation |
 
-#### Backend Strategy
-- [x] **AI SDK Everywhere**: Consistent use of AI SDK across all edge functions
-- [x] **Streaming Where Beneficial**: Real-time content generation for better UX
-- [x] **Proper Error Handling**: Comprehensive error handling and recovery
-- [x] **Supabase Client Usage**: No direct HTTP calls to edge functions
+### Generation Components
+| Component | File Path | Status | Purpose |
+|-----------|-----------|--------|---------|
+| **Content Generation** | `src/components/ArticleStudio/ContentGenerationPanel.tsx` | 🔄 Needs AI SDK | Article generation with streaming |
+| **Title Generation** | `src/components/ArticleStudio/TitleGenerationPanel.tsx` | ✅ Working | Title generation (keep direct API) |
+| **Outline Creation** | `src/components/ArticleStudio/OutlineCreationPanel.tsx` | ✅ Working | Outline generation (keep direct API) |
 
-#### Frontend Strategy
-- [x] **Centralized State**: All generation state managed in `useArticleStudio` hook
-- [x] **Event-driven Updates**: Proper callbacks for data flow between components
-- [x] **TypeScript Types**: Comprehensive type safety throughout
-- [x] **Component Separation**: Small, focused components for maintainability
+### UI Components
+| Component | File Path | Status | Purpose |
+|-----------|-----------|--------|---------|
+| **Empty State** | `src/components/ArticleStudio/EmptyStateDisplay.tsx` | ✅ Implemented | Empty state with try example |
+| **Streaming Preview** | `src/components/ArticleStudio/StreamingArticlePreview.tsx` | 🔄 Needs Update | Article content streaming display |
+| **Loading Skeleton** | `src/components/ArticleStudio/AnimatedLoadingSkeleton.tsx` | ✅ Working | Loading states between steps |
+
+### Editor Integration
+| Component | File Path | Status | Purpose |
+|-----------|-----------|--------|---------|
+| **Novel Editor** | `src/components/NovelEditor.tsx` | ✅ Existing | WYSIWYG editor for final content |
+| **Content Editor** | `src/components/ArticleEditor/ContentEditor.tsx` | ✅ Existing | Article editing interface |
+
+---
+
+## EDGE FUNCTIONS STATUS
+
+### Content Generation Functions
+| Function | File Path | Status | Purpose | Next Action |
+|----------|-----------|--------|---------|-------------|
+| **Content AI SDK** | `supabase/functions/generate-content-ai-sdk/index.ts` | 🔄 Needs AI SDK | Article generation | **PRIORITY**: Convert to AI SDK streaming |
+| **Generate Titles** | `supabase/functions/generate-titles/index.ts` | ✅ Keep Direct API | Title generation | No changes needed |
+| **Generate Outline** | `supabase/functions/generate-outline/index.ts` | ✅ Keep Direct API | Outline generation | No changes needed |
+| **Generate Keywords** | `supabase/functions/generate-keywords/index.ts` | ✅ Working | Keyword generation | No changes needed |
 
 ---
 
-## Success Metrics & Goals
+## HOOKS AND STATE MANAGEMENT
 
-### Technical Performance
-- **Generation Success Rate**: 99%+ successful completions
-- **Data Flow Integrity**: 100% data synchronization between panels
-- **Error Recovery**: <1% unrecoverable errors
-- **API Consistency**: All functions use AI SDK
-
-### User Experience
-- **Workflow Completion**: 95%+ of started articles completed successfully
-- **Step Progression**: Seamless navigation between all 3 steps
-- **Real-time Updates**: Live preview and streaming content
-- **Error Feedback**: Clear, actionable error messages
+### Core Hooks
+| Hook | File Path | Status | Purpose |
+|------|-----------|--------|---------|
+| **Article Studio** | `src/hooks/useArticleStudio.ts` | ✅ Working | Main state management |
+| **Articles** | `src/hooks/useArticles.tsx` | ✅ Working | Article CRUD operations |
+| **SEO Configuration** | `src/hooks/useSEOConfiguration.ts` | ✅ Working | SEO settings persistence |
 
 ---
+
+## TESTING CHECKPOINTS
+
+### Phase 2 Testing ✅ ALL PASSED
+- [x] **Visual Cleanup Verification**
+  - [x] No panel headers visible
+  - [x] No visual separators between panels
+  - [x] Resizable handle hidden by default
+  - [x] Clean, borderless panel experience
+
+- [x] **Conditional Display Testing**
+  - [x] Statistics hidden until content >500 chars
+  - [x] SEO panel hidden until content >1000 chars
+  - [x] Publishing options hidden until ready
+  - [x] Progressive disclosure working correctly
+
+- [x] **Step Navigation Testing**
+  - [x] 3-step workflow functional
+  - [x] Back/Continue buttons working
+  - [x] Step progression automatic
+  - [x] Visual feedback for completed steps
+
+### Phase 3 Testing - PENDING
+- [ ] **AI SDK Streaming Tests**
+  - [ ] Zero React Error #31 occurrences
+  - [ ] Streaming content appears in real-time
+  - [ ] Novel Editor receives streamed content
+  - [ ] Error handling and recovery functional
+  - [ ] Performance acceptable (<2 minutes for full article)
+
+---
+
+## CURRENT BLOCKING ISSUES
+
+### Phase 3 Blockers
+1. **AI SDK Integration**: Need to implement streaming for content generation
+2. **CDN Import Issues**: Resolve 429 rate limiting on CDN imports
+3. **Novel Editor Streaming**: Connect AI SDK stream to Novel Editor
+4. **Type Safety**: Ensure proper TypeScript types for streaming
+
+### Immediate Next Steps
+1. **Fix `generate-content-ai-sdk`**: Implement AI SDK with stable CDN imports
+2. **Update `ContentGenerationPanel`**: Use AI SDK hooks for streaming
+3. **Test Novel Editor Integration**: Ensure streaming content flows properly
+4. **Performance Testing**: Validate streaming reliability and speed
+
+---
+
+## SUCCESS METRICS TRACKING
+
+### Technical Performance Goals
+- [ ] **Streaming Reliability**: 99%+ successful completion rate
+- [ ] **Generation Speed**: Complete article in <2 minutes  
+- [ ] **Error Rate**: <1% React errors, <5% API failures
+- [ ] **User Experience**: Seamless workflow completion
+
+### User Experience Goals
+- [x] **Clean Interface**: Headers and visual noise removed ✅
+- [x] **Progressive Disclosure**: Content revealed appropriately ✅
+- [ ] **Real-time Feedback**: Streaming content with progress indicators
+- [ ] **Simultaneous Editing**: Edit while content streams
 
 **Last Updated**: 2025-07-03  
-**Next Review**: After Phase 1 completion  
-**Document Version**: 4.0 - Complete Rewrite Plan
+**Next Review**: After Phase 3 AI SDK implementation  
+**Document Version**: 5.0 - Phase 3 Ready
 
-## Rewrite Plan Summary
+---
 
-The Article Studio system is fundamentally broken due to incomplete AI SDK migration and broken data flow architecture. A complete rewrite is required focusing on:
+## IMPLEMENTATION NOTES
 
-1. **Backend Consistency** - Migrate all functions to AI SDK
-2. **Data Flow Architecture** - Fix communication between components
-3. **UI Rebuild** - Create working user interface
-4. **UX Polish** - Add final features and error handling
+### AI SDK Implementation Strategy
+- **Hybrid Approach Confirmed**: Keep direct API calls for speed-critical operations (titles, outlines)
+- **Streaming Focus**: Use AI SDK specifically for article content generation
+- **Novel Editor Integration**: Leverage existing Novel Editor for final content editing
+- **Progressive Enhancement**: Maintain existing functionality while adding streaming
 
-This tracker will be updated after each phase completion to reflect progress.
+### Component Architecture Decisions
+- **Small, Focused Components**: Each component has single responsibility
+- **Conditional Rendering**: UI adapts based on current step and content state
+- **State Management**: Centralized in `useArticleStudio` hook
+- **Type Safety**: Full TypeScript coverage with proper error handling
+
+This tracker provides comprehensive checkpoints and references for the Article Studio implementation, focusing on the current priority of Phase 3 AI SDK migration.
