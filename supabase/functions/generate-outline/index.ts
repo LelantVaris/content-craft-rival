@@ -15,6 +15,9 @@ serve(async (req) => {
   }
 
   try {
+    const requestBody = await req.json();
+    console.log('Received request:', requestBody);
+    
     const { 
       title, 
       topic, 
@@ -23,7 +26,7 @@ serve(async (req) => {
       audience = '',
       searchIntent = 'informational',
       targetWordCount = 4000
-    } = await req.json();
+    } = requestBody;
 
     if (!title && !topic) {
       return new Response(JSON.stringify({ error: 'Title or topic is required' }), {
