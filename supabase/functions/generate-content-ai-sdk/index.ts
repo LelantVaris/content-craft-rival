@@ -1,8 +1,8 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { streamText } from "https://esm.sh/ai@4.3.16";
-import { openai } from "https://esm.sh/@ai-sdk/openai@1.3.22";
+import { streamText } from "npm:ai@4.3.16";
+import { openai } from "npm:@ai-sdk/openai@1.3.22";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.1';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -109,7 +109,7 @@ serve(async (req) => {
       }
     }
 
-    // Build enhanced PVOD prompt (same as before)
+    // Build enhanced PVOD prompt
     const effectivePrimaryKeyword = primaryKeyword || keywords[0] || '';
     const secondaryKeywords = keywords.filter(k => k !== effectivePrimaryKeyword);
     
@@ -126,7 +126,7 @@ serve(async (req) => {
       ).join('\n');
     }
 
-    // PVOD Article Generation Prompt (same as before)
+    // PVOD Article Generation Prompt
     const systemPrompt = `You are an expert content writer specializing in PVOD content creation (Personality, Value, Opinion, Direct). Create comprehensive, engaging articles that:
 
 PERSONALITY: Inject authentic voice and relatable human elements
