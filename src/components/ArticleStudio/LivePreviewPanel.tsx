@@ -240,6 +240,8 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
                 isGenerating={isGenerating}
                 streamingContent={streamingContent}
                 streamingStatus={safeStreamingStatus}
+                outline={articleData.outline}
+                useEnhancedGeneration={true}
               />
             ) : (
               <div className="space-y-4">

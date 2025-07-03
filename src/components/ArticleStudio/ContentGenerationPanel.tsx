@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, PenTool, Zap, AlertCircle } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
-import { supabase } from '@/integrations/supabase/client';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/prompt-kit/reasoning';
 import { ResponseStream } from '@/components/prompt-kit/response-stream';
+import { useEnhancedContentGeneration } from '@/hooks/useEnhancedContentGeneration';
 
 interface ContentGenerationPanelProps {
   articleData: ArticleStudioData;
@@ -31,10 +31,18 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   getSecondaryKeywords,
   getTargetWordCount
 }) => {
-  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
   const [showReasoning, setShowReasoning] = useState(false);
-  const [reasoningText, setReasoningText] = useState('');
+  
+  const {
+    generateContent,
+    isGenerating: isEnhancedGenerating,
+    sections,
+    overallProgress,
+    currentMessage,
+    error: enhancedError,
+    finalContent,
+    reset
+  } = useEnhancedContentGeneration();
 
   const canGenerate = () => {
     const title = articleData.customTitle || articleData.selectedTitle;
@@ -48,60 +56,35 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       return;
     }
 
-    setIsGeneratingContent(true);
+    // Reset previous state
+    reset();
     setIsGenerating(true);
     setStreamingContent('');
-    setGenerationError(null);
-    setReasoningText('');
     setShowReasoning(true);
 
     try {
-      setReasoningText('Analyzing your PVOD article requirements...');
-      setStreamingStatus('Preparing to generate PVOD content...');
+      setStreamingStatus('Starting enhanced content generation...');
       
-      console.log('Invoking generate-content-ai-sdk function...');
-      const { data, error } = await supabase.functions.invoke('generate-content-ai-sdk', {
-        body: {
-          title,
-          outline: articleData.outline,
-          keywords: articleData.keywords,
-          primaryKeyword: getPrimaryKeyword(),
-          audience: articleData.audience,
-          tone: articleData.tone,
-          targetWordCount: getTargetWordCount(),
-          searchIntent: articleData.searchIntent,
-          brand: articleData.brand,
-          product: articleData.product,
-          pointOfView: articleData.pointOfView
-        }
+      await generateContent({
+        title,
+        outline: articleData.outline,
+        keywords: articleData.keywords,
+        audience: articleData.audience,
+        tone: articleData.tone
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Failed to generate content');
-      }
-
-      console.log('Function response received:', { hasContent: !!data?.content });
-
-      if (data?.content) {
-        onUpdate({ generatedContent: data.content });
-        setStreamingContent(data.content);
-        setReasoningText('PVOD content generation complete!');
-        setStreamingStatus('Ready to create article');
-        console.log('Content generated successfully with', data.metadata?.wordCount || 0, 'words');
-      } else {
-        throw new Error('No content was generated');
+      // Update with final content when complete
+      if (finalContent) {
+        onUpdate({ generatedContent: finalContent });
+        setStreamingContent(finalContent);
+        setStreamingStatus('Enhanced content generation complete!');
       }
       
     } catch (error) {
       console.error('Error generating content:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setGenerationError(errorMessage);
-      console.error(`Failed to generate content: ${errorMessage}`);
-      setStreamingContent('');
-      setReasoningText(`Error: ${errorMessage}`);
+      setStreamingStatus(`Error: ${errorMessage}`);
     } finally {
-      setIsGeneratingContent(false);
       setIsGenerating(false);
       
       setTimeout(() => {
@@ -110,18 +93,36 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     }
   };
 
+  // Sync final content when generation completes
+  React.useEffect(() => {
+    if (finalContent && !isEnhancedGenerating) {
+      onUpdate({ generatedContent: finalContent });
+      setStreamingContent(finalContent);
+    }
+  }, [finalContent, isEnhancedGenerating, onUpdate, setStreamingContent]);
+
+  // Sync streaming status
+  React.useEffect(() => {
+    if (currentMessage) {
+      setStreamingStatus(currentMessage);
+    }
+  }, [currentMessage, setStreamingStatus]);
+
+  const displayError = enhancedError;
+  const isGeneratingContent = isEnhancedGenerating;
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <PenTool className="w-5 h-5 text-green-600" />
-            Generate PVOD Article Content  
+            Generate Enhanced Article Content  
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Ready to generate your article content using PVOD principles (Personality, Value, Opinion, Direct).
+            Generate your article with section-by-section progress, research integration, and live updates.
           </p>
 
           <Reasoning 
@@ -135,19 +136,34 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
               markdown={false}
             >
               <ResponseStream
-                textStream={reasoningText}
+                textStream={currentMessage}
                 mode="typewriter"
                 className="text-sm text-green-800"
               />
             </ReasoningContent>
           </Reasoning>
 
-          {generationError && (
+          {/* Progress Display */}
+          {isGeneratingContent && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  {currentMessage || 'Processing...'}
+                </span>
+              </div>
+              <div className="text-xs text-blue-600">
+                Progress: {Math.round(overallProgress)}% • {sections.filter(s => s.status === 'complete').length}/{sections.length} sections complete
+              </div>
+            </div>
+          )}
+
+          {displayError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-red-800">Generation Failed</p>
-                <p className="text-xs text-red-600 mt-1">{generationError}</p>
+                <p className="text-xs text-red-600 mt-1">{displayError}</p>
               </div>
             </div>
           )}
@@ -160,12 +176,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             {isGeneratingContent ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating PVOD Content...
+                Generating Enhanced Content...
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Generate PVOD Content
+                Generate Enhanced Content
               </>
             )}
           </Button>
@@ -178,7 +194,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         </CardContent>
       </Card>
 
-      {articleData.generatedContent && (
+      {(articleData.generatedContent || finalContent) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -188,7 +204,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Your PVOD article content has been generated! Click "Create Article" to save it and continue editing.
+              Your enhanced article content has been generated! Click "Create Article" to save it and continue editing.
             </p>
             <Button
               onClick={onComplete}
