@@ -1,8 +1,13 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { openai } from 'https://esm.sh/@ai-sdk/openai@1.3.22';
+import { generateText } from 'https://esm.sh/ai@4.3.16';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,144 +29,148 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const requestBody = await req.json();
-    console.log('Received request:', requestBody);
-    
+
     const { 
       title, 
       topic, 
       keywords = [], 
-      primaryKeyword = '',
       audience = '',
-      searchIntent = 'informational',
+      tone = 'professional',
       targetWordCount = 4000
-    } = requestBody;
+    } = await req.json();
 
-    if (!title && !topic) {
-      return new Response(JSON.stringify({ error: 'Title or topic is required' }), {
+    if (!title) {
+      return new Response(JSON.stringify({ error: 'Title is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const effectivePrimaryKeyword = primaryKeyword || keywords[0] || '';
-    const secondaryKeywords = keywords.filter(k => k !== effectivePrimaryKeyword);
-    
-    const keywordText = effectivePrimaryKeyword ? `Primary keyword: ${effectivePrimaryKeyword}` : '';
-    const secondaryText = secondaryKeywords.length > 0 ? `Secondary keywords: ${secondaryKeywords.join(', ')}` : '';
-    const audienceText = audience ? `Target audience: ${audience}` : '';
+    // Deduct credits first
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      
+      if (user) {
+        const { data: creditResult } = await supabase.rpc('deduct_credits', {
+          p_user_id: user.id,
+          p_amount: 3,
+          p_tool_used: 'outline_generation',
+          p_description: `Generated outline for: ${title}`
+        });
 
-    // PVOD Outline Generation Prompt
-    const prompt = `Create a detailed PVOD-style article outline for the following:
-
-Title: ${title || topic}
-${keywordText}
-${secondaryText}
-${audienceText}
-Search Intent: ${searchIntent}
-Target Word Count: ~${targetWordCount} words
-
-PVOD Outline Requirements:
-- PERSONALITY: Include sections for personal stories, relatable examples
-- VALUE: Ensure each section provides actionable takeaways
-- OPINION: Add sections for expert insights and industry perspectives
-- DIRECT: Structure content to speak directly to the reader's needs
-
-Outline Structure Guidelines:
-- Create 6-8 main sections for comprehensive coverage
-- Start with an engaging hook section
-- Include a "common mistakes" or "what not to do" section
-- Add a "practical tips" or "how-to" section
-- Include expert insights or case studies
-- End with actionable next steps
-- Balance educational content with practical application
-- Consider the ${searchIntent} search intent throughout
-
-Section Requirements:
-- Each section should have a clear, benefit-focused title
-- Include 2-3 sentences describing what the section will cover
-- Mention specific takeaways or value points
-- Consider keyword integration opportunities
-- Flow logically from introduction to conclusion
-
-Format your response as JSON with this structure:
-{
-  "sections": [
-    {
-      "title": "Section Title",
-      "description": "Brief description of what this section covers and the value it provides"
+        if (!creditResult) {
+          return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
     }
-  ]
-}`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are an expert content strategist specializing in PVOD content structure. You create outlines that are personal, valuable, opinionated, and direct while being SEO-optimized. Always respond with valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
+    // Build context for outline generation
+    const keywordText = keywords.length > 0 ? `Keywords to integrate: ${keywords.join(', ')}` : '';
+    const audienceText = audience ? `Target audience: ${audience}` : '';
+    const topicText = topic ? `Original topic: ${topic}` : '';
+    
+    const systemPrompt = `You are an expert content strategist who creates comprehensive, engaging article outlines. Create outlines that:
+
+1. **Logical Flow**: Natural progression from introduction to conclusion
+2. **Comprehensive Coverage**: Cover all important aspects of the topic
+3. **Engaging Structure**: Mix of different content types (how-to, examples, tips, etc.)
+4. **SEO-Optimized**: Naturally incorporate keywords
+5. **Audience-Focused**: Tailored to the target audience's needs and knowledge level
+
+Return the outline as a JSON array of sections, each with:
+- id: unique identifier
+- title: section heading
+- content: brief description of what this section will cover
+- characterCount: estimated character count for this section
+- expanded: boolean (always false for new outlines)`;
+
+    const userPrompt = `Create a comprehensive article outline for:
+
+Title: "${title}"
+${topicText}
+${keywordText}
+${audienceText}
+Tone: ${tone}
+Target word count: ~${targetWordCount} words
+
+Requirements:
+- Create 6-8 main sections (including introduction and conclusion)
+- Each section should have a clear purpose and unique angle
+- Naturally incorporate the keywords throughout different sections
+- Ensure logical flow and progression
+- Make it comprehensive but not overwhelming
+- Include actionable insights and practical value
+- Tailor content depth to the target audience
+
+Return as JSON array with this exact structure:
+[
+  {
+    "id": "section-1",
+    "title": "Introduction: [Engaging Hook Title]",
+    "content": "Brief description of what this introduction will cover",
+    "characterCount": 800,
+    "expanded": false
+  }
+]
+
+Generate the complete JSON array:`;
+
+    console.log('Starting AI SDK outline generation for:', title);
+
+    const result = await generateText({
+      model: openai('gpt-4o-mini'),
+      system: systemPrompt,
+      prompt: userPrompt,
+      temperature: 0.7,
+      maxTokens: 1500,
     });
 
-    if (!response.ok) {
-      console.error(`OpenAI API error: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      console.error('OpenAI error response:', errorBody);
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('OpenAI response received successfully');
-    
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid OpenAI response structure:', data);
-      throw new Error('Invalid response structure from OpenAI');
-    }
-    
-    const generatedText = data.choices[0].message.content.trim();
-    console.log('Generated text length:', generatedText.length);
-
-    let outline;
+    // Parse the generated outline
+    let sections;
     try {
-      outline = JSON.parse(generatedText);
-      console.log('Successfully parsed outline JSON');
+      const jsonMatch = result.text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        sections = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON array found in response');
+      }
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', generatedText);
-      console.error('Parse error:', parseError);
-      throw new Error('Failed to parse outline response');
+      console.error('Failed to parse outline JSON:', parseError);
+      throw new Error('Failed to parse generated outline');
     }
 
-    // Validate outline structure
-    if (!outline.sections || !Array.isArray(outline.sections)) {
-      console.error('Invalid outline structure:', outline);
-      throw new Error('Invalid outline structure: missing sections array');
+    // Validate and ensure proper structure
+    if (!Array.isArray(sections) || sections.length === 0) {
+      throw new Error('Invalid outline structure generated');
     }
 
-    // Transform the outline into the format expected by the frontend
-    const sections = outline.sections.map((section: any, index: number) => ({
-      id: (index + 1).toString(),
-      title: section.title,
-      content: section.description,
-      characterCount: section.description.length,
+    // Ensure each section has required properties
+    sections = sections.map((section, index) => ({
+      id: section.id || `section-${index + 1}`,
+      title: section.title || `Section ${index + 1}`,
+      content: section.content || 'Content description',
+      characterCount: section.characterCount || Math.floor(targetWordCount / sections.length * 5), // ~5 chars per word
       expanded: false
     }));
 
-    console.log('Generated PVOD outline sections:', sections.length);
+    console.log('Generated outline sections:', sections.length);
 
     return new Response(JSON.stringify({ sections }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Error in generate-outline function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Outline generation failed',
+      details: error.toString()
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
