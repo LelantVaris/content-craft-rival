@@ -2,12 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { openai } from 'https://esm.sh/@ai-sdk/openai@1.3.22';
-import { generateText } from 'https://esm.sh/ai@4.3.16';
-
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,11 +9,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('=== GENERATE TITLES FUNCTION START ===');
+  console.log('=== GENERATE TITLES DEBUG VERSION START ===');
   console.log('Request method:', req.method);
-  console.log('OpenAI API Key present:', !!openAIApiKey);
-  console.log('Supabase URL present:', !!supabaseUrl);
-  console.log('Service Key present:', !!supabaseServiceKey);
+  console.log('Request URL:', req.url);
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -28,106 +20,166 @@ serve(async (req) => {
   }
 
   try {
-    // Check if API key is available
+    // Phase 1: Test basic function structure
+    console.log('Phase 1: Testing basic function structure...');
+    
+    // Test environment variables
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('Environment check:');
+    console.log('- OpenAI API Key present:', !!openAIApiKey);
+    console.log('- Supabase URL present:', !!supabaseUrl);
+    console.log('- Service Key present:', !!supabaseServiceKey);
+    
     if (!openAIApiKey) {
-      console.error('CRITICAL ERROR: OPENAI_API_KEY environment variable is not set');
-      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+      console.error('CRITICAL: OPENAI_API_KEY not found');
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured',
+        debug: 'OPENAI_API_KEY environment variable missing'
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Parsing request body...');
-    const requestBody = await req.json();
-    console.log('Request body received:', requestBody);
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('CRITICAL: Supabase credentials missing');
+      return new Response(JSON.stringify({ 
+        error: 'Supabase credentials not configured',
+        debug: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const { 
-      topic, 
-      keywords = [], 
-      audience = '', 
-      count = 5 
-    } = requestBody;
-
-    console.log('Extracted parameters:', { topic, keywords, audience, count });
-
-    if (!topic) {
-      console.error('ERROR: Topic is required but not provided');
-      return new Response(JSON.stringify({ error: 'Topic is required' }), {
+    // Test request parsing
+    console.log('Phase 2: Testing request parsing...');
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body parsed successfully:', requestBody);
+    } catch (parseError) {
+      console.error('Request parsing error:', parseError);
+      return new Response(JSON.stringify({
+        error: 'Invalid request body',
+        debug: parseError.message
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Creating Supabase client...');
-    // Deduct credits first
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
+    const { topic, keywords = [], audience = '', count = 5 } = requestBody;
     
+    if (!topic) {
+      console.error('Topic missing from request');
+      return new Response(JSON.stringify({ 
+        error: 'Topic is required',
+        debug: 'No topic provided in request body'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Request parameters:', { topic, keywords, audience, count });
+
+    // Phase 3: Test Supabase connection and credit deduction
+    console.log('Phase 3: Testing Supabase connection...');
+    let supabase;
+    try {
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+      console.log('Supabase client created successfully');
+    } catch (supabaseError) {
+      console.error('Supabase client creation error:', supabaseError);
+      return new Response(JSON.stringify({
+        error: 'Supabase connection failed',
+        debug: supabaseError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Test authentication and credit deduction
+    const authHeader = req.headers.get('Authorization');
     if (authHeader) {
-      console.log('Processing authentication...');
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-      
-      if (userError) {
-        console.error('Auth error:', userError);
-        return new Response(JSON.stringify({ error: 'Authentication failed' }), {
-          status: 401,
+      console.log('Testing authentication and credit deduction...');
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        
+        if (userError) {
+          console.error('Auth error:', userError);
+          return new Response(JSON.stringify({ 
+            error: 'Authentication failed',
+            debug: userError.message
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        if (user) {
+          console.log('User authenticated:', user.id);
+          
+          // Test credit deduction
+          const { data: creditResult, error: creditError } = await supabase.rpc('deduct_credits', {
+            p_user_id: user.id,
+            p_amount: 2,
+            p_tool_used: 'title_generation',
+            p_description: `Generated ${count} titles for: ${topic}`
+          });
+
+          console.log('Credit deduction result:', creditResult);
+          console.log('Credit deduction error:', creditError);
+
+          if (creditError) {
+            console.error('Credit deduction failed:', creditError);
+            return new Response(JSON.stringify({ 
+              error: 'Credit deduction failed',
+              debug: creditError.message
+            }), {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          if (!creditResult) {
+            console.error('Insufficient credits');
+            return new Response(JSON.stringify({ 
+              error: 'Insufficient credits',
+              debug: 'Credit deduction returned false'
+            }), {
+              status: 402,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          console.log('Credits deducted successfully');
+        }
+      } catch (authError) {
+        console.error('Authentication/credit error:', authError);
+        return new Response(JSON.stringify({
+          error: 'Authentication or credit system error',
+          debug: authError.message
+        }), {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
-      if (user) {
-        console.log('User authenticated:', user.id);
-        console.log('Attempting to deduct credits...');
-        
-        const { data: creditResult, error: creditError } = await supabase.rpc('deduct_credits', {
-          p_user_id: user.id,
-          p_amount: 2,
-          p_tool_used: 'title_generation',
-          p_description: `Generated ${count} titles for: ${topic}`
-        });
-
-        console.log('Credit deduction result:', creditResult);
-        console.log('Credit deduction error:', creditError);
-
-        if (creditError) {
-          console.error('Credit deduction failed:', creditError);
-          return new Response(JSON.stringify({ error: 'Credit deduction failed' }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        if (!creditResult) {
-          console.error('Insufficient credits');
-          return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
-            status: 402,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        console.log('Credits deducted successfully');
-      }
-    } else {
-      console.log('No auth header - proceeding without credit deduction');
     }
 
-    // Build context for better title generation
+    // Phase 4: Test OpenAI API directly (without AI SDK)
+    console.log('Phase 4: Testing OpenAI API directly...');
+    
     const keywordText = keywords.length > 0 ? `Keywords to consider: ${keywords.join(', ')}` : '';
     const audienceText = audience ? `Target audience: ${audience}` : '';
     
-    const systemPrompt = `You are an expert content strategist specializing in creating compelling, SEO-optimized article titles. Generate titles that are:
-
-1. **Click-worthy**: Compelling and engaging to drive clicks
-2. **SEO-optimized**: Include relevant keywords naturally
-3. **Audience-focused**: Tailored to the target audience
-4. **Varied**: Different angles and approaches
-5. **Professional**: Appropriate for business/marketing content
-
-Return exactly ${count} titles, one per line, with no numbering or formatting.`;
-
-    const userPrompt = `Generate ${count} compelling article titles for this topic:
+    const prompt = `Generate ${count} compelling article titles for this topic:
 
 Topic: ${topic}
 ${keywordText}
@@ -143,65 +195,124 @@ Requirements:
 
 Generate exactly ${count} titles, one per line:`;
 
-    console.log('Starting AI SDK title generation for topic:', topic);
-    console.log('System prompt length:', systemPrompt.length);
-    console.log('User prompt length:', userPrompt.length);
-
+    console.log('Making direct OpenAI API call...');
+    console.log('Prompt length:', prompt.length);
+    
+    let openAIResponse;
     try {
-      const result = await generateText({
-        model: openai('gpt-4o-mini'),
-        system: systemPrompt,
-        prompt: userPrompt,
-        temperature: 0.8,
-        maxTokens: 500,
+      openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert content strategist specializing in creating compelling, SEO-optimized article titles. Generate titles that are click-worthy, SEO-optimized, audience-focused, varied, and professional.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 500,
+        }),
       });
 
-      console.log('AI generation completed successfully');
-      console.log('Generated text length:', result.text.length);
-      console.log('Generated text preview:', result.text.substring(0, 200));
+      console.log('OpenAI API response status:', openAIResponse.status);
+      console.log('OpenAI API response ok:', openAIResponse.ok);
+      
+      if (!openAIResponse.ok) {
+        const errorText = await openAIResponse.text();
+        console.error('OpenAI API error response:', errorText);
+        return new Response(JSON.stringify({
+          error: 'OpenAI API request failed',
+          debug: `Status: ${openAIResponse.status}, Response: ${errorText}`
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
+      const openAIData = await openAIResponse.json();
+      console.log('OpenAI API response data:', openAIData);
+      
+      if (!openAIData.choices || !openAIData.choices[0] || !openAIData.choices[0].message) {
+        console.error('Invalid OpenAI response structure:', openAIData);
+        return new Response(JSON.stringify({
+          error: 'Invalid OpenAI response',
+          debug: 'Response missing expected structure'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const generatedText = openAIData.choices[0].message.content;
+      console.log('Generated text:', generatedText);
+      
       // Parse the generated titles
-      const titlesText = result.text.trim();
-      const titles = titlesText
+      const titles = generatedText
+        .trim()
         .split('\n')
         .map(title => title.trim())
         .filter(title => title.length > 0)
-        .slice(0, count); // Ensure we don't exceed requested count
+        .slice(0, count);
 
-      console.log('Parsed titles count:', titles.length);
-      console.log('Generated titles:', titles);
+      console.log('Parsed titles:', titles);
 
       if (titles.length === 0) {
-        console.error('ERROR: No titles were generated from AI response');
-        throw new Error('No titles were generated');
+        console.error('No titles generated');
+        return new Response(JSON.stringify({
+          error: 'No titles generated',
+          debug: 'Generated text could not be parsed into titles'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
-      console.log('=== GENERATE TITLES FUNCTION SUCCESS ===');
-      return new Response(JSON.stringify({ titles }), {
+      console.log('=== SUCCESS: All phases completed ===');
+      return new Response(JSON.stringify({ 
+        titles,
+        debug: {
+          phase: 'completed',
+          titlesGenerated: titles.length,
+          method: 'direct_openai_api'
+        }
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
-    } catch (aiError) {
-      console.error('AI SDK Error Details:', {
-        message: aiError.message,
-        stack: aiError.stack,
-        name: aiError.name
+    } catch (openAIError) {
+      console.error('OpenAI API call error:', openAIError);
+      return new Response(JSON.stringify({
+        error: 'OpenAI API call failed',
+        debug: openAIError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      throw aiError;
     }
 
   } catch (error) {
-    console.error('=== GENERATE TITLES FUNCTION ERROR ===');
+    console.error('=== UNEXPECTED ERROR ===');
     console.error('Error type:', typeof error);
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
-    console.error('Full error object:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'Title generation failed',
-      details: error.toString(),
-      type: error.name || 'Unknown Error'
+      error: 'Unexpected server error',
+      debug: {
+        message: error.message,
+        type: error.name,
+        stack: error.stack?.substring(0, 500) // Limit stack trace length
+      }
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
