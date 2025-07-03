@@ -10,11 +10,20 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Check if API key is available
+    if (!openAIApiKey) {
+      console.error('OPENAI_API_KEY environment variable is not set');
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const requestBody = await req.json();
     console.log('Received request:', requestBody);
     
@@ -103,18 +112,37 @@ Format your response as JSON with this structure:
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      console.error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error('OpenAI error response:', errorBody);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('OpenAI response received successfully');
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid OpenAI response structure:', data);
+      throw new Error('Invalid response structure from OpenAI');
+    }
+    
     const generatedText = data.choices[0].message.content.trim();
+    console.log('Generated text length:', generatedText.length);
 
     let outline;
     try {
       outline = JSON.parse(generatedText);
+      console.log('Successfully parsed outline JSON');
     } catch (parseError) {
       console.error('Failed to parse JSON response:', generatedText);
+      console.error('Parse error:', parseError);
       throw new Error('Failed to parse outline response');
+    }
+
+    // Validate outline structure
+    if (!outline.sections || !Array.isArray(outline.sections)) {
+      console.error('Invalid outline structure:', outline);
+      throw new Error('Invalid outline structure: missing sections array');
     }
 
     // Transform the outline into the format expected by the frontend
