@@ -10,7 +10,7 @@ interface UnifiedControlPanelProps {
   generationStep: GenerationStep;
   setStreamingContent: (content: string) => void;
   setGenerationStep: (step: GenerationStep) => void;
-  setStreamingStatus: (status: any) => void;
+  setStreamingStatus: (status: string) => void;
   getPrimaryKeyword: () => string;
   getSecondaryKeywords: () => string[];
   getTargetWordCount: () => number;
