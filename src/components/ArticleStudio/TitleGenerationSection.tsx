@@ -1,59 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Minus, Loader2 } from 'lucide-react';
-import { ArticleStudioData } from '@/hooks/useArticleStudio';
+import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TitleGenerationSectionProps {
   articleData: ArticleStudioData;
   onTitlesGenerated: (titles: string[]) => void;
-  isGenerating: boolean;
-  setIsGenerating: (generating: boolean) => void;
+  generationStep: GenerationStep;
   currentStep: number;
   hasTitle: boolean;
   hasOutline: boolean;
   setStreamingContent: (content: string) => void;
   setStreamingStatus: (status: string) => void;
-  setMainIsGenerating: (generating: boolean) => void;
+  onGenerateTitles: () => Promise<void>;
+  onGenerateOutline: () => Promise<void>;
+  onGenerateArticle: () => Promise<void>;
 }
 
 export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
   articleData,
   onTitlesGenerated,
-  isGenerating,
-  setIsGenerating,
+  generationStep,
   currentStep,
   hasTitle,
   hasOutline,
   setStreamingContent,
   setStreamingStatus,
-  setMainIsGenerating
+  onGenerateTitles,
+  onGenerateOutline,
+  onGenerateArticle
 }) => {
   const [titleCount, setTitleCount] = useState(4);
 
-  // Listen for continue button events from LivePreviewPanel
-  useEffect(() => {
-    const handleTriggerOutlineGeneration = () => {
-      if (hasTitle) {
-        handleGenerateOutline();
-      }
-    };
-
-    const handleTriggerArticleGeneration = () => {
-      if (hasOutline) {
-        handleGenerateArticle();
-      }
-    };
-
-    window.addEventListener('trigger-outline-generation', handleTriggerOutlineGeneration);
-    window.addEventListener('trigger-article-generation', handleTriggerArticleGeneration);
-
-    return () => {
-      window.removeEventListener('trigger-outline-generation', handleTriggerOutlineGeneration);
-      window.removeEventListener('trigger-article-generation', handleTriggerArticleGeneration);
-    };
-  }, [hasTitle, hasOutline, articleData]);
+  const isGenerating = generationStep !== GenerationStep.IDLE;
 
   const getButtonText = () => {
     if (isGenerating) {
@@ -73,199 +54,11 @@ export const TitleGenerationSection: React.FC<TitleGenerationSectionProps> = ({
 
   const handleGenerate = async () => {
     if (currentStep === 1) {
-      handleGenerateTitles();
+      await onGenerateTitles();
     } else if (currentStep === 2) {
-      handleGenerateOutline();
+      await onGenerateOutline();
     } else {
-      handleGenerateArticle();
-    }
-  };
-
-  const handleGenerateTitles = async () => {
-    if (!articleData.topic) {
-      console.error('No topic provided');
-      return;
-    }
-
-    console.log('Starting title generation with:', {
-      topic: articleData.topic,
-      keywords: articleData.keywords,
-      audience: articleData.audience,
-      count: titleCount
-    });
-
-    // Dispatch event to notify LivePreviewPanel that generation is starting
-    window.dispatchEvent(new CustomEvent('title-generation-start'));
-
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-titles', {
-        body: {
-          topic: articleData.topic,
-          keywords: articleData.keywords,
-          audience: articleData.audience,
-          count: titleCount
-        }
-      });
-
-      console.log('Title generation response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      if (data?.titles && Array.isArray(data.titles)) {
-        console.log('Generated titles:', data.titles);
-        
-        // Dispatch event to notify LivePreviewPanel with the titles
-        window.dispatchEvent(new CustomEvent('titles-generated', { 
-          detail: data.titles 
-        }));
-        
-        onTitlesGenerated(data.titles);
-      } else {
-        throw new Error('Invalid response format from title generation');
-      }
-    } catch (error) {
-      console.error('Error generating titles:', error);
-      // Add user-visible error handling here if needed
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleGenerateOutline = async () => {
-    if (!hasTitle) {
-      console.error('No title selected');
-      return;
-    }
-
-    const finalTitle = articleData.customTitle || articleData.selectedTitle;
-    console.log('Starting outline generation with:', {
-      title: finalTitle,
-      topic: articleData.topic,
-      keywords: articleData.keywords,
-      audience: articleData.audience
-    });
-
-    // Dispatch event to notify LivePreviewPanel that outline generation is starting
-    window.dispatchEvent(new CustomEvent('outline-generation-start'));
-
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-outline', {
-        body: {
-          title: finalTitle,
-          topic: articleData.topic,
-          keywords: articleData.keywords,
-          audience: articleData.audience
-        }
-      });
-
-      console.log('Outline generation response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      if (data?.sections && Array.isArray(data.sections)) {
-        console.log('Generated outline:', data.sections);
-        
-        // Dispatch event to notify LivePreviewPanel with the outline
-        window.dispatchEvent(new CustomEvent('outline-generated', { 
-          detail: data.sections 
-        }));
-      } else {
-        throw new Error('Invalid response format from outline generation');
-      }
-    } catch (error) {
-      console.error('Error generating outline:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleGenerateArticle = async () => {
-    if (!hasOutline) {
-      console.error('No outline available');
-      return;
-    }
-
-    const finalTitle = articleData.customTitle || articleData.selectedTitle;
-    console.log('Starting article generation with:', {
-      title: finalTitle,
-      outline: articleData.outline,
-      keywords: articleData.keywords,
-      audience: articleData.audience
-    });
-
-    setIsGenerating(true);
-    setMainIsGenerating(true);
-    setStreamingContent('');
-    
-    try {
-      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: finalTitle,
-          outline: articleData.outline,
-          keywords: articleData.keywords,
-          audience: articleData.audience,
-          tone: 'professional' // You might want to get this from form data
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedContent = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              
-              if (data === '[DONE]') {
-                console.log('Article generation completed');
-                break;
-              }
-              
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.content) {
-                  accumulatedContent += parsed.content;
-                  setStreamingContent(accumulatedContent);
-                }
-              } catch (parseError) {
-                // Skip invalid JSON
-                continue;
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error generating article:', error);
-    } finally {
-      setIsGenerating(false);
-      setMainIsGenerating(false);
+      await onGenerateArticle();
     }
   };
 

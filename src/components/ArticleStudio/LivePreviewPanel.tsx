@@ -69,13 +69,6 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     };
   }, [updateArticleData]);
 
-  // Auto-trigger outline generation when title is selected
-  useEffect(() => {
-    if (hasSelectedTitle && !hasOutline && generationStep === GenerationStep.IDLE) {
-      window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
-    }
-  }, [hasSelectedTitle, hasOutline, generationStep]);
-
   // Determine current step
   const getCurrentStep = () => {
     if (!hasSelectedTitle) return 1;
@@ -125,15 +118,9 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   const handleContinue = () => {
-    // The continue button should trigger the next step's generation
-    // This is handled by dispatching events that the TitleGenerationSection listens to
-    if (currentStep === 1 && hasSelectedTitle) {
-      // Trigger outline generation
-      window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
-    } else if (currentStep === 2 && hasOutline) {
-      // Trigger article generation
-      window.dispatchEvent(new CustomEvent('trigger-article-generation'));
-    }
+    // Continue button is now primarily informational since generation
+    // is handled directly through the TitleGenerationSection component
+    console.log('Continue clicked for step:', currentStep);
   };
 
   const renderContent = () => {

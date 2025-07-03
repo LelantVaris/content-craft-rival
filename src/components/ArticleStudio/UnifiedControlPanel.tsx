@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
 import { TitleGenerationSection } from './TitleGenerationSection';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UnifiedControlPanelProps {
   articleData: ArticleStudioData;
@@ -65,8 +66,150 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     }
   };
 
+  const handleGenerateTitles = async () => {
+    if (!articleData.topic) {
+      console.error('No topic provided');
+      return;
+    }
+
+    console.log('Starting title generation with:', {
+      topic: articleData.topic,
+      keywords: articleData.keywords,
+      audience: articleData.audience
+    });
+
+    setGenerationStep(GenerationStep.GENERATING_TITLES);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-titles', {
+        body: {
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience,
+          count: 4
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.titles && Array.isArray(data.titles)) {
+        // Dispatch event to notify LivePreviewPanel with the titles
+        window.dispatchEvent(new CustomEvent('titles-generated', { 
+          detail: data.titles 
+        }));
+      }
+    } catch (error) {
+      console.error('Error generating titles:', error);
+    } finally {
+      setGenerationStep(GenerationStep.IDLE);
+    }
+  };
+
+  const handleGenerateOutline = async () => {
+    if (!hasTitle) {
+      console.error('No title selected');
+      return;
+    }
+
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    setGenerationStep(GenerationStep.GENERATING_OUTLINE);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-outline', {
+        body: {
+          title: finalTitle,
+          topic: articleData.topic,
+          keywords: articleData.keywords,
+          audience: articleData.audience
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.sections && Array.isArray(data.sections)) {
+        window.dispatchEvent(new CustomEvent('outline-generated', { 
+          detail: data.sections 
+        }));
+      }
+    } catch (error) {
+      console.error('Error generating outline:', error);
+    } finally {
+      setGenerationStep(GenerationStep.IDLE);
+    }
+  };
+
+  const handleGenerateArticle = async () => {
+    if (!hasOutline) {
+      console.error('No outline available');
+      return;
+    }
+
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    setGenerationStep(GenerationStep.GENERATING_ARTICLE);
+    setStreamingContent('');
+    
+    try {
+      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: finalTitle,
+          outline: articleData.outline,
+          keywords: articleData.keywords,
+          audience: articleData.audience,
+          tone: 'professional'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              
+              if (data === '[DONE]') {
+                console.log('Article generation completed');
+                break;
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  accumulatedContent += parsed.content;
+                  setStreamingContent(accumulatedContent);
+                }
+              } catch (parseError) {
+                continue;
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error generating article:', error);
+    } finally {
+      setGenerationStep(GenerationStep.IDLE);
+    }
+  };
+
   const handleTitlesGenerated = (titles: string[]) => {
-    // This will be handled by the LivePreviewPanel
     console.log('Titles generated:', titles);
   };
 
@@ -146,16 +289,15 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         <TitleGenerationSection
           articleData={articleData}
           onTitlesGenerated={handleTitlesGenerated}
-          isGenerating={isTitleGenerating}
-          setIsGenerating={setIsTitleGenerating}
+          generationStep={generationStep}
           currentStep={currentStep}
           hasTitle={hasTitle}
           hasOutline={hasOutline}
           setStreamingContent={setStreamingContent}
           setStreamingStatus={setStreamingStatus}
-          setMainIsGenerating={(generating: boolean) => {
-            setGenerationStep(generating ? GenerationStep.GENERATING_ARTICLE : GenerationStep.IDLE);
-          }}
+          onGenerateTitles={handleGenerateTitles}
+          onGenerateOutline={handleGenerateOutline}
+          onGenerateArticle={handleGenerateArticle}
         />
       </div>
     </div>
