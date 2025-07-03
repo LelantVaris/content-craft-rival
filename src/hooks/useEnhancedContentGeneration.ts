@@ -1,5 +1,6 @@
 
 import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface StreamEvent {
   type: 'status' | 'section' | 'research' | 'content' | 'complete' | 'error';
@@ -52,49 +53,31 @@ export function useEnhancedContentGeneration() {
     setSections(initialSections);
 
     try {
-      const response = await fetch('/api/v1/functions/v1/generate-enhanced-content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Use Supabase client to invoke the function like titles and outlines do
+      const { data, error } = await supabase.functions.invoke('generate-enhanced-content', {
+        body: {
           title,
           outline,
           keywords,
           audience,
           tone
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to start content generation');
+      if (error) {
+        console.error('Enhanced content generation error:', error);
+        throw error;
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        throw new Error('No response stream available');
+      // Handle the response - this will be different from streaming
+      // For now, let's handle it as a complete response like other functions
+      if (data?.content) {
+        setFinalContent(data.content);
+        setOverallProgress(100);
+        setCurrentMessage('Enhanced article generation complete!');
+        setSections(prev => prev.map(section => ({ ...section, status: 'complete' })));
       }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const text = decoder.decode(value);
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              handleStreamEvent(eventData);
-            } catch (e) {
-              console.warn('Failed to parse SSE data:', e);
-            }
-          }
-        }
-      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
