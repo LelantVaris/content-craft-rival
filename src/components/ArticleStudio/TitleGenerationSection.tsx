@@ -14,7 +14,7 @@ interface TitleGenerationSectionProps {
   hasTitle: boolean;
   hasOutline: boolean;
   setStreamingContent: (content: string) => void;
-  setStreamingStatus: (status: any) => void;
+  setStreamingStatus: (status: string) => void;
   setMainIsGenerating: (generating: boolean) => void;
 }
 

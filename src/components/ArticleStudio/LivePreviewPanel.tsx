@@ -32,15 +32,11 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   updateArticleData
 }) => {
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
-  const [loadingState, setLoadingState] = useState<{ operation: 'titles' | 'outline' | 'article' | null; isLoading: boolean }>({
-    operation: null,
-    isLoading: false
-  });
   const [customTitle, setCustomTitle] = useState('');
   
   const finalTitle = articleData.customTitle || articleData.selectedTitle;
   const finalContent = streamingContent || articleData.generatedContent;
-  const safeStreamingStatus = typeof streamingStatus === 'string' ? streamingStatus : '';
+  const safeStreamingStatus = String(streamingStatus || '');
 
   // Progressive display logic
   const hasTopic = !!articleData.topic;
@@ -54,42 +50,28 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     const handleTitleGeneration = (event: CustomEvent) => {
       const titles = event.detail;
       setGeneratedTitles(titles);
-      setLoadingState({ operation: null, isLoading: false });
-    };
-
-    const handleTitleGenerationStart = () => {
-      setLoadingState({ operation: 'titles', isLoading: true });
     };
 
     const handleOutlineGenerated = (event: CustomEvent) => {
       const sections = event.detail;
       updateArticleData({ outline: sections });
-      setLoadingState({ operation: null, isLoading: false });
-    };
-
-    const handleOutlineGenerationStart = () => {
-      setLoadingState({ operation: 'outline', isLoading: true });
     };
 
     window.addEventListener('titles-generated', handleTitleGeneration as EventListener);
-    window.addEventListener('title-generation-start', handleTitleGenerationStart as EventListener);
     window.addEventListener('outline-generated', handleOutlineGenerated as EventListener);
-    window.addEventListener('outline-generation-start', handleOutlineGenerationStart as EventListener);
 
     return () => {
       window.removeEventListener('titles-generated', handleTitleGeneration as EventListener);
-      window.removeEventListener('title-generation-start', handleTitleGenerationStart as EventListener);
       window.removeEventListener('outline-generated', handleOutlineGenerated as EventListener);
-      window.removeEventListener('outline-generation-start', handleOutlineGenerationStart as EventListener);
     };
   }, [updateArticleData]);
 
   // Auto-trigger outline generation when title is selected
   useEffect(() => {
-    if (hasSelectedTitle && !hasOutline && !loadingState.isLoading) {
+    if (hasSelectedTitle && !hasOutline && !isGenerating) {
       window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
     }
-  }, [hasSelectedTitle, hasOutline, loadingState.isLoading]);
+  }, [hasSelectedTitle, hasOutline, isGenerating]);
 
   // Determine current step
   const getCurrentStep = () => {
@@ -162,7 +144,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     }
 
     // State 2: Loading state (Title Generation)
-    if (loadingState.isLoading && loadingState.operation === 'titles') {
+    if (isGenerating && currentStep === 1) {
       return <AnimatedLoadingSkeleton />;
     }
 
@@ -233,20 +215,35 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
       );
     }
 
-    // State 4: Outline Display - Auto-trigger generation when title is selected
+    // State 4: Outline Loading or Display
     if (hasSelectedTitle && !hasOutline) {
+      if (isGenerating && currentStep === 2) {
+        return (
+          <div className="p-6">
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Generating your outline...
+              </h3>
+              <p className="text-gray-600">
+                AI is creating a structured outline for your article
+              </p>
+            </div>
+            
+            <AnimatedLoadingSkeleton />
+          </div>
+        );
+      }
+      
       return (
-        <div className="p-6">
-          <div className="text-center mb-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Generating your outline...
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              Ready to generate outline
             </h3>
             <p className="text-gray-600">
-              AI is creating a structured outline for your article
+              Click "Generate outline" to create your article structure
             </p>
           </div>
-          
-          <AnimatedLoadingSkeleton />
         </div>
       );
     }
