@@ -142,7 +142,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     setStreamingContent('');
     
     try {
-      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content`, {
+      const response = await fetch(`https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-content-ai-sdk`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk`,
