@@ -64,6 +64,7 @@ export function useArticleStudio() {
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingStatus, setStreamingStatus] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   
   const navigate = useNavigate();
   const { saveArticle, refreshArticles } = useArticles();
@@ -181,7 +182,6 @@ export function useArticleStudio() {
   }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
 
   const generateFullArticle = useCallback(async () => {
-    // This will be handled by the streaming article generation in UnifiedControlPanel
     console.info('Article generation will be handled by the streaming component');
   }, []);
 
@@ -220,6 +220,8 @@ export function useArticleStudio() {
     getPrimaryKeyword,
     getSecondaryKeywords,
     getTargetWordCount,
-    isFormValid
+    isFormValid,
+    generatedTitles,
+    setGeneratedTitles
   };
 }

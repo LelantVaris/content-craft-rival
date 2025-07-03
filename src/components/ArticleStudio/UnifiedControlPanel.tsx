@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
@@ -17,6 +18,8 @@ interface UnifiedControlPanelProps {
   getSecondaryKeywords: () => string[];
   getTargetWordCount: () => number;
   streamingContent: string;
+  generatedTitles: string[];
+  setGeneratedTitles: (titles: string[]) => void;
 }
 
 export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
@@ -30,9 +33,12 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   getPrimaryKeyword,
   getSecondaryKeywords,
   getTargetWordCount,
-  streamingContent
+  streamingContent,
+  generatedTitles,
+  setGeneratedTitles
 }) => {
   const [seoProMode, setSeoProMode] = useState(true);
+  const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
 
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -58,6 +64,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         outline: [],
         generatedContent: ''
       });
+      setGeneratedTitles([]);
       setStreamingContent('');
     } else if (targetStep === 2 && currentStep === 3) {
       // Go back to step 2 - clear article content but keep outline
@@ -67,8 +74,8 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   };
 
   const handleGenerateTitles = async () => {
-    if (!articleData.topic) {
-      toast.error('Please enter a topic first');
+    if (!articleData.topic || isGeneratingTitles) {
+      if (!articleData.topic) toast.error('Please enter a topic first');
       return;
     }
 
@@ -78,7 +85,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       audience: articleData.audience
     });
 
+    setIsGeneratingTitles(true);
     setGenerationStep(GenerationStep.GENERATING_TITLES);
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-titles', {
         body: {
@@ -97,7 +106,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 
       if (data?.titles && Array.isArray(data.titles)) {
         console.log('Generated titles:', data.titles);
-        // Titles will be handled by the TitleGenerationSection component
+        setGeneratedTitles(data.titles);
         toast.success(`Generated ${data.titles.length} titles successfully!`);
       } else {
         throw new Error('No titles received from generation');
@@ -106,6 +115,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       console.error('Error generating titles:', error);
       toast.error('Failed to generate titles. Please check your connection and try again.');
     } finally {
+      setIsGeneratingTitles(false);
       setGenerationStep(GenerationStep.IDLE);
     }
   };
@@ -186,8 +196,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         throw error;
       }
 
-      // Note: The streaming content will be handled by the response stream
-      // The actual streaming logic would need to be implemented here
       console.log('Article generation initiated successfully');
       setStreamingStatus('Article generation completed');
       
@@ -198,11 +206,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     } finally {
       setGenerationStep(GenerationStep.IDLE);
     }
-  };
-
-  const handleTitlesGenerated = (titles: string[]) => {
-    console.log('Titles generated callback:', titles);
-    // This callback will be used by TitleGenerationSection to pass titles up
   };
 
   return (
@@ -280,7 +283,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       <div className="flex-shrink-0 h-20">
         <TitleGenerationSection
           articleData={articleData}
-          onTitlesGenerated={handleTitlesGenerated}
+          onTitlesGenerated={setGeneratedTitles}
           generationStep={generationStep}
           currentStep={currentStep}
           hasTitle={hasTitle}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,6 @@ import { RealtimeSEOPanel } from './RealtimeSEOPanel';
 import { EnhancedPublishingOptions } from './EnhancedPublishingOptions';
 import { EmptyStateDisplay } from './EmptyStateDisplay';
 import { AnimatedLoadingSkeleton } from './AnimatedLoadingSkeleton';
-import { supabase } from '@/integrations/supabase/client';
 
 interface LivePreviewPanelProps {
   articleData: ArticleStudioData;
@@ -21,6 +20,7 @@ interface LivePreviewPanelProps {
   generationStep: GenerationStep;
   streamingStatus?: string | null;
   updateArticleData: (updates: Partial<ArticleStudioData>) => void;
+  generatedTitles: string[];
 }
 
 export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
@@ -29,9 +29,9 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   saveAndComplete,
   generationStep,
   streamingStatus,
-  updateArticleData
+  updateArticleData,
+  generatedTitles
 }) => {
-  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [customTitle, setCustomTitle] = useState('');
   
   const finalTitle = articleData.customTitle || articleData.selectedTitle || '';
@@ -48,15 +48,6 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   // Helper to check if currently generating
   const isGenerating = generationStep !== GenerationStep.IDLE;
 
-  // Update generated titles when new ones are available (prop-based update)
-  useEffect(() => {
-    // For now, we'll simulate getting titles from a shared state or prop
-    // This will be connected when the UnifiedControlPanel passes titles
-    if (generationStep === GenerationStep.IDLE && !hasSelectedTitle && hasTopic) {
-      // Check if we need to get titles from somewhere - for now keep local state
-    }
-  }, [generationStep, hasSelectedTitle, hasTopic]);
-
   // Determine current step
   const getCurrentStep = () => {
     if (!hasSelectedTitle) return 1;
@@ -68,6 +59,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 
   const handleTitleSelect = (title: string) => {
     updateArticleData({ selectedTitle: title, customTitle: '' });
+    setCustomTitle('');
   };
 
   const handleCustomTitleSubmit = () => {
@@ -105,8 +97,6 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   };
 
   const handleContinue = () => {
-    // Continue button is now primarily informational since generation
-    // is handled directly through the TitleGenerationSection component
     console.log('Continue clicked for step:', currentStep);
   };
 
@@ -127,7 +117,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 
     // State 3: Title Selection
     if (hasTopic && !hasSelectedTitle) {
-      if (generatedTitles.length === 0) {
+      if (!hasGeneratedTitles) {
         return (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
