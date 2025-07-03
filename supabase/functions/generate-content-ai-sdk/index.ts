@@ -3,7 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { streamText } from "npm:ai@4.3.16";
 import { openai } from "npm:@ai-sdk/openai@1.3.22";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.1';
+import { createClient } from "https://deno.land/x/supabase@1.2.0/mod.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
