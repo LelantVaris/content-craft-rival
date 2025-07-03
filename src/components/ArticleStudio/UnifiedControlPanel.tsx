@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
@@ -74,12 +73,24 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   };
 
   const handleGenerateTitles = async () => {
+    console.log('=== HANDLE GENERATE TITLES START ===');
+    console.log('Article data topic:', articleData.topic);
+    console.log('Article data keywords:', articleData.keywords);
+    console.log('Article data audience:', articleData.audience);
+    console.log('Is generating titles:', isGeneratingTitles);
+
     if (!articleData.topic || isGeneratingTitles) {
-      if (!articleData.topic) toast.error('Please enter a topic first');
+      if (!articleData.topic) {
+        console.error('No topic provided');
+        toast.error('Please enter a topic first');
+      }
+      if (isGeneratingTitles) {
+        console.log('Already generating titles, skipping');
+      }
       return;
     }
 
-    console.log('Starting title generation with:', {
+    console.log('Starting title generation with payload:', {
       topic: articleData.topic,
       keywords: articleData.keywords,
       audience: articleData.audience
@@ -89,6 +100,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     setGenerationStep(GenerationStep.GENERATING_TITLES);
     
     try {
+      console.log('Calling supabase function...');
       const { data, error } = await supabase.functions.invoke('generate-titles', {
         body: {
           topic: articleData.topic,
@@ -98,23 +110,34 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         }
       });
 
+      console.log('Supabase function response:', { data, error });
+
       if (error) {
-        console.error('Title generation error:', error);
-        toast.error('Failed to generate titles. Please try again.');
+        console.error('Title generation error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        toast.error(`Failed to generate titles: ${error.message}`);
         throw error;
       }
 
       if (data?.titles && Array.isArray(data.titles)) {
-        console.log('Generated titles:', data.titles);
+        console.log('Generated titles received:', data.titles);
         setGeneratedTitles(data.titles);
         toast.success(`Generated ${data.titles.length} titles successfully!`);
       } else {
+        console.error('Invalid response format:', data);
         throw new Error('No titles received from generation');
       }
     } catch (error) {
-      console.error('Error generating titles:', error);
+      console.error('=== TITLE GENERATION ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error details:', error);
       toast.error('Failed to generate titles. Please check your connection and try again.');
     } finally {
+      console.log('=== HANDLE GENERATE TITLES END ===');
       setIsGeneratingTitles(false);
       setGenerationStep(GenerationStep.IDLE);
     }
