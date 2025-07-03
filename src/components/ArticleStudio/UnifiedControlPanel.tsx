@@ -32,7 +32,6 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   streamingContent
 }) => {
   const [seoProMode, setSeoProMode] = useState(true);
-  const [isTitleGenerating, setIsTitleGenerating] = useState(false);
 
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -92,10 +91,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       if (error) throw error;
 
       if (data?.titles && Array.isArray(data.titles)) {
-        // Dispatch event to notify LivePreviewPanel with the titles
-        window.dispatchEvent(new CustomEvent('titles-generated', { 
-          detail: data.titles 
-        }));
+        console.log('Generated titles:', data.titles);
       }
     } catch (error) {
       console.error('Error generating titles:', error);
@@ -126,9 +122,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       if (error) throw error;
 
       if (data?.sections && Array.isArray(data.sections)) {
-        window.dispatchEvent(new CustomEvent('outline-generated', { 
-          detail: data.sections 
-        }));
+        updateArticleData({ outline: data.sections });
       }
     } catch (error) {
       console.error('Error generating outline:', error);

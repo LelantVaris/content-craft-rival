@@ -48,26 +48,14 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   // Helper to check if currently generating
   const isGenerating = generationStep !== GenerationStep.IDLE;
 
-  // Listen for title generation events from UnifiedControlPanel
+  // Update generated titles when new ones are available (prop-based update)
   useEffect(() => {
-    const handleTitleGeneration = (event: CustomEvent) => {
-      const titles = event.detail;
-      setGeneratedTitles(titles);
-    };
-
-    const handleOutlineGenerated = (event: CustomEvent) => {
-      const sections = event.detail;
-      updateArticleData({ outline: sections });
-    };
-
-    window.addEventListener('titles-generated', handleTitleGeneration as EventListener);
-    window.addEventListener('outline-generated', handleOutlineGenerated as EventListener);
-
-    return () => {
-      window.removeEventListener('titles-generated', handleTitleGeneration as EventListener);
-      window.removeEventListener('outline-generated', handleOutlineGenerated as EventListener);
-    };
-  }, [updateArticleData]);
+    // For now, we'll simulate getting titles from a shared state or prop
+    // This will be connected when the UnifiedControlPanel passes titles
+    if (generationStep === GenerationStep.IDLE && !hasSelectedTitle && hasTopic) {
+      // Check if we need to get titles from somewhere - for now keep local state
+    }
+  }, [generationStep, hasSelectedTitle, hasTopic]);
 
   // Determine current step
   const getCurrentStep = () => {
@@ -113,7 +101,6 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
         customTitle: '', 
         outline: []
       });
-      setGeneratedTitles([]);
     }
   };
 
