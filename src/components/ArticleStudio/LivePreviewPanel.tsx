@@ -19,7 +19,7 @@ interface LivePreviewPanelProps {
   streamingContent: string;
   saveAndComplete: () => Promise<void>;
   generationStep: GenerationStep;
-  streamingStatus?: string;
+  streamingStatus?: string | null;
   updateArticleData: (updates: Partial<ArticleStudioData>) => void;
 }
 
@@ -34,9 +34,9 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [customTitle, setCustomTitle] = useState('');
   
-  const finalTitle = articleData.customTitle || articleData.selectedTitle;
-  const finalContent = streamingContent || articleData.generatedContent;
-  const safeStreamingStatus = String(streamingStatus || '');
+  const finalTitle = articleData.customTitle || articleData.selectedTitle || '';
+  const finalContent = streamingContent || articleData.generatedContent || '';
+  const safeStreamingStatus = streamingStatus ? String(streamingStatus) : '';
 
   // Progressive display logic
   const hasTopic = !!articleData.topic;

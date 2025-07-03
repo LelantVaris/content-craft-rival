@@ -12,7 +12,7 @@ interface StreamingArticlePreviewProps {
   content: string;
   isGenerating: boolean;
   streamingContent?: string;
-  streamingStatus?: string;
+  streamingStatus?: string | null;
 }
 
 export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = ({
@@ -32,10 +32,10 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
     }
   }, [streamingContent, isGenerating]);
 
-  const displayContent = streamingContent || content;
+  const displayContent = streamingContent || content || '';
   
-  // Ensure streamingStatus is always a string and handle empty/undefined cases
-  const safeStreamingStatus = streamingStatus && typeof streamingStatus === 'string' ? streamingStatus : '';
+  // Ensure streamingStatus is properly typed and safe
+  const safeStreamingStatus = streamingStatus ? String(streamingStatus) : '';
 
   return (
     <Card className="h-full overflow-hidden border-2 border-gray-100">
