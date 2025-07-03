@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { ArticleStudioData } from '@/hooks/useArticleStudio';
+import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { StreamingArticlePreview } from './StreamingArticlePreview';
 import { LiveArticleStats } from './LiveArticleStats';
 import { RealtimeSEOPanel } from './RealtimeSEOPanel';
@@ -18,7 +18,7 @@ interface LivePreviewPanelProps {
   articleData: ArticleStudioData;
   streamingContent: string;
   saveAndComplete: () => Promise<void>;
-  isGenerating: boolean;
+  generationStep: GenerationStep;
   streamingStatus?: string;
   updateArticleData: (updates: Partial<ArticleStudioData>) => void;
 }
@@ -27,7 +27,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   articleData,
   streamingContent,
   saveAndComplete,
-  isGenerating,
+  generationStep,
   streamingStatus,
   updateArticleData
 }) => {
@@ -44,6 +44,9 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const hasSelectedTitle = !!finalTitle;
   const hasOutline = articleData.outline.length > 0;
   const hasContent = !!finalContent;
+  
+  // Helper to check if currently generating
+  const isGenerating = generationStep !== GenerationStep.IDLE;
 
   // Listen for title generation events from UnifiedControlPanel
   useEffect(() => {
@@ -68,10 +71,10 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 
   // Auto-trigger outline generation when title is selected
   useEffect(() => {
-    if (hasSelectedTitle && !hasOutline && !isGenerating) {
+    if (hasSelectedTitle && !hasOutline && generationStep === GenerationStep.IDLE) {
       window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
     }
-  }, [hasSelectedTitle, hasOutline, isGenerating]);
+  }, [hasSelectedTitle, hasOutline, generationStep]);
 
   // Determine current step
   const getCurrentStep = () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArticleStudioData } from '@/hooks/useArticleStudio';
+import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
 import { TitleGenerationSection } from './TitleGenerationSection';
 
@@ -7,9 +7,9 @@ interface UnifiedControlPanelProps {
   articleData: ArticleStudioData;
   updateArticleData: (updates: Partial<ArticleStudioData>) => void;
   saveAndComplete: () => Promise<void>;
-  isGenerating: boolean;
+  generationStep: GenerationStep;
   setStreamingContent: (content: string) => void;
-  setIsGenerating: (generating: boolean) => void;
+  setGenerationStep: (step: GenerationStep) => void;
   setStreamingStatus: (status: any) => void;
   getPrimaryKeyword: () => string;
   getSecondaryKeywords: () => string[];
@@ -21,9 +21,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   articleData,
   updateArticleData,
   saveAndComplete,
-  isGenerating,
+  generationStep,
   setStreamingContent,
-  setIsGenerating,
+  setGenerationStep,
   setStreamingStatus,
   getPrimaryKeyword,
   getSecondaryKeywords,
@@ -153,7 +153,9 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           hasOutline={hasOutline}
           setStreamingContent={setStreamingContent}
           setStreamingStatus={setStreamingStatus}
-          setMainIsGenerating={setIsGenerating}
+          setMainIsGenerating={(generating: boolean) => {
+            setGenerationStep(generating ? GenerationStep.GENERATING_ARTICLE : GenerationStep.IDLE);
+          }}
         />
       </div>
     </div>
