@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
 import { TitleGenerationSection } from './TitleGenerationSection';
+import { useEnhancedContentGeneration } from '@/hooks/useEnhancedContentGeneration';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -38,6 +40,18 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
 }) => {
   const [seoProMode, setSeoProMode] = useState(true);
   const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
+
+  // Use the enhanced content generation hook
+  const {
+    generateContent: generateEnhancedContent,
+    isGenerating: isEnhancedGenerating,
+    sections,
+    overallProgress,
+    currentMessage,
+    error: enhancedError,
+    finalContent,
+    reset: resetEnhanced
+  } = useEnhancedContentGeneration();
 
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -194,33 +208,22 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
     setGenerationStep(GenerationStep.GENERATING_ARTICLE);
     setStreamingContent('');
-    setStreamingStatus('Starting article generation...');
+    setStreamingStatus('Starting enhanced article generation...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content-ai-sdk', {
-        body: {
-          title: finalTitle,
-          outline: articleData.outline,
-          keywords: articleData.keywords,
-          primaryKeyword: getPrimaryKeyword(),
-          audience: articleData.audience,
-          tone: articleData.tone,
-          targetWordCount: getTargetWordCount(),
-          searchIntent: articleData.searchIntent,
-          brand: articleData.brand,
-          product: articleData.product,
-          pointOfView: articleData.pointOfView
-        }
+      // Reset previous enhanced generation state
+      resetEnhanced();
+      
+      // Use the enhanced content generation
+      await generateEnhancedContent({
+        title: finalTitle,
+        outline: articleData.outline,
+        keywords: articleData.keywords,
+        audience: articleData.audience,
+        tone: articleData.tone
       });
 
-      if (error) {
-        console.error('Article generation error:', error);
-        toast.error('Failed to generate article. Please try again.');
-        throw error;
-      }
-
-      console.log('Article generation initiated successfully');
-      setStreamingStatus('Article generation completed');
+      toast.success('Article generation started successfully!');
       
     } catch (error) {
       console.error('Error generating article:', error);
@@ -230,6 +233,22 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
       setGenerationStep(GenerationStep.IDLE);
     }
   };
+
+  // Sync enhanced content generation states with main article studio
+  React.useEffect(() => {
+    if (finalContent && !isEnhancedGenerating) {
+      updateArticleData({ generatedContent: finalContent });
+      setStreamingContent(finalContent);
+      setStreamingStatus('Enhanced article generation complete!');
+    }
+  }, [finalContent, isEnhancedGenerating, updateArticleData, setStreamingContent, setStreamingStatus]);
+
+  // Sync current message with streaming status
+  React.useEffect(() => {
+    if (currentMessage) {
+      setStreamingStatus(currentMessage);
+    }
+  }, [currentMessage, setStreamingStatus]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] max-h-[calc(100vh-56px)]">
