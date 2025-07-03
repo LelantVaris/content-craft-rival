@@ -82,6 +82,13 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
     };
   }, [updateArticleData]);
 
+  // Auto-trigger outline generation when title is selected
+  useEffect(() => {
+    if (hasSelectedTitle && !hasOutline && !isLoadingOutline) {
+      window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
+    }
+  }, [hasSelectedTitle, hasOutline, isLoadingOutline]);
+
   // Determine current step
   const getCurrentStep = () => {
     if (!hasSelectedTitle) return 1;
@@ -226,13 +233,6 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
 
     // State 4: Outline Display - Auto-trigger generation when title is selected
     if (hasSelectedTitle && !hasOutline) {
-      // Auto-trigger outline generation immediately when title is selected
-      React.useEffect(() => {
-        if (hasSelectedTitle && !hasOutline && !isLoadingOutline) {
-          window.dispatchEvent(new CustomEvent('trigger-outline-generation'));
-        }
-      }, [hasSelectedTitle, hasOutline, isLoadingOutline]);
-
       return (
         <div className="p-6">
           <div className="text-center mb-8">
