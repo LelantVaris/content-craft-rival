@@ -1,4 +1,3 @@
-
 # Article Studio Implementation Guide
 
 ## Development Roadmap
@@ -100,336 +99,423 @@ const STEPS = [
 - [x] Proper step progression coordination ✅ COMPLETED
 - [x] Visual feedback for completed steps ✅ COMPLETED
 
-### 🔄 Phase 3: AI SDK Migration (CRITICAL FIX - CURRENT PRIORITY)
+### 🔄 Phase 3: Enhanced Content Generation Integration (CRITICAL FIX - CURRENT PRIORITY)
 
 #### 3.1 Root Cause Analysis ✅ COMPLETED
-**Current Issues Identified**:
-- [x] React Error #31: Objects rendered as React children due to type safety violations ✅ DIAGNOSED
-- [x] Streaming failures: Manual SSE parsing in edge functions fails silently ✅ DIAGNOSED
-- [x] Type issues: `streamingStatus` typed as `any` instead of `string` ✅ DIAGNOSED
-- [x] CDN Import Issues: 429 rate limiting on `https://esm.sh/@supabase/supabase-js@2.7.1` ✅ DIAGNOSED
+**Issues Identified**:
+- [x] Backend generation working correctly with proper SSE streaming ✅ VERIFIED
+- [x] Frontend integration failing due to duplicate hook instances ✅ DIAGNOSED
+- [x] State synchronization missing between generation and display components ✅ DIAGNOSED
+- [x] Streaming content not reaching preview components ✅ DIAGNOSED
 
-#### 3.2 AI SDK Implementation Plan 🔄 READY TO IMPLEMENT
+#### 3.2 Enhanced Content Generation Integration Status 🔄 IN PROGRESS
 
-**Strategy Decision**: **Hybrid Approach**
-- **Keep Direct OpenAI API**: `generate-titles`, `generate-outline`, `generate-keywords` (speed critical)
-- **Convert to AI SDK**: `generate-content-ai-sdk` (streaming critical for UX)
+**Current State**:
+- ✅ **Backend Working**: Enhanced content generation edge function streams correctly
+- ✅ **Console Logging**: Detailed debugging information available
+- ❌ **Frontend Display**: Streaming content not visible in UI
+- ❌ **State Sync**: Enhanced generation state not synchronized with main article studio
 
-#### Phase 3 Detailed Tasks
+**Critical Integration Issues**:
+1. **Duplicate Hook Instances**: `useEnhancedContentGeneration` instantiated separately in:
+   - `UnifiedControlPanel` (triggers generation)
+   - `StreamingArticlePreview` (should display content)
+2. **Missing State Bridge**: Enhanced generation state isolated from main article studio state
+3. **Streaming Disconnect**: Generated content never reaches preview components
 
-##### Task 1: Fix Edge Function (Priority 1)
-**File**: `supabase/functions/generate-content-ai-sdk/index.ts`
-- [ ] **Replace CDN Import**: Switch from `https://esm.sh/@supabase/supabase-js@2.7.1` to stable alternative
-- [ ] **Implement AI SDK**: Replace manual streaming with `streamText()` from AI SDK
-- [ ] **Add AI SDK Dependencies**: Import `streamText` from `ai` package
-- [ ] **Maintain PVOD Prompt**: Keep existing prompt structure and parameters
-- [ ] **Error Handling**: Comprehensive error recovery with AI SDK patterns
-- [ ] **Test Streaming**: Verify reliable streaming without 429 errors
+#### Phase 3 Implementation Plan 🔄 READY TO IMPLEMENT
 
-**Implementation Pattern**:
+**Strategy**: **Centralize Enhanced Generation State**
+- **Integrate** `useEnhancedContentGeneration` into main `useArticleStudio` hook
+- **Eliminate** duplicate hook instances in individual components
+- **Synchronize** enhanced generation state across all components
+
+##### Task 1: Centralize Enhanced Generation (Priority 1)
+**File**: `src/hooks/useArticleStudio.ts`
+- [ ] **Integrate Enhanced Generation**: Import and use `useEnhancedContentGeneration` in main hook
+- [ ] **Add State Bridge**: Sync enhanced generation state with main article state
+- [ ] **Export Enhanced Props**: Provide enhanced generation state to components
+- [ ] **Maintain Backward Compatibility**: Keep existing functionality intact
+
+**Integration Pattern**:
 ```typescript
-import { streamText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+export function useArticleStudio() {
+  const [articleData, setArticleData] = useState<ArticleStudioData>({
+    topic: '',
+    keywords: [],
+    primaryKeyword: '',
+    searchIntent: 'auto',
+    audience: '',
+    tone: 'professional',
+    length: 'medium',
+    customWordCount: undefined,
+    pointOfView: 'second',
+    brand: '',
+    product: '',
+    selectedTitle: '',
+    customTitle: '',
+    outline: [],
+    generatedContent: '',
+    seoNotes: '',
+    currentStep: 1
+  });
 
-// Replace manual streaming with:
-const result = streamText({
-  model: openai('gpt-4o-mini'),
-  messages: [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
-  ],
-  temperature: 0.7,
-  maxTokens: 4000,
-});
+  const [generationStep, setGenerationStep] = useState<GenerationStep>(GenerationStep.IDLE);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [streamingStatus, setStreamingStatus] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  
+  const navigate = useNavigate();
+  const { saveArticle, refreshArticles } = useArticles();
 
-return result.toDataStreamResponse();
+  // Integrate enhanced generation
+  const enhancedGeneration = useEnhancedContentGeneration();
+  
+  // Sync states
+  useEffect(() => {
+    if (enhancedGeneration.finalContent) {
+      setStreamingContent(enhancedGeneration.finalContent);
+      updateArticleData({ generatedContent: enhancedGeneration.finalContent });
+    }
+  }, [enhancedGeneration.finalContent]);
+
+  const updateArticleData = useCallback((updates: Partial<ArticleStudioData>) => {
+    setArticleData(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Helper to get primary keyword (use explicit or first from list)
+  const getPrimaryKeyword = useCallback(() => {
+    return articleData.primaryKeyword || articleData.keywords[0] || '';
+  }, [articleData.primaryKeyword, articleData.keywords]);
+
+  // Helper to get secondary keywords (all except primary)
+  const getSecondaryKeywords = useCallback(() => {
+    const primary = getPrimaryKeyword();
+    return articleData.keywords.filter(k => k !== primary);
+  }, [articleData.keywords, getPrimaryKeyword]);
+
+  // Helper to get target word count
+  const getTargetWordCount = useCallback(() => {
+    if (articleData.length === 'custom') {
+      return articleData.customWordCount || 4000;
+    }
+    
+    const wordCountMap = {
+      short: 2000,
+      medium: 4000,
+      long: 6000
+    };
+    
+    return wordCountMap[articleData.length as keyof typeof wordCountMap] || 4000;
+  }, [articleData.length, articleData.customWordCount]);
+
+  // Form validation
+  const isFormValid = useCallback(() => {
+    return (
+      articleData.topic.trim().length > 0 &&
+      (articleData.keywords.length > 0 || articleData.primaryKeyword.trim().length > 0) &&
+      articleData.audience.trim().length > 0
+    );
+  }, [articleData]);
+
+  // Auto-progression logic
+  useEffect(() => {
+    const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
+    const hasOutline = articleData.outline.length > 0;
+    
+    let newStep = 1;
+    if (hasTitle && hasOutline) newStep = 3;
+    else if (hasTitle) newStep = 2;
+    
+    if (newStep !== articleData.currentStep) {
+      setArticleData(prev => ({ ...prev, currentStep: newStep }));
+    }
+  }, [articleData.selectedTitle, articleData.customTitle, articleData.outline.length]);
+
+  const nextStep = useCallback(() => {
+    setArticleData(prev => ({ 
+      ...prev, 
+      currentStep: Math.min(prev.currentStep + 1, 3) 
+    }));
+  }, []);
+
+  const prevStep = useCallback(() => {
+    setArticleData(prev => ({ 
+      ...prev, 
+      currentStep: Math.max(prev.currentStep - 1, 1) 
+    }));
+  }, []);
+
+  const canProceed = useCallback(() => {
+    switch (articleData.currentStep) {
+      case 1:
+        return !!(articleData.selectedTitle || articleData.customTitle);
+      case 2:
+        return articleData.outline.length > 0;
+      case 3:
+        return articleData.generatedContent.length > 0 || streamingContent.length > 0;
+      default:
+        return false;
+    }
+  }, [articleData, streamingContent]);
+
+  const saveAndComplete = useCallback(async () => {
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    const finalContent = streamingContent || articleData.generatedContent || `# ${finalTitle}\n\nStart writing your article here...`;
+    
+    if (!finalTitle || finalTitle === 'Untitled Article') {
+      toast.error('Please select or enter a title for your article');
+      return;
+    }
+    
+    try {
+      setGenerationStep(GenerationStep.GENERATING_ARTICLE);
+      const savedArticle = await saveArticle({
+        title: finalTitle,
+        content: finalContent,
+        status: 'draft',
+        content_type: 'blog-post',
+        tone: articleData.tone,
+        target_audience: articleData.audience || undefined,
+        keywords: articleData.keywords.length > 0 ? articleData.keywords : undefined,
+      });
+
+      toast.success('Article saved successfully!');
+      await refreshArticles();
+      navigate(`/article/${savedArticle.id}/edit`);
+    } catch (error) {
+      console.error('Error saving article:', error);
+      toast.error('Failed to save article. Please try again.');
+    } finally {
+      setGenerationStep(GenerationStep.IDLE);
+    }
+  }, [articleData, streamingContent, saveArticle, refreshArticles, navigate]);
+
+  const generateFullArticle = useCallback(async () => {
+    console.info('Article generation will be handled by the streaming component');
+  }, []);
+
+  const autoSave = useCallback(async () => {
+    const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    const finalContent = streamingContent || articleData.generatedContent;
+    
+    if (!finalTitle || finalTitle === 'Untitled Article' || !finalContent) {
+      return;
+    }
+    
+    try {
+      console.log('Auto-saving article...', { title: finalTitle, contentLength: finalContent.length });
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    }
+  }, [articleData, streamingContent]);
+
+  return {
+    articleData,
+    updateArticleData,
+    nextStep,
+    prevStep,
+    canProceed,
+    saveAndComplete,
+    generateFullArticle,
+    autoSave,
+    generationStep,
+    streamingContent,
+    streamingStatus,
+    error,
+    setStreamingContent,
+    setGenerationStep,
+    setStreamingStatus,
+    setError,
+    getPrimaryKeyword,
+    getSecondaryKeywords,
+    getTargetWordCount,
+    isFormValid,
+    generatedTitles,
+    setGeneratedTitles,
+    enhancedGeneration, // Pass through enhanced generation state
+  };
+}
 ```
 
-##### Task 2: Update Frontend Integration (Priority 2)
-**File**: `src/components/ArticleStudio/ContentGenerationPanel.tsx`
-- [ ] **Replace Manual Streaming**: Remove `supabase.functions.invoke` approach
-- [ ] **Implement AI SDK Hooks**: Use `useChat` or `useCompletion` from `ai/react`
-- [ ] **Connect to Novel Editor**: Stream content directly to editor
-- [ ] **Progress Indicators**: Real-time status and progress updates
-- [ ] **Error Handling**: Proper error states and recovery
-- [ ] **Type Safety**: Fix `streamingStatus` typing issues
-
-**Implementation Pattern**:
-```typescript
-import { useCompletion } from 'ai/react';
-
-const { completion, complete, isLoading, error } = useCompletion({
-  api: '/api/generate-content',
-  onFinish: (completion) => {
-    onUpdate({ generatedContent: completion });
-  },
-  onError: (error) => {
-    setGenerationError(error.message);
-  }
-});
-```
-
-##### Task 3: Novel Editor Streaming (Priority 3)
-**File**: `src/components/NovelEditor.tsx` (Review existing implementation)
-- [ ] **Review Current Capabilities**: Understand existing Novel Editor features
-- [ ] **Implement Real-time Updates**: Content insertion during streaming
-- [ ] **Maintain Editor State**: Preserve formatting and cursor position
-- [ ] **Transaction-based Updates**: Avoid conflicts during streaming
-- [ ] **Preserve Features**: Keep all existing Novel Editor functionality
-
-**Integration Points**:
-- [ ] Connect `completion` from AI SDK to Novel Editor content
-- [ ] Handle partial content updates during streaming
-- [ ] Maintain user editing capabilities during streaming
-- [ ] Preserve editor extensions and formatting
-
-#### 3.3 Type Safety Improvements
+##### Task 2: Update Component Integration (Priority 2)
 **Files to Update**:
-- [ ] `src/components/ArticleStudio/StreamingArticlePreview.tsx`: Replace `streamingStatus?: any` with proper AI SDK types
-- [ ] `src/components/ArticleStudio/LivePreviewPanel.tsx`: Remove manual type guards and string validation
-- [ ] `src/hooks/useArticleStudio.ts`: Use AI SDK's built-in message and error types
+- [ ] **`src/components/ArticleStudio/UnifiedControlPanel.tsx`**:
+  - Remove duplicate `useEnhancedContentGeneration` hook
+  - Use enhanced generation state from props
+  - Maintain generation trigger functionality
 
-#### 3.4 Testing & Validation Checkpoints
-- [ ] **Zero React Error #31**: Eliminate type-related rendering errors
-- [ ] **Streaming Reliability**: 99%+ successful completion rate
-- [ ] **Real-time Display**: Content appears immediately in UI
-- [ ] **Novel Editor Integration**: Seamless content insertion
-- [ ] **Error Recovery**: Proper error handling and user feedback
-- [ ] **Performance**: <2 minute article generation times
+- [ ] **`src/components/ArticleStudio/StreamingArticlePreview.tsx`**:
+  - Remove duplicate `useEnhancedContentGeneration` hook  
+  - Receive enhanced generation state via props
+  - Display real-time streaming content
 
-### 📋 Phase 4: Enhanced Content Generation - PENDING
+- [ ] **`src/components/ArticleStudio/LivePreviewPanel.tsx`**:
+  - Pass enhanced generation state to preview components
+  - Maintain conditional display logic
 
-#### 4.1 Two-Phase Generation Flow
+- [ ] **`src/pages/ArticleStudio.tsx`**:
+  - Pass enhanced generation props through component tree
+  - Ensure state flows from main hook to all components
+
+##### Task 3: Streaming Content Integration (Priority 3)
+**Implementation Requirements**:
+- [ ] **Real-time Content Display**: Stream content appears immediately in preview
+- [ ] **Section Progress Updates**: Section-by-section progress visible in UI
+- [ ] **Status Message Sync**: Current generation status displayed to user
+- [ ] **Error State Handling**: Enhanced generation errors properly displayed
+- [ ] **Final Content Sync**: Generated content saved to main article state
+
+#### 3.3 Success Criteria for Phase 3
+- [ ] **Real-time Streaming**: Content appears in preview as it's generated
+- [ ] **Section Progress**: Section-by-section updates visible in UI
+- [ ] **State Synchronization**: Enhanced generation state flows through all components
+- [ ] **Error Handling**: Proper error messages and recovery
+- [ ] **Performance**: Generation completes in <2 minutes
+- [ ] **Console Logging**: Detailed debugging information maintained
+
+### 📋 Phase 4: Enhanced Content Generation Features - PENDING
 **Dependencies**: Phase 3 complete
-- [ ] **Phase 1: Skeleton Generation** - Basic content structure without web search
-- [ ] **Phase 2: Web Enhancement** - Research each section with OpenAI/Tavily integration
+- [ ] **Two-Phase Generation**: Skeleton → Research enhancement
+- [ ] **Web Research Integration**: OpenAI/Tavily for section enhancement
+- [ ] **Progress Indicators**: Real-time status updates
+- [ ] **Novel Editor Full Integration**: Transaction-based updates
 
-#### 4.2 Progress Status Implementation
-```typescript
-const progressMessages = [
-  "Generating article outline...",
-  "Writing introduction...",
-  "Researching latest trends for '{section}'...",
-  "Enhancing section with industry insights...",
-  "Finalizing content..."
-];
-```
+### 📋 Phase 5: Advanced Features & Polish - PENDING
+**Dependencies**: Phase 4 complete
+- [ ] **Loading Overlays**: Between step transitions
+- [ ] **Drag-and-Drop Outlines**: Enhanced outline management
+- [ ] **Performance Optimization**: Caching and memory management
+- [ ] **Comprehensive Testing**: End-to-end workflow validation
 
-#### 4.3 Novel Editor Full Integration
-- [ ] Transaction-based updates for conflict-free insertion
-- [ ] Progress indicators within editor content
-- [ ] Preserve all existing Novel AI features (slash commands, bubble menu)
+---
 
-### 📋 Phase 5: Advanced Features Implementation - PENDING
+## COMPONENT REFERENCE MAP
 
-#### 5.1 Loading Screen Implementation
-**New Components to Create**:
-- [ ] `LoadingOverlay.tsx` - Between step transitions
-- [ ] `StepTransitionLoader.tsx` - Progress indicators
-- [ ] `GenerationProgress.tsx` - Article generation status
+### Core Article Studio Components
+| Component | File Path | Status | Current Issue | Action Required |
+|-----------|-----------|--------|---------------|-----------------|
+| **Main Studio** | `src/pages/ArticleStudio.tsx` | ✅ Working | None | Pass enhanced generation props |
+| **Control Panel** | `src/components/ArticleStudio/UnifiedControlPanel.tsx` | 🔄 Integration Issue | Duplicate hook instance | Remove duplicate hook, use props |
+| **Live Preview** | `src/components/ArticleStudio/LivePreviewPanel.tsx` | ✅ Working | Missing enhanced state | Pass enhanced generation to preview |
+| **Streaming Preview** | `src/components/ArticleStudio/StreamingArticlePreview.tsx` | 🔄 Integration Issue | Duplicate hook instance | Remove duplicate hook, use props |
 
-#### 5.2 Enhanced Outline Creation
-- [ ] `OutlineEditor.tsx` - Drag-and-drop outline management
-- [ ] Hierarchical display with character count estimates
-- [ ] Add/remove/reorder sections with visual feedback
+### Enhanced Generation Components
+| Component | File Path | Status | Purpose | Integration Status |
+|-----------|-----------|--------|---------|-------------------|
+| **Enhanced Hook** | `src/hooks/useEnhancedContentGeneration.ts` | ✅ Working | Enhanced content generation | Needs centralization |
+| **Section Preview** | `src/components/ArticleStudio/SectionStreamingPreview.tsx` | ✅ Working | Section-by-section display | Ready for integration |
+
+---
 
 ## Technical Implementation Details
 
-### File Structure Status & Next Actions
+### Enhanced Content Generation Architecture
 
-#### ✅ Core Components - COMPLETED & WORKING
-- [x] `src/pages/ArticleStudio.tsx` - Main layout with clean interface ✅ NO CHANGES NEEDED
-- [x] `src/components/ArticleStudio/LivePreviewPanel.tsx` - Progressive content display ✅ NO CHANGES NEEDED
-- [x] `src/components/ArticleStudio/UnifiedControlPanel.tsx` - Step management ✅ NO CHANGES NEEDED
-- [x] `src/components/ArticleStudio/StepNavigation.tsx` - 3-step workflow ✅ NO CHANGES NEEDED
+#### Current Architecture ❌ PROBLEMATIC
+```
+UnifiedControlPanel
+  └── useEnhancedContentGeneration() [Instance 1]
+      └── Triggers generation
+      └── Has generation state
 
-#### 🔄 Components Needing AI SDK Updates
-- [ ] `src/components/ArticleStudio/ContentGenerationPanel.tsx` - **PRIORITY UPDATE**: Convert to AI SDK
-- [ ] `src/components/ArticleStudio/StreamingArticlePreview.tsx` - **UPDATE**: Connect to AI SDK stream
-- [ ] `src/hooks/useArticleStudio.ts` - **REVIEW**: May need AI SDK type updates
+StreamingArticlePreview  
+  └── useEnhancedContentGeneration() [Instance 2]
+      └── Isolated state
+      └── Never receives content
+```
 
-#### ✅ Components Working Perfectly - NO CHANGES
-- [x] `src/components/ArticleStudio/EmptyStateDisplay.tsx` - Empty state with try example ✅
-- [x] `src/components/ArticleStudio/TitleGenerationPanel.tsx` - Keep direct API calls ✅
-- [x] `src/components/ArticleStudio/OutlineCreationPanel.tsx` - Keep direct API calls ✅
-- [x] `src/components/ArticleStudio/AnimatedLoadingSkeleton.tsx` - Loading states ✅
-- [x] `src/components/ArticleStudio/LiveArticleStats.tsx` - Conditional stats ✅
+#### Target Architecture ✅ SOLUTION  
+```
+useArticleStudio
+  └── useEnhancedContentGeneration() [Single Instance]
+      └── Centralized state
+      └── Shared across components
 
-### Edge Functions Status & Plan
+UnifiedControlPanel (props)
+  └── Receives: enhancedGeneration state
+  └── Triggers: generation through props
 
-#### ✅ Keep Direct API Calls - NO CHANGES NEEDED
-- [x] `supabase/functions/generate-titles/index.ts` - Fast title generation ✅
-- [x] `supabase/functions/generate-outline/index.ts` - Quick outline creation ✅  
-- [x] `supabase/functions/generate-keywords/index.ts` - Instant keyword suggestions ✅
+StreamingArticlePreview (props)
+  └── Receives: enhancedGeneration state  
+  └── Displays: real-time streaming content
+```
 
-#### 🔄 Convert to AI SDK - PRIORITY TASK
-- [ ] `supabase/functions/generate-content-ai-sdk/index.ts` - **CRITICAL**: Implement AI SDK streaming
-
-### Conditional Display Logic ✅ WORKING PERFECTLY
-
-#### Statistics Display Rules ✅ IMPLEMENTED & TESTED
+### State Flow Integration ✅ PLANNED
 ```typescript
-interface ConditionalDisplayProps {
-  content: string;
-  isGenerating: boolean;
-  hasTitle: boolean;
-  hasOutline: boolean;
+interface ArticleStudioWithEnhanced {
+  // Existing article studio state
+  articleData: ArticleStudioData;
+  streamingContent: string;
+  
+  // Enhanced generation state
+  enhancedGeneration: {
+    isGenerating: boolean;
+    sections: SectionState[];
+    overallProgress: number;
+    currentMessage: string;
+    finalContent: string;
+    error: string | null;
+  };
 }
-
-const getDisplayState = ({ content, isGenerating, hasTitle, hasOutline }: ConditionalDisplayProps) => ({
-  showStats: content.length > 500 && !isGenerating,
-  showSEO: content.length > 1000 && !isGenerating,
-  showPublishing: content.length > 800 && !isGenerating && hasTitle,
-  showEmpty: !hasTitle && !isGenerating,
-  showTitleSelection: hasTitle && !hasOutline,
-  showOutline: hasTitle && hasOutline && !content,
-  showArticle: hasTitle && hasOutline && content,
-  showLoading: isGenerating
-});
 ```
-
-#### Panel Configuration ✅ OPTIMIZED
-```typescript
-// Current working panel configuration
-const PanelConfig = {
-  leftPanel: {
-    defaultSize: 40,
-    minSize: 30,
-    maxSize: 60
-  },
-  rightPanel: {
-    defaultSize: 60,
-    minSize: 40
-  },
-  resizableHandle: {
-    visible: false, // Hidden by default ✅
-    className: "opacity-0 hover:opacity-100 transition-opacity"
-  }
-};
-```
-
-## Performance Optimization Strategy
-
-### ✅ Conditional Rendering - COMPLETED & OPTIMIZED
-- [x] Use React.memo for expensive statistics calculations ✅ COMPLETED
-- [x] Implement lazy loading for non-critical components ✅ COMPLETED
-- [x] Debounce content length calculations ✅ COMPLETED
-- [x] Cache component state during generation ✅ COMPLETED
-
-### ✅ Memory Management - COMPLETED
-- [x] Cleanup unused event listeners ✅ COMPLETED
-- [x] Optimize re-rendering with dependency arrays ✅ COMPLETED
-- [x] Efficient state management in useArticleStudio ✅ COMPLETED
-- [x] Lazy load non-critical UI elements ✅ COMPLETED
 
 ## Testing Strategy & Checkpoints
 
 ### ✅ Phase 2 Testing - ALL PASSED
-- [x] **Visual Cleanup Verification**
-  - [x] No panel headers visible ✅ VERIFIED
-  - [x] No visual separators between panels ✅ VERIFIED
-  - [x] Resizable handle hidden by default ✅ VERIFIED
-  - [x] Clean, borderless panel experience ✅ VERIFIED
-
-- [x] **Conditional Display Testing**
-  - [x] Statistics hidden until content >500 chars ✅ VERIFIED
-  - [x] SEO panel hidden until content >1000 chars ✅ VERIFIED
-  - [x] Publishing options hidden until ready ✅ VERIFIED
-  - [x] Progressive disclosure working correctly ✅ VERIFIED
-
-- [x] **Step Navigation Testing**
-  - [x] 3-step workflow functional ✅ VERIFIED
-  - [x] Back/Continue buttons working ✅ VERIFIED
-  - [x] Step progression automatic ✅ VERIFIED
-  - [x] Visual feedback for completed steps ✅ VERIFIED
+- [x] **Visual Cleanup Verification**: Clean interface achieved ✅
+- [x] **Conditional Display Testing**: Progressive disclosure working ✅
+- [x] **Step Navigation Testing**: 3-step workflow functional ✅
 
 ### 🔄 Phase 3 Testing - READY TO IMPLEMENT
-**Testing Plan for AI SDK Migration**:
-- [ ] **Streaming Reliability Tests**
-  - [ ] Zero React Error #31 occurrences
-  - [ ] 99%+ successful streaming completion rate
-  - [ ] Content streams without interruption
-  - [ ] Proper error handling and recovery
+**Testing Plan for Enhanced Generation Integration**:
+- [ ] **Backend Verification**: Enhanced generation edge function working ✅ VERIFIED
+- [ ] **Console Log Analysis**: Detailed debugging information available ✅ VERIFIED
+- [ ] **State Integration Tests**:
+  - [ ] Single hook instance in main article studio
+  - [ ] Enhanced generation state flows to all components
+  - [ ] Real-time content appears in preview
+  - [ ] Section progress updates visible
+  - [ ] Error states properly handled
 
-- [ ] **Novel Editor Integration Tests**
-  - [ ] Real-time content insertion works
-  - [ ] Editor state preserved during streaming
-  - [ ] All Novel Editor features functional
-  - [ ] No conflicts with user editing
+### Integration Testing Checklist
+- [ ] **Complete Workflow**: Title → Outline → Enhanced Article generation
+- [ ] **Real-time Updates**: Content streams into preview as generated
+- [ ] **State Synchronization**: All components reflect current generation state
+- [ ] **Error Recovery**: Proper error handling and user feedback
+- [ ] **Performance**: Generation completes within acceptable timeframes
 
-- [ ] **Performance Tests**
-  - [ ] Article generation completes in <2 minutes
-  - [ ] Streaming starts within 3 seconds
-  - [ ] No memory leaks during long generations
-  - [ ] Proper cleanup after completion
+## Current Blocking Issues & Solutions
 
-### Integration Testing ✅ COMPLETED
-- [x] Complete 3-step workflow functional ✅ COMPLETED
-- [x] Right panel updates with left panel steps ✅ COMPLETED
-- [x] SEO settings affect content generation ✅ COMPLETED
-- [x] Article saving and navigation preserved ✅ COMPLETED
-- [x] Mobile responsiveness maintained ✅ COMPLETED
+### 🚨 Critical Integration Issues
+1. **Duplicate Hook Instances**: 
+   - **Problem**: `useEnhancedContentGeneration` used in multiple components
+   - **Solution**: Centralize in `useArticleStudio` hook
+   - **Impact**: HIGH - Prevents all streaming functionality
 
-## Deployment Strategy
+2. **Missing State Bridge**:
+   - **Problem**: Enhanced generation state isolated from main article state
+   - **Solution**: Sync states in main hook with useEffect
+   - **Impact**: HIGH - No content reaches preview components
 
-### Phase-by-Phase Rollout
-- [x] **Phase 2**: Clean UI with feature flags for gradual rollout ✅ COMPLETED
-- [ ] **Phase 3**: AI SDK migration with comprehensive testing 🔄 READY
-- [ ] **Phase 4**: Enhanced generation with user feedback integration
-- [ ] **Phase 5**: Advanced features with performance monitoring
+3. **Component Prop Threading**:
+   - **Problem**: Enhanced generation state not passed through component tree
+   - **Solution**: Thread props from main hook through all components
+   - **Impact**: MEDIUM - UI components don't reflect generation state
 
-### Rollback Strategy ✅ COMPLETED
-- [x] Maintain existing components during updates ✅ COMPLETED
-- [x] Feature flags for instant rollback capability ✅ COMPLETED
-- [x] Database schema backward compatible ✅ COMPLETED
-- [x] Comprehensive error handling ✅ COMPLETED
+### Immediate Next Steps (Priority Order)
+1. **[ ] Integrate Enhanced Generation into Main Hook** - 2 hours
+2. **[ ] Update Component Props Threading** - 1 hour  
+3. **[ ] Remove Duplicate Hook Instances** - 1 hour
+4. **[ ] Test End-to-End Integration** - 1 hour
 
-### Success Metrics & Tracking
-- [x] **Phase 2**: Clean interface matching reference screenshots 100% ✅ ACHIEVED
-- [ ] **Phase 3**: 99%+ streaming reliability 🎯 TARGET
-- [ ] **Phase 4**: <2 minute generation times 🎯 TARGET
-- [ ] **Phase 5**: >90% workflow completion rates 🎯 TARGET
-
-## Next Immediate Actions (Priority Order)
-
-### 🚨 Critical Path - Phase 3 Implementation
-1. **[ ] Update `generate-content-ai-sdk` Edge Function**
-   - Replace CDN imports causing 429 errors
-   - Implement AI SDK `streamText()` 
-   - Test streaming reliability
-   - **Timeline**: 1-2 hours
-
-2. **[ ] Update `ContentGenerationPanel.tsx`**
-   - Implement AI SDK hooks (`useCompletion`)
-   - Connect streaming to UI
-   - Fix type safety issues
-   - **Timeline**: 1-2 hours
-
-3. **[ ] Test Novel Editor Integration**
-   - Verify content streams into editor
-   - Test concurrent editing capabilities
-   - Validate all features preserved
-   - **Timeline**: 1 hour
-
-4. **[ ] End-to-End Testing**
-   - Complete workflow testing
-   - Performance validation
-   - Error handling verification
-   - **Timeline**: 1 hour
-
-### Success Criteria Checklist
-- [ ] Article generation completes successfully 99%+ of the time
-- [ ] Content streams in real-time without errors
-- [ ] Novel Editor receives and displays streamed content
-- [ ] All existing functionality preserved
-- [ ] Zero React Error #31 occurrences
-- [ ] Generation completes in <2 minutes
+**Estimated Total Time**: 5 hours for complete Phase 3 implementation
 
 ---
 
-**CURRENT STATUS**: ✅ Phase 2 Complete → 🔄 Phase 3 Ready for Implementation  
-**NEXT MILESTONE**: AI SDK streaming implementation for real-time article generation  
-**ESTIMATED TIME**: 4-6 hours for complete Phase 3 implementation  
-**SUCCESS METRIC**: Real-time streaming article generation in Novel Editor
+**CURRENT STATUS**: ✅ Phase 2 Complete → 🔄 Phase 3 Integration Issues Identified  
+**NEXT MILESTONE**: Centralized enhanced content generation state  
+**SUCCESS METRIC**: Real-time streaming article generation visible in UI
 
-This implementation guide provides detailed technical roadmap with clear checkpoints and component references for the current AI SDK implementation priority.
+This implementation guide provides the current state analysis and detailed integration plan for fixing the enhanced content generation frontend issues.
