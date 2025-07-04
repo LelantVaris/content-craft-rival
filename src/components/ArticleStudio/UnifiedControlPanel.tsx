@@ -1,9 +1,7 @@
-
 import React, { useState } from 'react';
 import { ArticleStudioData, GenerationStep } from '@/hooks/useArticleStudio';
 import { ContentBriefForm } from './ContentBriefForm';
 import { TitleGenerationSection } from './TitleGenerationSection';
-import { useEnhancedContentGeneration } from '@/hooks/useEnhancedContentGeneration';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,6 +19,7 @@ interface UnifiedControlPanelProps {
   streamingContent: string;
   generatedTitles: string[];
   setGeneratedTitles: (titles: string[]) => void;
+  enhancedGeneration: any; // Enhanced generation state from main hook
 }
 
 export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
@@ -36,22 +35,11 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   getTargetWordCount,
   streamingContent,
   generatedTitles,
-  setGeneratedTitles
+  setGeneratedTitles,
+  enhancedGeneration
 }) => {
   const [seoProMode, setSeoProMode] = useState(true);
   const [isGeneratingTitles, setIsGeneratingTitles] = useState(false);
-
-  // Use the enhanced content generation hook
-  const {
-    generateContent: generateEnhancedContent,
-    isGenerating: isEnhancedGenerating,
-    sections,
-    overallProgress,
-    currentMessage,
-    error: enhancedError,
-    finalContent,
-    reset: resetEnhanced
-  } = useEnhancedContentGeneration();
 
   const hasTitle = !!(articleData.selectedTitle || articleData.customTitle);
   const hasOutline = articleData.outline.length > 0;
@@ -206,16 +194,27 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     }
 
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
+    console.log('=== STARTING ENHANCED ARTICLE GENERATION ===');
+    console.log('Using enhanced generation from main hook:', !!enhancedGeneration);
+    
     setGenerationStep(GenerationStep.GENERATING_ARTICLE);
     setStreamingContent('');
     setStreamingStatus('Starting enhanced article generation...');
     
     try {
       // Reset previous enhanced generation state
-      resetEnhanced();
+      enhancedGeneration.reset();
       
-      // Use the enhanced content generation
-      await generateEnhancedContent({
+      // Use the enhanced content generation from main hook
+      console.log('Calling enhanced generation with:', {
+        title: finalTitle,
+        outlineSections: articleData.outline.length,
+        keywords: articleData.keywords,
+        audience: articleData.audience,
+        tone: articleData.tone
+      });
+
+      await enhancedGeneration.generateContent({
         title: finalTitle,
         outline: articleData.outline,
         keywords: articleData.keywords,
@@ -223,32 +222,17 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
         tone: articleData.tone
       });
 
-      toast.success('Article generation started successfully!');
+      toast.success('Enhanced article generation started successfully!');
+      console.log('Enhanced generation initiated, streaming should begin...');
       
     } catch (error) {
-      console.error('Error generating article:', error);
+      console.error('Error generating enhanced article:', error);
       toast.error('Failed to generate article. Please check your connection and try again.');
       setStreamingStatus('');
     } finally {
       setGenerationStep(GenerationStep.IDLE);
     }
   };
-
-  // Sync enhanced content generation states with main article studio
-  React.useEffect(() => {
-    if (finalContent && !isEnhancedGenerating) {
-      updateArticleData({ generatedContent: finalContent });
-      setStreamingContent(finalContent);
-      setStreamingStatus('Enhanced article generation complete!');
-    }
-  }, [finalContent, isEnhancedGenerating, updateArticleData, setStreamingContent, setStreamingStatus]);
-
-  // Sync current message with streaming status
-  React.useEffect(() => {
-    if (currentMessage) {
-      setStreamingStatus(currentMessage);
-    }
-  }, [currentMessage, setStreamingStatus]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] max-h-[calc(100vh-56px)]">

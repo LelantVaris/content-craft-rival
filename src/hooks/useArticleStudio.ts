@@ -1,7 +1,7 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useArticles } from '@/hooks/useArticles';
+import { useEnhancedContentGeneration } from '@/hooks/useEnhancedContentGeneration';
 import { toast } from 'sonner';
 
 export enum GenerationStep {
@@ -68,6 +68,32 @@ export function useArticleStudio() {
   
   const navigate = useNavigate();
   const { saveArticle, refreshArticles } = useArticles();
+
+  // Integrate enhanced content generation
+  const enhancedGeneration = useEnhancedContentGeneration();
+
+  // Sync enhanced generation content with main article state
+  useEffect(() => {
+    if (enhancedGeneration.finalContent && !enhancedGeneration.isGenerating) {
+      console.log('Syncing enhanced generation final content to main state:', enhancedGeneration.finalContent.length, 'chars');
+      setStreamingContent(enhancedGeneration.finalContent);
+      updateArticleData({ generatedContent: enhancedGeneration.finalContent });
+    }
+  }, [enhancedGeneration.finalContent, enhancedGeneration.isGenerating]);
+
+  // Sync enhanced generation status with streaming status
+  useEffect(() => {
+    if (enhancedGeneration.currentMessage) {
+      setStreamingStatus(enhancedGeneration.currentMessage);
+    }
+  }, [enhancedGeneration.currentMessage]);
+
+  // Sync enhanced generation error with main error state
+  useEffect(() => {
+    if (enhancedGeneration.error) {
+      setError(enhancedGeneration.error);
+    }
+  }, [enhancedGeneration.error]);
 
   const updateArticleData = useCallback((updates: Partial<ArticleStudioData>) => {
     setArticleData(prev => ({ ...prev, ...updates }));
@@ -222,6 +248,8 @@ export function useArticleStudio() {
     getTargetWordCount,
     isFormValid,
     generatedTitles,
-    setGeneratedTitles
+    setGeneratedTitles,
+    // Pass through enhanced generation state and methods
+    enhancedGeneration
   };
 }

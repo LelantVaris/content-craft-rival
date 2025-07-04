@@ -19,6 +19,8 @@ const ArticleStudio = () => {
   const articleStudio = useArticleStudio();
   const isMobile = useIsMobile();
 
+  console.log('ArticleStudio render - Enhanced generation available:', !!articleStudio.enhancedGeneration);
+
   if (isMobile) {
     return (
       <div className="flex items-center justify-center p-4 h-full">

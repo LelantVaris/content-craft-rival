@@ -7,7 +7,6 @@ import { ResponseStream } from '@/components/prompt-kit/response-stream';
 import { Markdown } from '@/components/prompt-kit/markdown';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/prompt-kit/reasoning';
 import { SectionStreamingPreview } from './SectionStreamingPreview';
-import { useEnhancedContentGeneration } from '@/hooks/useEnhancedContentGeneration';
 
 interface StreamingArticlePreviewProps {
   title: string;
@@ -17,6 +16,7 @@ interface StreamingArticlePreviewProps {
   streamingStatus?: string | null;
   outline?: any[];
   useEnhancedGeneration?: boolean;
+  enhancedGeneration?: any; // Enhanced generation state from main hook
 }
 
 export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = ({
@@ -26,28 +26,37 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
   streamingContent,
   streamingStatus,
   outline = [],
-  useEnhancedGeneration = false
+  useEnhancedGeneration = false,
+  enhancedGeneration
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [showReasoning, setShowReasoning] = useState(false);
-  
-  const {
-    sections,
-    overallProgress,
-    currentMessage,
-    error: enhancedError,
-    isGenerating: isEnhancedGenerating
-  } = useEnhancedContentGeneration();
 
   // Auto-scroll to bottom when new content is added
   useEffect(() => {
-    if (contentRef.current && isGenerating) {
+    if (contentRef.current && (isGenerating || enhancedGeneration?.isGenerating)) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
-  }, [streamingContent, isGenerating]);
+  }, [streamingContent, isGenerating, enhancedGeneration?.finalContent, enhancedGeneration?.isGenerating]);
 
-  const displayContent = streamingContent || content || '';
+  const displayContent = streamingContent || enhancedGeneration?.finalContent || content || '';
   const safeStreamingStatus = streamingStatus ? String(streamingStatus) : '';
+
+  // Use enhanced generation state if available
+  const sections = enhancedGeneration?.sections || [];
+  const overallProgress = enhancedGeneration?.overallProgress || 0;
+  const currentMessage = enhancedGeneration?.currentMessage || '';
+  const enhancedError = enhancedGeneration?.error || null;
+  const isEnhancedGenerating = enhancedGeneration?.isGenerating || false;
+
+  console.log('StreamingArticlePreview render:', {
+    title,
+    isGenerating,
+    isEnhancedGenerating,
+    sectionsCount: sections.length,
+    displayContentLength: displayContent.length,
+    enhancedGenerationAvailable: !!enhancedGeneration
+  });
 
   // Use enhanced generation if sections are available and we're generating
   const shouldShowSectionPreview = useEnhancedGeneration && sections.length > 0 && (isEnhancedGenerating || sections.some(s => s.status !== 'pending'));
@@ -108,7 +117,7 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
                   </h1>
                   
                   {displayContent ? (
-                    isGenerating ? (
+                    (isGenerating || isEnhancedGenerating) ? (
                       <ResponseStream
                         textStream={displayContent}
                         mode="typewriter"

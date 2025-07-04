@@ -21,6 +21,7 @@ interface LivePreviewPanelProps {
   streamingStatus?: string | null;
   updateArticleData: (updates: Partial<ArticleStudioData>) => void;
   generatedTitles: string[];
+  enhancedGeneration: any; // Enhanced generation state from main hook
 }
 
 export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
@@ -30,12 +31,13 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   generationStep,
   streamingStatus,
   updateArticleData,
-  generatedTitles
+  generatedTitles,
+  enhancedGeneration
 }) => {
   const [customTitle, setCustomTitle] = useState('');
   
   const finalTitle = articleData.customTitle || articleData.selectedTitle || '';
-  const finalContent = streamingContent || articleData.generatedContent || '';
+  const finalContent = streamingContent || enhancedGeneration?.finalContent || articleData.generatedContent || '';
   const safeStreamingStatus = streamingStatus ? String(streamingStatus) : '';
 
   // Progressive display logic
@@ -45,8 +47,16 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
   const hasOutline = articleData.outline.length > 0;
   const hasContent = !!finalContent;
   
-  // Helper to check if currently generating
-  const isGenerating = generationStep !== GenerationStep.IDLE;
+  // Helper to check if currently generating (including enhanced generation)
+  const isGenerating = generationStep !== GenerationStep.IDLE || enhancedGeneration?.isGenerating;
+
+  console.log('LivePreviewPanel render:', {
+    finalContent: finalContent.length,
+    streamingContent: streamingContent.length,
+    enhancedFinalContent: enhancedGeneration?.finalContent?.length || 0,
+    isGenerating,
+    enhancedIsGenerating: enhancedGeneration?.isGenerating
+  });
 
   // Determine current step
   const getCurrentStep = () => {
@@ -215,7 +225,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
       );
     }
 
-    // State 5: Article Preview with Outline
+    // State 5: Article Preview with Outline - UPDATED to pass enhanced generation
     if (hasSelectedTitle && hasOutline) {
       return (
         <div className="space-y-6 h-full flex flex-col">
@@ -231,7 +241,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
             </div>
           )}
           
-          {/* Main Content */}
+          {/* Main Content - UPDATED to pass enhanced generation state */}
           <div className="flex-1 px-6">
             {hasContent ? (
               <StreamingArticlePreview
@@ -242,6 +252,7 @@ export const LivePreviewPanel: React.FC<LivePreviewPanelProps> = ({
                 streamingStatus={safeStreamingStatus}
                 outline={articleData.outline}
                 useEnhancedGeneration={true}
+                enhancedGeneration={enhancedGeneration}
               />
             ) : (
               <div className="space-y-4">
