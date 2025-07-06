@@ -1,10 +1,17 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface StreamEvent {
   type: 'status' | 'content' | 'complete' | 'error';
   data: any;
+}
+
+export interface SectionState {
+  id: string;
+  title: string;
+  content: string;
+  status: 'pending' | 'researching' | 'writing' | 'complete' | 'error';
+  message?: string;
 }
 
 export function useEnhancedContentGeneration() {
