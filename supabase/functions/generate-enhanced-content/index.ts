@@ -12,7 +12,7 @@ const corsHeaders = {
 };
 
 interface StreamEvent {
-  type: 'status' | 'section' | 'research' | 'content' | 'complete' | 'error';
+  type: 'status' | 'content' | 'complete' | 'error';
   data: any;
 }
 
@@ -45,7 +45,6 @@ serve(async (req) => {
         try {
           // Send initial status
           controller.enqueue(encoder.encode(createStreamEvent('status', {
-            phase: 'draft',
             message: '🎯 Starting enhanced article generation...',
             progress: 0
           })));
@@ -59,36 +58,46 @@ serve(async (req) => {
           // Use AI SDK for streaming generation
           const result = await streamText({
             model: openai('gpt-4o-mini'),
-            system: `You are an expert content writer. Create a comprehensive article with clear sections. Use markdown formatting and write in a ${tone} tone.`,
-            prompt: `Title: ${title}
-Outline: ${outlineText}
-Keywords: ${keywords.join(', ')}
-Audience: ${audience}
+            system: `You are an expert content writer. Create a comprehensive, well-structured article with clear sections. Use markdown formatting and write in a ${tone} tone for ${audience || 'general audience'}.`,
+            prompt: `Write a complete article with the following specifications:
 
-Create a well-structured article draft with proper sections. Use markdown formatting and ensure each section has substantial content.${keywordText}`,
+Title: ${title}
+
+Outline: 
+${outlineText}
+
+Requirements:
+- Write a full, comprehensive article following the outline structure
+- Use proper markdown formatting with headers (##, ###)
+- Include engaging introductions and conclusions for each section
+- Write in ${tone} tone for ${audience || 'general audience'}
+- Incorporate these keywords naturally: ${keywords.join(', ')}
+- Aim for substantial, informative content in each section
+- Create smooth transitions between sections${keywordText}
+
+Write the complete article now:`,
             temperature: 0.7,
             maxTokens: 3000,
           });
 
           let fullContent = '';
           let progress = 0;
-          const totalSections = outline.length;
 
           // Process the AI SDK stream
           for await (const chunk of result.textStream) {
             fullContent += chunk;
             progress += 1;
             
-            // Send progress updates
-            controller.enqueue(encoder.encode(createStreamEvent('status', {
-              phase: 'writing',
-              message: `✍️ Generating content... (${Math.min(progress, 100)}%)`,
-              progress: Math.min((progress / totalSections) * 100, 95)
-            })));
+            // Send progress updates every 10 chunks
+            if (progress % 10 === 0) {
+              controller.enqueue(encoder.encode(createStreamEvent('status', {
+                message: `✍️ Generating content... (${Math.min(progress * 2, 95)}%)`,
+                progress: Math.min(progress * 2, 95)
+              })));
+            }
 
             // Stream content updates
             controller.enqueue(encoder.encode(createStreamEvent('content', {
-              sectionIndex: Math.floor(progress / 10),
               content: fullContent,
               status: 'writing'
             })));

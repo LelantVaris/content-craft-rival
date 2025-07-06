@@ -3,22 +3,13 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface StreamEvent {
-  type: 'status' | 'section' | 'research' | 'content' | 'complete' | 'error';
+  type: 'status' | 'content' | 'complete' | 'error';
   data: any;
-}
-
-export interface SectionState {
-  id: string;
-  title: string;
-  status: 'pending' | 'researching' | 'writing' | 'complete' | 'error';
-  content: string;
-  progress: number;
-  message?: string;
 }
 
 export function useEnhancedContentGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sections, setSections] = useState<SectionState[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
   const [overallProgress, setOverallProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -48,18 +39,7 @@ export function useEnhancedContentGeneration() {
     setError(null);
     setFinalContent('');
     setOverallProgress(0);
-    
-    // Initialize sections from outline
-    const initialSections: SectionState[] = outline.map((section, index) => ({
-      id: section.id || `section-${index}`,
-      title: section.title,
-      status: 'pending',
-      content: '',
-      progress: 0
-    }));
-    
-    console.log('Initialized sections:', initialSections);
-    setSections(initialSections);
+    setSections([]);
 
     try {
       // Get the current session to include auth headers
@@ -172,31 +152,8 @@ export function useEnhancedContentGeneration() {
         setOverallProgress(event.data.progress || 0);
         break;
 
-      case 'section':
-        console.log('Section update:', event.data);
-        setSections(prev => prev.map(section => 
-          section.id === `section-${event.data.index}` 
-            ? { ...section, status: event.data.status === 'processing' ? 'writing' : section.status }
-            : section
-        ));
-        break;
-
-      case 'research':
-        console.log('Research update:', event.data);
-        setSections(prev => prev.map((section, index) => 
-          index === event.data.sectionIndex 
-            ? { ...section, status: 'researching', message: event.data.message }
-            : section
-        ));
-        break;
-
       case 'content':
-        console.log('Content update for section:', event.data.sectionIndex);
-        setSections(prev => prev.map((section, index) => 
-          index === event.data.sectionIndex 
-            ? { ...section, status: 'complete', content: event.data.content, progress: 100 }
-            : section
-        ));
+        console.log('Content update - length:', event.data.content?.length || 0);
         setFinalContent(event.data.content);
         break;
 
@@ -205,7 +162,6 @@ export function useEnhancedContentGeneration() {
         setFinalContent(event.data.content);
         setOverallProgress(100);
         setCurrentMessage(event.data.message);
-        setSections(prev => prev.map(section => ({ ...section, status: 'complete' })));
         break;
 
       case 'error':

@@ -1,5 +1,4 @@
 
-export { ControlPanel } from './ControlPanel';
 export { PreviewPanel } from './PreviewPanel';
 export { StepNavigation } from './StepNavigation';
 export { TitleGenerationPanel } from './TitleGenerationPanel';
