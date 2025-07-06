@@ -19,7 +19,7 @@ interface UnifiedControlPanelProps {
   streamingContent: string;
   generatedTitles: string[];
   setGeneratedTitles: (titles: string[]) => void;
-  enhancedGeneration: any; // Enhanced generation state from main hook
+  enhancedGeneration: any;
 }
 
 export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
@@ -188,14 +188,27 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
   };
 
   const handleGenerateArticle = async () => {
-    if (!hasOutline) {
-      toast.error('Please generate an outline first');
+    if (!hasTitle || !hasOutline) {
+      toast.error(!hasTitle ? 'Please select a title first' : 'Please generate an outline first');
       return;
     }
 
     const finalTitle = articleData.customTitle || articleData.selectedTitle;
-    console.log('=== STARTING ENHANCED ARTICLE GENERATION ===');
-    console.log('Using enhanced generation from main hook:', !!enhancedGeneration);
+    console.log('=== STARTING ENHANCED ARTICLE GENERATION DEBUG ===');
+    console.log('Article data check:', {
+      title: finalTitle,
+      outlineLength: articleData.outline.length,
+      keywords: articleData.keywords,
+      primaryKeyword: getPrimaryKeyword(),
+      secondaryKeywords: getSecondaryKeywords(),
+      targetWordCount: getTargetWordCount(),
+      audience: articleData.audience,
+      tone: articleData.tone,
+      pointOfView: articleData.pointOfView,
+      brand: articleData.brand,
+      product: articleData.product,
+      searchIntent: articleData.searchIntent
+    });
     
     setGenerationStep(GenerationStep.GENERATING_ARTICLE);
     setStreamingContent('');
@@ -203,32 +216,39 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
     
     try {
       // Reset previous enhanced generation state
+      console.log('Resetting enhanced generation state...');
       enhancedGeneration.reset();
       
-      // Use the enhanced content generation from main hook
-      console.log('Calling enhanced generation with:', {
-        title: finalTitle,
-        outlineSections: articleData.outline.length,
-        keywords: articleData.keywords,
-        audience: articleData.audience,
-        tone: articleData.tone
-      });
-
-      await enhancedGeneration.generateContent({
+      // Prepare comprehensive parameters with defaults for missing values
+      const generationParams = {
         title: finalTitle,
         outline: articleData.outline,
-        keywords: articleData.keywords,
-        audience: articleData.audience,
-        tone: articleData.tone
-      });
+        keywords: articleData.keywords.length > 0 ? articleData.keywords : [getPrimaryKeyword()].filter(Boolean),
+        audience: articleData.audience || 'general audience',
+        tone: articleData.tone || 'professional',
+        targetWordCount: getTargetWordCount(),
+        pointOfView: articleData.pointOfView || 'second',
+        brand: articleData.brand || '',
+        product: articleData.product || '',
+        searchIntent: articleData.searchIntent || 'informational',
+        primaryKeyword: getPrimaryKeyword() || articleData.keywords[0] || ''
+      };
 
+      console.log('Calling enhanced generation with complete parameters:', generationParams);
+
+      await enhancedGeneration.generateContent(generationParams);
+
+      console.log('Enhanced generation call completed successfully');
       toast.success('Enhanced article generation started successfully!');
-      console.log('Enhanced generation initiated, streaming should begin...');
       
     } catch (error) {
-      console.error('Error generating enhanced article:', error);
-      toast.error('Failed to generate article. Please check your connection and try again.');
-      setStreamingStatus('');
+      console.error('=== ENHANCED ARTICLE GENERATION ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      toast.error(`Failed to generate article: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setStreamingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setGenerationStep(GenerationStep.IDLE);
     }
@@ -311,7 +331,7 @@ export const UnifiedControlPanel: React.FC<UnifiedControlPanelProps> = ({
           articleData={articleData}
           onTitlesGenerated={setGeneratedTitles}
           generationStep={generationStep}
-          currentStep={currentStep}
+          currentStep={getCurrentStep()}
           hasTitle={hasTitle}
           hasOutline={hasOutline}
           setStreamingContent={setStreamingContent}

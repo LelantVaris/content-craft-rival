@@ -44,16 +44,27 @@ export function useEnhancedContentGeneration() {
     primaryKeyword?: string;
   }) => {
     console.log('=== ENHANCED PVOD CONTENT GENERATION START ===');
-    console.log('Parameters:', {
-      title: params.title,
-      outlineSections: params.outline.length,
-      targetWordCount: params.targetWordCount,
-      pointOfView: params.pointOfView,
-      searchIntent: params.searchIntent,
-      brand: params.brand,
-      product: params.product,
-      primaryKeyword: params.primaryKeyword
+    console.log('Input parameters validation:', {
+      title: params.title?.length || 0,
+      outlineSections: params.outline?.length || 0,
+      keywordsCount: params.keywords?.length || 0,
+      audience: params.audience || 'NOT PROVIDED',
+      tone: params.tone || 'NOT PROVIDED',
+      targetWordCount: params.targetWordCount || 'NOT PROVIDED',
+      pointOfView: params.pointOfView || 'NOT PROVIDED',
+      searchIntent: params.searchIntent || 'NOT PROVIDED',
+      brand: params.brand || 'NOT PROVIDED',
+      product: params.product || 'NOT PROVIDED',
+      primaryKeyword: params.primaryKeyword || 'NOT PROVIDED'
     });
+
+    // Validate required parameters
+    if (!params.title || !params.outline || params.outline.length === 0) {
+      const errorMsg = 'Missing required parameters: title or outline';
+      console.error('Parameter validation failed:', errorMsg);
+      setError(errorMsg);
+      return;
+    }
 
     setIsGenerating(true);
     setError(null);
@@ -69,8 +80,12 @@ export function useEnhancedContentGeneration() {
     });
 
     try {
+      console.log('Getting Supabase session...');
       const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Session data:', sessionData.session ? 'Valid session' : 'No session');
+      
       const functionUrl = `https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-content`;
+      console.log('Function URL:', functionUrl);
 
       const headers = {
         'Content-Type': 'application/json',
@@ -79,21 +94,22 @@ export function useEnhancedContentGeneration() {
 
       if (sessionData.session?.access_token) {
         headers['authorization'] = `Bearer ${sessionData.session.access_token}`;
+        console.log('Added authorization header');
       }
 
       // Enhanced request body with comprehensive PVOD parameters
       const requestBody = {
         title: params.title,
         outline: params.outline,
-        keywords: params.keywords,
-        audience: params.audience,
-        tone: params.tone,
+        keywords: params.keywords || [],
+        audience: params.audience || 'general audience',
+        tone: params.tone || 'professional',
         targetWordCount: params.targetWordCount || 4000,
         pointOfView: params.pointOfView || 'second',
         brand: params.brand || '',
         product: params.product || '',
         searchIntent: params.searchIntent || 'informational',
-        primaryKeyword: params.primaryKeyword || params.keywords[0] || ''
+        primaryKeyword: params.primaryKeyword || params.keywords?.[0] || ''
       };
 
       console.log('Making PVOD content request with comprehensive parameters:', requestBody);
@@ -104,8 +120,12 @@ export function useEnhancedContentGeneration() {
         body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('HTTP Error Response:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
@@ -116,11 +136,17 @@ export function useEnhancedContentGeneration() {
         throw new Error('No response stream available');
       }
 
+      console.log('Starting to read stream...');
       let buffer = '';
+      let eventCount = 0;
+      
       while (true) {
         const { done, value } = await reader.read();
         
-        if (done) break;
+        if (done) {
+          console.log('Stream reading completed. Total events processed:', eventCount);
+          break;
+        }
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
@@ -132,6 +158,8 @@ export function useEnhancedContentGeneration() {
           if (line.startsWith('data: ')) {
             try {
               const eventData = JSON.parse(line.slice(6));
+              eventCount++;
+              console.log(`Processing stream event #${eventCount}:`, eventData.type, eventData.data);
               handleStreamEvent(eventData);
             } catch (e) {
               console.warn('Failed to parse SSE data:', line, e);
@@ -140,26 +168,36 @@ export function useEnhancedContentGeneration() {
         }
       }
 
+      console.log('Stream processing completed successfully');
+
     } catch (err) {
-      console.error('Enhanced PVOD content generation error:', err);
+      console.error('=== ENHANCED PVOD CONTENT GENERATION ERROR ===');
+      console.error('Error type:', typeof err);
+      console.error('Error instanceof Error:', err instanceof Error);
+      console.error('Error message:', err instanceof Error ? err.message : String(err));
+      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
+      
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       setCurrentMessage(`Error: ${errorMessage}`);
     } finally {
+      console.log('Setting isGenerating to false');
       setIsGenerating(false);
     }
   }, []);
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
-    console.log('PVOD Stream event:', event.type, event.data);
+    console.log('PVOD Stream event received:', event.type, 'data keys:', Object.keys(event.data || {}));
     
     switch (event.type) {
       case 'progress':
+        console.log('Progress update:', event.data);
         setProgress(event.data);
         setCurrentMessage(event.data.status);
         break;
 
       case 'content':
+        console.log('Content update received, has partialContent:', !!event.data.partialContent);
         if (event.data.partialContent) {
           setPartialArticle(event.data.partialContent);
           
@@ -173,12 +211,14 @@ export function useEnhancedContentGeneration() {
                   : ''
               ).join('')
             }`;
+            console.log('Generated markdown length:', markdown.length);
             setFinalContent(markdown);
           }
         }
         break;
 
       case 'complete':
+        console.log('Generation completed, processing final article...');
         const finalArticle = event.data.article;
         if (finalArticle && finalArticle.sections) {
           const markdown = `# ${finalArticle.title}\n\n${
@@ -186,18 +226,21 @@ export function useEnhancedContentGeneration() {
               `## ${section.title}\n\n${section.content}\n\n`
             ).join('')
           }`;
+          console.log('Final article markdown length:', markdown.length);
           setFinalContent(markdown);
           setCurrentMessage(event.data.message);
           setProgress(prev => ({ ...prev, progress: 100 }));
           
           // Set content quality indicators
           if (event.data.contentQuality) {
+            console.log('Content quality indicators:', event.data.contentQuality);
             setContentQuality(event.data.contentQuality);
           }
         }
         break;
 
       case 'error':
+        console.error('Stream error event:', event.data.error);
         setError(event.data.error);
         setCurrentMessage(`Error: ${event.data.error}`);
         break;
@@ -205,6 +248,7 @@ export function useEnhancedContentGeneration() {
   }, []);
 
   const reset = useCallback(() => {
+    console.log('Resetting enhanced content generation state');
     setIsGenerating(false);
     setProgress({
       currentSection: 0,

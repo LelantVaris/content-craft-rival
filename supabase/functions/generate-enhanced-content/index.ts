@@ -275,7 +275,22 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== ENHANCED CONTENT GENERATION EDGE FUNCTION START ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
     const params = await req.json();
+    console.log('Request parameters received:', {
+      title: params.title?.length || 0,
+      outline: params.outline?.length || 0,
+      keywords: params.keywords?.length || 0,
+      audience: params.audience || 'NOT PROVIDED',
+      tone: params.tone || 'NOT PROVIDED',
+      targetWordCount: params.targetWordCount || 'NOT PROVIDED',
+      pointOfView: params.pointOfView || 'NOT PROVIDED',
+      searchIntent: params.searchIntent || 'NOT PROVIDED'
+    });
+
     const { 
       title, 
       outline, 
@@ -291,7 +306,9 @@ serve(async (req) => {
     } = params;
 
     if (!title || !outline || outline.length === 0) {
-      return new Response(JSON.stringify({ error: 'Title and outline are required' }), {
+      const errorMsg = 'Title and outline are required';
+      console.error('Validation failed:', errorMsg);
+      return new Response(JSON.stringify({ error: errorMsg }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -310,8 +327,10 @@ serve(async (req) => {
 
     // Calculate appropriate maxTokens based on target word count
     const maxTokens = Math.min(Math.max(targetWordCount * 4, 6000), 16000);
+    console.log('Using maxTokens:', maxTokens);
     
     const prompt = buildPVODPrompt(params);
+    console.log('Generated prompt length:', prompt.length);
 
     const result = streamObject({
       model: openai('gpt-4o'),
@@ -327,11 +346,19 @@ serve(async (req) => {
         const encoder = new TextEncoder();
         
         try {
+          console.log('Starting stream processing...');
           let currentWordCount = 0;
           let sectionsCompleted = 0;
           let finalArticle = null;
+          let eventCount = 0;
           
           for await (const partialObject of result.partialObjectStream) {
+            eventCount++;
+            console.log(`Processing partial object #${eventCount}:`, {
+              hasSections: !!partialObject.sections,
+              sectionsLength: partialObject.sections?.length || 0
+            });
+
             // Calculate progress
             if (partialObject.sections) {
               const newWordCount = partialObject.sections.reduce((total, section) => {
@@ -371,6 +398,7 @@ serve(async (req) => {
             })}\n\n`));
           }
 
+          console.log('Partial object stream completed, getting final result...');
           // Get final result
           finalArticle = await result.object;
           const initialWordCount = countWordsInMarkdown(
@@ -386,6 +414,7 @@ serve(async (req) => {
           // Word count validation and extension
           const tolerance = targetWordCount * 0.15; // 15% tolerance
           if (initialWordCount < (targetWordCount - tolerance)) {
+            console.log('Article is too short, extending...');
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
               type: 'progress',
               data: {
@@ -418,6 +447,7 @@ serve(async (req) => {
           }
 
           // Send completion
+          console.log('Sending completion event...');
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'complete',
             data: {
@@ -433,13 +463,20 @@ serve(async (req) => {
             }
           })}\n\n`));
 
+          console.log('Stream processing completed successfully');
+
         } catch (error) {
-          console.error('Error in enhanced PVOD generation:', error);
+          console.error('=== ERROR IN ENHANCED PVOD GENERATION ===');
+          console.error('Error type:', typeof error);
+          console.error('Error message:', error instanceof Error ? error.message : String(error));
+          console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+          
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'error',
-            data: { error: error.message }
+            data: { error: error instanceof Error ? error.message : String(error) }
           })}\n\n`));
         } finally {
+          console.log('Closing stream controller');
           controller.close();
         }
       }
@@ -455,8 +492,14 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in generate-enhanced-content function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('=== ERROR IN GENERATE-ENHANCED-CONTENT FUNCTION ===');
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : String(error) 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
