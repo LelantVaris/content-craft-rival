@@ -26,21 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      title, 
-      outline, 
-      keywords = [], 
-      audience = '', 
-      tone = 'professional',
-      targetWordCount = 4000,
-      pointOfView = 'second',
-      brand = '',
-      product = '',
-      searchIntent = 'informational',
-      primaryKeyword = '',
-      length = 'medium',
-      customWordCount
-    } = await req.json();
+    const { title, outline, keywords = [], audience = '', tone = 'professional' } = await req.json();
 
     if (!title || !outline || outline.length === 0) {
       return new Response(JSON.stringify({ error: 'Title and outline are required' }), {
@@ -50,16 +36,6 @@ serve(async (req) => {
     }
 
     console.log('Starting enhanced content generation for:', title);
-    console.log('Received parameters:', {
-      targetWordCount,
-      pointOfView,
-      brand: brand ? 'provided' : 'not provided',
-      product: product ? 'provided' : 'not provided',
-      searchIntent,
-      primaryKeyword,
-      length,
-      customWordCount
-    });
 
     // Create a readable stream for Server-Sent Events
     const stream = new ReadableStream({
@@ -78,83 +54,61 @@ serve(async (req) => {
           ).join('\n');
 
           const keywordText = keywords.length > 0 ? `\nTarget keywords: ${keywords.join(', ')}` : '';
-          const primaryKeywordText = primaryKeyword ? `\nPrimary keyword: ${primaryKeyword}` : '';
-          const brandContext = brand ? `\nBrand context: ${brand}` : '';
-          const productContext = product ? `\nProduct/service context: ${product}` : '';
-          
-          // Calculate appropriate maxTokens based on target word count
-          // Rough estimate: 1 word ≈ 1.3 tokens, plus buffer for formatting
-          const finalWordCount = customWordCount || targetWordCount;
-          const maxTokens = Math.min(Math.max(Math.round(finalWordCount * 1.5), 4000), 8000);
-
-          console.log(`Target word count: ${finalWordCount}, Max tokens: ${maxTokens}`);
 
           // Use AI SDK for streaming generation
           const result = await streamText({
             model: openai('gpt-4o-mini'),
-            system: `You are an expert content writer. Create a comprehensive, well-structured article with clear sections. Use markdown formatting and write in a ${tone} tone for ${audience || 'general audience'}. Write in ${pointOfView} person perspective.`,
+            system: `You are an expert content writer. Create a comprehensive, well-structured article with clear sections. Use markdown formatting and write in a ${tone} tone for ${audience || 'general audience'}.`,
             prompt: `Write a complete article with the following specifications:
 
 Title: ${title}
-
-Target Word Count: ${finalWordCount} words (This is important - aim for approximately ${finalWordCount} words)
 
 Outline: 
 ${outlineText}
 
 Requirements:
 - Write a full, comprehensive article following the outline structure
-- Target approximately ${finalWordCount} words total
 - Use proper markdown formatting with headers (##, ###)
-- Write in ${pointOfView} person perspective (${pointOfView === 'first' ? 'I/we' : pointOfView === 'second' ? 'you' : 'they/it'})
 - Include engaging introductions and conclusions for each section
 - Write in ${tone} tone for ${audience || 'general audience'}
-- Search intent: ${searchIntent} - tailor content accordingly
-- Incorporate these keywords naturally: ${keywords.join(', ')}${primaryKeywordText}
-- Create smooth transitions between sections${keywordText}${brandContext}${productContext}
-- Ensure substantial, informative content in each section to meet the ${finalWordCount} word target
-- Include actionable insights and practical examples where relevant
+- Incorporate these keywords naturally: ${keywords.join(', ')}
+- Aim for substantial, informative content in each section
+- Create smooth transitions between sections${keywordText}
 
 Write the complete article now:`,
             temperature: 0.7,
-            maxTokens: maxTokens,
+            maxTokens: 3000,
           });
 
           let fullContent = '';
           let progress = 0;
-          let chunkCount = 0;
 
           // Process the AI SDK stream
           for await (const chunk of result.textStream) {
             fullContent += chunk;
-            chunkCount++;
+            progress += 1;
             
-            // Send progress updates more frequently - every 5 chunks
-            if (chunkCount % 5 === 0) {
-              progress = Math.min(chunkCount * 3, 95); // More gradual progress
+            // Send progress updates every 10 chunks
+            if (progress % 10 === 0) {
               controller.enqueue(encoder.encode(createStreamEvent('status', {
-                message: `✍️ Writing comprehensive content... (${progress}%)`,
-                progress: progress
+                message: `✍️ Generating content... (${Math.min(progress * 2, 95)}%)`,
+                progress: Math.min(progress * 2, 95)
               })));
             }
 
-            // Stream content updates every 10 chunks for smoother experience
-            if (chunkCount % 10 === 0) {
-              controller.enqueue(encoder.encode(createStreamEvent('content', {
-                content: fullContent,
-                status: 'writing'
-              })));
-            }
+            // Stream content updates
+            controller.enqueue(encoder.encode(createStreamEvent('content', {
+              content: fullContent,
+              status: 'writing'
+            })));
           }
 
           // Final completion
           controller.enqueue(encoder.encode(createStreamEvent('complete', {
             content: fullContent.trim(),
-            message: `🎉 Article generation complete! Generated ${fullContent.trim().split(' ').length} words.`,
+            message: '🎉 Article generation complete!',
             progress: 100
           })));
-
-          console.log(`Generation complete. Final word count: ${fullContent.trim().split(' ').length}`);
 
         } catch (error) {
           console.error('Error in enhanced generation:', error);

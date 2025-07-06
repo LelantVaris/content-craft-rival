@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,21 +65,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     try {
       setStreamingStatus('Starting enhanced content generation...');
       
-      // Pass ALL available parameters to generateContent
       await generateContent({
         title,
         outline: articleData.outline,
         keywords: articleData.keywords,
         audience: articleData.audience,
-        tone: articleData.tone,
-        targetWordCount: getTargetWordCount(),
-        pointOfView: articleData.pointOfView,
-        brand: articleData.brand,
-        product: articleData.product,
-        searchIntent: articleData.searchIntent,
-        primaryKeyword: getPrimaryKeyword(),
-        length: articleData.length,
-        customWordCount: articleData.customWordCount
+        tone: articleData.tone
       });
 
       // Update with final content when complete

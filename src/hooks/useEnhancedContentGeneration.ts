@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,29 +27,13 @@ export function useEnhancedContentGeneration() {
     outline,
     keywords,
     audience,
-    tone,
-    targetWordCount,
-    pointOfView,
-    brand,
-    product,
-    searchIntent,
-    primaryKeyword,
-    length,
-    customWordCount
+    tone
   }: {
     title: string;
     outline: any[];
     keywords: string[];
     audience: string;
     tone: string;
-    targetWordCount?: number;
-    pointOfView?: string;
-    brand?: string;
-    product?: string;
-    searchIntent?: string;
-    primaryKeyword?: string;
-    length?: string;
-    customWordCount?: number;
   }) => {
     console.log('=== ENHANCED CONTENT GENERATION START ===');
     console.log('Title:', title);
@@ -58,14 +41,6 @@ export function useEnhancedContentGeneration() {
     console.log('Keywords:', keywords);
     console.log('Audience:', audience);
     console.log('Tone:', tone);
-    console.log('Target Word Count:', targetWordCount);
-    console.log('Point of View:', pointOfView);
-    console.log('Brand:', brand);
-    console.log('Product:', product);
-    console.log('Search Intent:', searchIntent);
-    console.log('Primary Keyword:', primaryKeyword);
-    console.log('Length:', length);
-    console.log('Custom Word Count:', customWordCount);
 
     setIsGenerating(true);
     setError(null);
@@ -98,15 +73,7 @@ export function useEnhancedContentGeneration() {
         outline,
         keywords,
         audience,
-        tone,
-        targetWordCount,
-        pointOfView,
-        brand,
-        product,
-        searchIntent,
-        primaryKeyword,
-        length,
-        customWordCount
+        tone
       };
 
       console.log('Making fetch request with body:', requestBody);
