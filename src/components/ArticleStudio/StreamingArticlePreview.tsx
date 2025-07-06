@@ -6,7 +6,6 @@ import { FileText, Loader2, Eye } from 'lucide-react';
 import { ResponseStream } from '@/components/prompt-kit/response-stream';
 import { Markdown } from '@/components/prompt-kit/markdown';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/prompt-kit/reasoning';
-import { SectionStreamingPreview } from './SectionStreamingPreview';
 
 interface StreamingArticlePreviewProps {
   title: string;
@@ -16,7 +15,7 @@ interface StreamingArticlePreviewProps {
   streamingStatus?: string | null;
   outline?: any[];
   useEnhancedGeneration?: boolean;
-  enhancedGeneration?: any; // Enhanced generation state from main hook
+  enhancedGeneration?: any;
 }
 
 export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = ({
@@ -42,24 +41,9 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
   const displayContent = streamingContent || enhancedGeneration?.finalContent || content || '';
   const safeStreamingStatus = streamingStatus ? String(streamingStatus) : '';
 
-  // Use enhanced generation state if available
-  const sections = enhancedGeneration?.sections || [];
-  const overallProgress = enhancedGeneration?.overallProgress || 0;
-  const currentMessage = enhancedGeneration?.currentMessage || '';
-  const enhancedError = enhancedGeneration?.error || null;
   const isEnhancedGenerating = enhancedGeneration?.isGenerating || false;
-
-  console.log('StreamingArticlePreview render:', {
-    title,
-    isGenerating,
-    isEnhancedGenerating,
-    sectionsCount: sections.length,
-    displayContentLength: displayContent.length,
-    enhancedGenerationAvailable: !!enhancedGeneration
-  });
-
-  // Use enhanced generation if sections are available and we're generating
-  const shouldShowSectionPreview = useEnhancedGeneration && sections.length > 0 && (isEnhancedGenerating || sections.some(s => s.status !== 'pending'));
+  const currentMessage = enhancedGeneration?.currentMessage || '';
+  const progress = enhancedGeneration?.progress || {};
 
   return (
     <Card className="h-full overflow-hidden border-2 border-gray-100">
@@ -73,12 +57,15 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
               className="ml-auto text-white animate-pulse bg-blue-500"
             >
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              {shouldShowSectionPreview ? 'Generating Sections...' : 'Generating...'}
+              {progress.wordsGenerated > 0 
+                ? `${progress.wordsGenerated}/${progress.targetWords} words`
+                : 'Generating...'
+              }
             </Badge>
           )}
         </CardTitle>
         
-        {/* AI Reasoning Panel */}
+        {/* Enhanced AI Reasoning Panel */}
         {(isGenerating || isEnhancedGenerating) && (safeStreamingStatus || currentMessage) && (
           <Reasoning 
             isStreaming={isGenerating || isEnhancedGenerating}
@@ -87,11 +74,19 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
           >
             <ReasoningTrigger>Show AI reasoning</ReasoningTrigger>
             <ReasoningContent className="ml-2 border-l-2 border-l-blue-200 px-2 pb-1">
-              <ResponseStream 
-                textStream={currentMessage || safeStreamingStatus}
-                mode="typewriter"
-                className="text-sm text-blue-800"
-              />
+              <div className="space-y-2">
+                <ResponseStream 
+                  textStream={currentMessage || safeStreamingStatus}
+                  mode="typewriter"
+                  className="text-sm text-blue-800"
+                />
+                {progress.wordsGenerated > 0 && (
+                  <div className="text-xs text-blue-600">
+                    Section {progress.currentSection}/{progress.totalSections} • 
+                    {Math.round((progress.wordsGenerated / progress.targetWords) * 100)}% complete
+                  </div>
+                )}
+              </div>
             </ReasoningContent>
           </Reasoning>
         )}
@@ -101,43 +96,32 @@ export const StreamingArticlePreview: React.FC<StreamingArticlePreviewProps> = (
         <div ref={contentRef} className="h-full overflow-auto">
           <div className="p-6">
             {title ? (
-              shouldShowSectionPreview ? (
-                <SectionStreamingPreview
-                  title={title}
-                  sections={sections}
-                  overallProgress={overallProgress}
-                  currentMessage={currentMessage}
-                  isGenerating={isEnhancedGenerating}
-                  error={enhancedError}
-                />
-              ) : (
-                <div className="prose prose-lg max-w-none">
-                  <h1 className="text-4xl font-bold mb-8 text-gray-900 border-b-2 border-purple-200 pb-4">
-                    {title}
-                  </h1>
-                  
-                  {displayContent ? (
-                    (isGenerating || isEnhancedGenerating) ? (
-                      <ResponseStream
-                        textStream={displayContent}
-                        mode="typewriter"
-                        className="text-gray-700 leading-relaxed"
-                        segmentDelay={30}
-                      />
-                    ) : (
-                      <Markdown className="text-gray-700 leading-relaxed">
-                        {displayContent}
-                      </Markdown>
-                    )
+              <div className="prose prose-lg max-w-none">
+                <h1 className="text-4xl font-bold mb-8 text-gray-900 border-b-2 border-purple-200 pb-4">
+                  {title}
+                </h1>
+                
+                {displayContent ? (
+                  (isGenerating || isEnhancedGenerating) ? (
+                    <ResponseStream
+                      textStream={displayContent}
+                      mode="typewriter"
+                      className="text-gray-700 leading-relaxed"
+                      segmentDelay={20}
+                    />
                   ) : (
-                    <div className="text-center text-gray-500 py-12">
-                      <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                      <p className="text-lg">Ready to generate your article</p>
-                      <p className="text-sm mt-2">Content will stream here in real-time</p>
-                    </div>
-                  )}
-                </div>
-              )
+                    <Markdown className="text-gray-700 leading-relaxed">
+                      {displayContent}
+                    </Markdown>
+                  )
+                ) : (
+                  <div className="text-center text-gray-500 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg">Ready to generate your article</p>
+                    <p className="text-sm mt-2">Content will stream here in real-time</p>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="text-center text-gray-500 py-16">
                 <FileText className="w-20 h-20 mx-auto mb-6 opacity-20" />

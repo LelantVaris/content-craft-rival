@@ -36,8 +36,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   const {
     generateContent,
     isGenerating: isEnhancedGenerating,
-    sections,
-    overallProgress,
+    progress,
     currentMessage,
     error: enhancedError,
     finalContent,
@@ -56,7 +55,6 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
       return;
     }
 
-    // Reset previous state
     reset();
     setIsGenerating(true);
     setStreamingContent('');
@@ -65,31 +63,28 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     try {
       setStreamingStatus('Starting enhanced content generation...');
       
+      // Pass ALL content preferences to the generation function
       await generateContent({
         title,
         outline: articleData.outline,
         keywords: articleData.keywords,
         audience: articleData.audience,
-        tone: articleData.tone
+        tone: articleData.tone,
+        targetWordCount: getTargetWordCount(),
+        pointOfView: articleData.pointOfView,
+        brand: articleData.brand,
+        product: articleData.product,
+        searchIntent: articleData.searchIntent,
+        primaryKeyword: getPrimaryKeyword()
       });
 
-      // Update with final content when complete
-      if (finalContent) {
-        onUpdate({ generatedContent: finalContent });
-        setStreamingContent(finalContent);
-        setStreamingStatus('Enhanced content generation complete!');
-      }
-      
     } catch (error) {
       console.error('Error generating content:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setStreamingStatus(`Error: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
-      
-      setTimeout(() => {
-        setShowReasoning(false);
-      }, 3000);
+      setTimeout(() => setShowReasoning(false), 3000);
     }
   };
 
@@ -122,7 +117,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Generate your article with section-by-section progress, research integration, and live updates.
+            Generate your article with structured sections, proper word count, and all content preferences applied.
           </p>
 
           <Reasoning 
@@ -143,7 +138,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             </ReasoningContent>
           </Reasoning>
 
-          {/* Progress Display */}
+          {/* Enhanced Progress Display */}
           {isGeneratingContent && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
@@ -152,8 +147,14 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
                   {currentMessage || 'Processing...'}
                 </span>
               </div>
-              <div className="text-xs text-blue-600">
-                Progress: {Math.round(overallProgress)}% • {sections.filter(s => s.status === 'complete').length}/{sections.length} sections complete
+              <div className="text-xs text-blue-600 space-y-1">
+                <div>Section {progress.currentSection}/{progress.totalSections} • {progress.wordsGenerated}/{progress.targetWords} words</div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min((progress.wordsGenerated / progress.targetWords) * 100, 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -181,7 +182,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Generate Enhanced Content
+                Generate Enhanced Content ({getTargetWordCount()} words)
               </>
             )}
           </Button>
