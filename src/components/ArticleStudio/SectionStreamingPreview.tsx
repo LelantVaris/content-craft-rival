@@ -12,8 +12,16 @@ import {
   Clock,
   AlertCircle 
 } from 'lucide-react';
-import { SectionState } from '@/hooks/useEnhancedContentGeneration';
 import { Markdown } from '@/components/prompt-kit/markdown';
+
+// Define SectionState locally since we're no longer exporting it from the hook
+interface SectionState {
+  id: string;
+  title: string;
+  content: string;
+  status: 'pending' | 'researching' | 'writing' | 'complete' | 'error';
+  message?: string;
+}
 
 interface SectionStreamingPreviewProps {
   title: string;
