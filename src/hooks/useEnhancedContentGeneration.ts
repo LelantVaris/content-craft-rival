@@ -1,7 +1,11 @@
 
 import { useState, useCallback } from 'react';
-import { streamText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface StreamEvent {
+  type: 'status' | 'section' | 'research' | 'content' | 'complete' | 'error';
+  data: any;
+}
 
 export interface SectionState {
   id: string;
@@ -33,7 +37,7 @@ export function useEnhancedContentGeneration() {
     audience: string;
     tone: string;
   }) => {
-    console.log('=== AI SDK ENHANCED CONTENT GENERATION START ===');
+    console.log('=== ENHANCED CONTENT GENERATION START ===');
     console.log('Title:', title);
     console.log('Outline sections:', outline.length);
     console.log('Keywords:', keywords);
@@ -58,115 +62,164 @@ export function useEnhancedContentGeneration() {
     setSections(initialSections);
 
     try {
-      setCurrentMessage('🎯 Starting AI SDK enhanced content generation...');
-      setOverallProgress(10);
+      // Get the current session to include auth headers
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Session data available:', !!sessionData.session);
 
-      // Build enhanced prompt with all context
-      const outlineText = outline.map((section: any, index: number) => 
-        `${index + 1}. ${section.title}\n   - ${section.content}`
-      ).join('\n');
+      // Build the Supabase function URL
+      const functionUrl = `https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-content`;
+      console.log('Function URL:', functionUrl);
 
-      const keywordText = keywords.length > 0 ? `\nTarget keywords to include naturally: ${keywords.join(', ')}` : '';
-      
-      const enhancedPrompt = `Create a comprehensive, well-researched article with the following specifications:
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwZXpka2xla2FuZmNjdHN3dGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3ODg4NzgsImV4cCI6MjA2NjM2NDg3OH0.GRm70_874KITS3vkxgjVdWNed0Z923P_bFD6TOF6dgk'
+      };
 
-Title: ${title}
+      // Add authorization header if session exists
+      if (sessionData.session?.access_token) {
+        headers['authorization'] = `Bearer ${sessionData.session.access_token}`;
+        console.log('Authorization header added');
+      }
 
-Outline:
-${outlineText}
+      const requestBody = {
+        title,
+        outline,
+        keywords,
+        audience,
+        tone
+      };
 
-Writing Requirements:
-- Audience: ${audience}
-- Tone: ${tone}
-- Write in a ${tone} tone that resonates with ${audience}
-- Include current insights, examples, and actionable advice
-- Use proper markdown formatting (headers, lists, bold, italic)
-- Make each section substantial and informative
-- Ensure smooth transitions between sections${keywordText}
+      console.log('Making fetch request with body:', requestBody);
 
-Please write a complete, engaging article that follows the outline structure and provides real value to the reader.`;
-
-      console.log('Starting AI SDK streamText with prompt length:', enhancedPrompt.length);
-
-      // Use AI SDK streamText for generation
-      const { textStream, finishReason, usage } = await streamText({
-        model: openai('gpt-4o'),
-        prompt: enhancedPrompt,
-        temperature: 0.7,
-        maxTokens: 4000,
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
       });
 
-      let accumulatedContent = '';
-      let currentSectionIndex = 0;
-      
-      setCurrentMessage('✨ Generating enhanced content with AI SDK...');
-      setOverallProgress(20);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
-      // Process the stream
-      for await (const delta of textStream) {
-        accumulatedContent += delta;
-        setFinalContent(accumulatedContent);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response not ok:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        console.error('No response reader available');
+        throw new Error('No response stream available');
+      }
+
+      console.log('Starting to read stream...');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        console.log('Stream read:', { done, valueLength: value?.length });
         
-        // Update progress based on content length
-        const estimatedProgress = Math.min(90, 20 + (accumulatedContent.length / 3000) * 70);
-        setOverallProgress(estimatedProgress);
-        
-        // Update current message with progress
-        if (accumulatedContent.length > 0) {
-          setCurrentMessage(`📝 Writing article... (${Math.round(estimatedProgress)}% complete)`);
+        if (done) {
+          console.log('Stream reading complete');
+          break;
         }
 
-        // Simulate section progress for UI feedback
-        const currentWordCount = accumulatedContent.split(' ').length;
-        const expectedWordsPerSection = 500;
-        const completedSections = Math.floor(currentWordCount / expectedWordsPerSection);
-        
-        if (completedSections > currentSectionIndex && currentSectionIndex < sections.length) {
-          setSections(prev => prev.map((section, index) => {
-            if (index <= completedSections && index < outline.length) {
-              return { ...section, status: 'complete', progress: 100 };
-            } else if (index === completedSections + 1) {
-              return { ...section, status: 'writing', progress: 50 };
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        console.log('Received chunk:', chunk.substring(0, 100) + '...');
+
+        // Process complete lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          console.log('Processing line:', line);
+          
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+              console.log('Parsed event:', eventData);
+              handleStreamEvent(eventData);
+            } catch (e) {
+              console.warn('Failed to parse SSE data:', line, e);
             }
-            return section;
-          }));
-          currentSectionIndex = completedSections;
+          }
         }
       }
 
-      // Mark all sections as complete
-      setSections(prev => prev.map(section => ({ 
-        ...section, 
-        status: 'complete', 
-        progress: 100,
-        content: accumulatedContent 
-      })));
-
-      setOverallProgress(100);
-      setCurrentMessage('🎉 Enhanced article generation complete!');
-      
-      console.log('AI SDK generation completed:', {
-        contentLength: accumulatedContent.length,
-        finishReason,
-        usage
-      });
-
     } catch (err) {
-      console.error('=== AI SDK ENHANCED CONTENT GENERATION ERROR ===');
+      console.error('=== ENHANCED CONTENT GENERATION ERROR ===');
       console.error('Error type:', typeof err);
       console.error('Error details:', err);
       
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(`AI SDK Error: ${errorMessage}`);
-      setCurrentMessage(`❌ Generation failed: ${errorMessage}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
     } finally {
-      console.log('=== AI SDK ENHANCED CONTENT GENERATION END ===');
+      console.log('=== ENHANCED CONTENT GENERATION END ===');
       setIsGenerating(false);
     }
   }, []);
 
+  const handleStreamEvent = useCallback((event: StreamEvent) => {
+    console.log('Handling stream event:', event.type, event.data);
+    
+    switch (event.type) {
+      case 'status':
+        console.log('Status update:', event.data.message, 'Progress:', event.data.progress);
+        setCurrentMessage(event.data.message);
+        setOverallProgress(event.data.progress || 0);
+        break;
+
+      case 'section':
+        console.log('Section update:', event.data);
+        setSections(prev => prev.map(section => 
+          section.id === `section-${event.data.index}` 
+            ? { ...section, status: event.data.status === 'processing' ? 'writing' : section.status }
+            : section
+        ));
+        break;
+
+      case 'research':
+        console.log('Research update:', event.data);
+        setSections(prev => prev.map((section, index) => 
+          index === event.data.sectionIndex 
+            ? { ...section, status: 'researching', message: event.data.message }
+            : section
+        ));
+        break;
+
+      case 'content':
+        console.log('Content update for section:', event.data.sectionIndex);
+        setSections(prev => prev.map((section, index) => 
+          index === event.data.sectionIndex 
+            ? { ...section, status: 'complete', content: event.data.content, progress: 100 }
+            : section
+        ));
+        setFinalContent(event.data.content);
+        break;
+
+      case 'complete':
+        console.log('Generation complete:', event.data.message);
+        setFinalContent(event.data.content);
+        setOverallProgress(100);
+        setCurrentMessage(event.data.message);
+        setSections(prev => prev.map(section => ({ ...section, status: 'complete' })));
+        break;
+
+      case 'error':
+        console.error('Stream error:', event.data.error);
+        setError(event.data.error);
+        break;
+
+      default:
+        console.warn('Unknown event type:', event.type);
+    }
+  }, []);
+
   const reset = useCallback(() => {
-    console.log('Resetting AI SDK enhanced content generation state');
+    console.log('Resetting enhanced content generation state');
     setIsGenerating(false);
     setSections([]);
     setOverallProgress(0);

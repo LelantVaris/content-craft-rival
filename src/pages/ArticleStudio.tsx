@@ -80,10 +80,7 @@ const ArticleStudio = () => {
         <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
             <div className="h-full overflow-auto">
-              <UnifiedControlPanel 
-                {...articleStudio}
-                enhancedGeneration={articleStudio.enhancedGeneration}
-              />
+              <UnifiedControlPanel {...articleStudio} />
             </div>
           </ResizablePanel>
           
@@ -95,7 +92,6 @@ const ArticleStudio = () => {
                 {...articleStudio} 
                 updateArticleData={articleStudio.updateArticleData}
                 generatedTitles={articleStudio.generatedTitles}
-                enhancedGeneration={articleStudio.enhancedGeneration}
               />
             </div>
           </ResizablePanel>

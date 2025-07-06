@@ -6,6 +6,7 @@ import { Loader2, PenTool, Zap, AlertCircle } from 'lucide-react';
 import { ArticleStudioData } from '@/hooks/useArticleStudio';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/prompt-kit/reasoning';
 import { ResponseStream } from '@/components/prompt-kit/response-stream';
+import { useEnhancedContentGeneration } from '@/hooks/useEnhancedContentGeneration';
 
 interface ContentGenerationPanelProps {
   articleData: ArticleStudioData;
@@ -17,7 +18,6 @@ interface ContentGenerationPanelProps {
   getPrimaryKeyword: () => string;
   getSecondaryKeywords: () => string[];
   getTargetWordCount: () => number;
-  enhancedGeneration: any; // Centralized AI SDK state from main hook
 }
 
 export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
@@ -29,12 +29,10 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
   setStreamingStatus,
   getPrimaryKeyword,
   getSecondaryKeywords,
-  getTargetWordCount,
-  enhancedGeneration // Use centralized AI SDK state
+  getTargetWordCount
 }) => {
   const [showReasoning, setShowReasoning] = useState(false);
   
-  // Use centralized AI SDK state instead of local hook
   const {
     generateContent,
     isGenerating: isEnhancedGenerating,
@@ -44,7 +42,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     error: enhancedError,
     finalContent,
     reset
-  } = enhancedGeneration;
+  } = useEnhancedContentGeneration();
 
   const canGenerate = () => {
     const title = articleData.customTitle || articleData.selectedTitle;

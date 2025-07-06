@@ -13,17 +13,11 @@ import { toast } from 'sonner';
 interface OutlineCreationPanelProps {
   articleData: ArticleStudioData;
   onUpdate: (updates: Partial<ArticleStudioData>) => void;
-  getPrimaryKeyword: () => string;
-  getSecondaryKeywords: () => string[];
-  getTargetWordCount: () => number;
 }
 
 export const OutlineCreationPanel: React.FC<OutlineCreationPanelProps> = ({
   articleData,
-  onUpdate,
-  getPrimaryKeyword,
-  getSecondaryKeywords,
-  getTargetWordCount
+  onUpdate
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 

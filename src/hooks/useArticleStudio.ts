@@ -69,7 +69,7 @@ export function useArticleStudio() {
   const navigate = useNavigate();
   const { saveArticle, refreshArticles } = useArticles();
 
-  // Integrate enhanced content generation - CENTRALIZED AI SDK STATE
+  // Integrate enhanced content generation
   const enhancedGeneration = useEnhancedContentGeneration();
 
   // Sync enhanced generation content with main article state
@@ -249,7 +249,7 @@ export function useArticleStudio() {
     isFormValid,
     generatedTitles,
     setGeneratedTitles,
-    // CENTRALIZED AI SDK STATE - Pass through enhanced generation
+    // Pass through enhanced generation state and methods
     enhancedGeneration
   };
 }

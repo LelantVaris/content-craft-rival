@@ -35,29 +35,27 @@ const STEPS = [
 
 interface StepNavigationProps {
   currentStep: number;
-  totalSteps?: number;
   onNext: () => void;
   onPrev: () => void;
   canProceed: boolean;
-  onComplete?: () => Promise<void>;
+  onComplete: () => Promise<void>;
   isGenerating: boolean;
 }
 
 export const StepNavigation: React.FC<StepNavigationProps> = ({
   currentStep,
-  totalSteps = STEPS.length,
   onNext,
   onPrev,
   canProceed,
   onComplete,
   isGenerating
 }) => {
-  const progress = (currentStep / totalSteps) * 100;
+  const progress = (currentStep / STEPS.length) * 100;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between text-sm text-gray-600 mb-2">
-        <span>Step {currentStep} of {totalSteps}</span>
+        <span>Step {currentStep} of {STEPS.length}</span>
         <span>{Math.round(progress)}% complete</span>
       </div>
       <Progress value={progress} className="h-2" />
@@ -130,7 +128,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
           Back
         </Button>
 
-        {currentStep < totalSteps ? (
+        {currentStep < STEPS.length ? (
           <Button
             onClick={onNext}
             disabled={!canProceed || isGenerating}
