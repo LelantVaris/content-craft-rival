@@ -63,14 +63,32 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     setShowReasoning(true);
 
     try {
-      setStreamingStatus('Starting enhanced content generation...');
+      setStreamingStatus('Starting enhanced content generation with your preferences...');
       
+      // Get target word count and all content preferences
+      const targetWordCount = getTargetWordCount();
+      
+      console.log('Generating content with preferences:', {
+        targetWordCount,
+        tone: articleData.tone,
+        audience: articleData.audience,
+        pointOfView: articleData.pointOfView,
+        brand: articleData.brand,
+        product: articleData.product,
+        searchIntent: articleData.searchIntent
+      });
+
       await generateContent({
         title,
         outline: articleData.outline,
         keywords: articleData.keywords,
         audience: articleData.audience,
-        tone: articleData.tone
+        tone: articleData.tone,
+        targetWordCount: targetWordCount,
+        pointOfView: articleData.pointOfView,
+        brand: articleData.brand,
+        product: articleData.product,
+        searchIntent: articleData.searchIntent
       });
 
       // Update with final content when complete
@@ -121,9 +139,16 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Generate your article with section-by-section progress, research integration, and live updates.
-          </p>
+          <div className="text-sm text-gray-600 space-y-2">
+            <p>Generate your article with all your preferences applied:</p>
+            <div className="bg-blue-50 p-3 rounded-lg text-xs">
+              <p><strong>Target:</strong> {getTargetWordCount()} words • <strong>Tone:</strong> {articleData.tone}</p>
+              <p><strong>Audience:</strong> {articleData.audience} • <strong>POV:</strong> {articleData.pointOfView} person</p>
+              {(articleData.brand || articleData.product) && (
+                <p><strong>Brand:</strong> {articleData.brand} • <strong>Product:</strong> {articleData.product}</p>
+              )}
+            </div>
+          </div>
 
           <Reasoning 
             isStreaming={isGeneratingContent}
@@ -153,7 +178,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
                 </span>
               </div>
               <div className="text-xs text-blue-600">
-                Progress: {Math.round(overallProgress)}% • {sections.filter(s => s.status === 'complete').length}/{sections.length} sections complete
+                Progress: {Math.round(overallProgress)}% • Target: {getTargetWordCount()} words
               </div>
             </div>
           )}
@@ -176,12 +201,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             {isGeneratingContent ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating Enhanced Content...
+                Generating {getTargetWordCount()}-Word Article...
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Generate Enhanced Content
+                Generate {getTargetWordCount()}-Word Article
               </>
             )}
           </Button>

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,20 +28,31 @@ export function useEnhancedContentGeneration() {
     outline,
     keywords,
     audience,
-    tone
+    tone,
+    targetWordCount,
+    pointOfView,
+    brand,
+    product,
+    searchIntent
   }: {
     title: string;
     outline: any[];
     keywords: string[];
     audience: string;
     tone: string;
+    targetWordCount?: number;
+    pointOfView?: string;
+    brand?: string;
+    product?: string;
+    searchIntent?: string;
   }) => {
     console.log('=== ENHANCED CONTENT GENERATION START ===');
     console.log('Title:', title);
-    console.log('Outline sections:', outline.length);
-    console.log('Keywords:', keywords);
-    console.log('Audience:', audience);
-    console.log('Tone:', tone);
+    console.log('Target word count:', targetWordCount);
+    console.log('Point of view:', pointOfView);
+    console.log('Brand:', brand);
+    console.log('Product:', product);
+    console.log('Search intent:', searchIntent);
 
     setIsGenerating(true);
     setError(null);
@@ -73,10 +85,15 @@ export function useEnhancedContentGeneration() {
         outline,
         keywords,
         audience,
-        tone
+        tone,
+        targetWordCount: targetWordCount || 4000,
+        pointOfView: pointOfView || 'second',
+        brand: brand || '',
+        product: product || '',
+        searchIntent: searchIntent || 'informational'
       };
 
-      console.log('Making fetch request with body:', requestBody);
+      console.log('Making fetch request with enhanced preferences:', requestBody);
 
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -85,7 +102,6 @@ export function useEnhancedContentGeneration() {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -106,7 +122,6 @@ export function useEnhancedContentGeneration() {
 
       while (true) {
         const { done, value } = await reader.read();
-        console.log('Stream read:', { done, valueLength: value?.length });
         
         if (done) {
           console.log('Stream reading complete');
@@ -115,19 +130,16 @@ export function useEnhancedContentGeneration() {
 
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
-        console.log('Received chunk:', chunk.substring(0, 100) + '...');
 
         // Process complete lines
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
         for (const line of lines) {
-          console.log('Processing line:', line);
-          
           if (line.startsWith('data: ')) {
             try {
               const eventData = JSON.parse(line.slice(6));
-              console.log('Parsed event:', eventData);
+              console.log('Parsed event:', eventData.type);
               handleStreamEvent(eventData);
             } catch (e) {
               console.warn('Failed to parse SSE data:', line, e);
@@ -138,7 +150,6 @@ export function useEnhancedContentGeneration() {
 
     } catch (err) {
       console.error('=== ENHANCED CONTENT GENERATION ERROR ===');
-      console.error('Error type:', typeof err);
       console.error('Error details:', err);
       
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -150,7 +161,7 @@ export function useEnhancedContentGeneration() {
   }, []);
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
-    console.log('Handling stream event:', event.type, event.data);
+    console.log('Handling stream event:', event.type);
     
     switch (event.type) {
       case 'status':
