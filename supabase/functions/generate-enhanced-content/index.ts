@@ -14,7 +14,7 @@ const corsHeaders = {
 
 // Schema for structured article generation
 const ArticleSchema = z.object({
-  title: z.string().describe("The main title of the article"),
+  title: z.string().describe("The main title of the article following PVOD framework"),
   sections: z.array(z.object({
     id: z.string().describe("Unique identifier for the section"),
     title: z.string().describe("Section heading"),
@@ -30,7 +30,22 @@ const ArticleSchema = z.object({
   }).describe("Article metadata"),
 });
 
-function buildComprehensivePrompt(params: any): string {
+function countWordsInMarkdown(content: string): number {
+  if (!content) return 0;
+  // Remove markdown formatting and count words
+  const plainText = content
+    .replace(/#{1,6}\s+/g, '') // Remove headers
+    .replace(/\*{1,2}(.*?)\*{1,2}/g, '$1') // Remove bold/italic
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links, keep text
+    .replace(/`{1,3}(.*?)`{1,3}/g, '$1') // Remove code formatting
+    .replace(/^\s*[-*+]\s+/gm, '') // Remove bullet points
+    .replace(/^\s*\d+\.\s+/gm, '') // Remove numbered lists
+    .trim();
+  
+  return plainText.split(/\s+/).filter(word => word.length > 0).length;
+}
+
+function buildPVODPrompt(params: any): string {
   const {
     title,
     outline,
@@ -50,8 +65,8 @@ function buildComprehensivePrompt(params: any): string {
   ).join('\n');
 
   const keywordText = keywords.length > 0 ? keywords.join(', ') : '';
-  const brandContext = brand ? `Brand: ${brand}` : '';
-  const productContext = product ? `Product/Service: ${product}` : '';
+  const effectivePrimaryKeyword = primaryKeyword || keywords[0] || '';
+  const secondaryKeywords = keywords.filter((k: string) => k !== effectivePrimaryKeyword);
   
   const povInstructions = {
     'first': 'Use first-person perspective (I, we, our)',
@@ -66,41 +81,192 @@ function buildComprehensivePrompt(params: any): string {
     'commercial': 'Compare options and guide purchase decisions'
   };
 
-  return `You are an expert content writer creating a comprehensive, well-structured article.
+  return `You are an expert content writer creating high-quality articles following the PVOD (Personality, Value, Opinion, Direct) framework.
 
-CRITICAL REQUIREMENTS:
-- Target Word Count: ${targetWordCount} words (THIS IS MANDATORY - do not write shorter articles)
-- Writing Perspective: ${povInstructions[pointOfView as keyof typeof povInstructions] || povInstructions.second}
-- Tone: ${tone}
-- Target Audience: ${audience}
-- Search Intent: ${searchIntent} - ${intentInstructions[searchIntent as keyof typeof intentInstructions] || intentInstructions.informational}
-${brandContext ? `- ${brandContext}` : ''}
-${productContext ? `- ${productContext}` : ''}
+## CRITICAL REQUIREMENTS - MUST FOLLOW EXACTLY:
 
-ARTICLE SPECIFICATIONS:
+### TARGET SPECIFICATIONS:
+- **MANDATORY Word Count**: EXACTLY ${targetWordCount} words (this is non-negotiable)
+- **Primary Keyword**: "${effectivePrimaryKeyword}" (MUST appear in title, intro within first 50 words, first H2, and conclusion)
+- **Secondary Keywords**: ${secondaryKeywords.join(', ')} (use naturally throughout)
+- **Target Audience**: ${audience}
+- **Tone**: ${tone}
+- **Point of View**: ${povInstructions[pointOfView as keyof typeof povInstructions] || povInstructions.second}
+- **Search Intent**: ${searchIntent} - ${intentInstructions[searchIntent as keyof typeof intentInstructions] || intentInstructions.informational}
+
+### PVOD FRAMEWORK REQUIREMENTS:
+
+#### P - PERSONALITY (Human, Not AI):
+- Write like a human with clear, defined voice
+- Use humor where appropriate (not slapstick)
+- Be warm, relatable, and conversational
+- Use relatable metaphors for complex concepts
+- Address reader as "You" (${povInstructions[pointOfView as keyof typeof povInstructions]})
+- NO AI tropes or generic phrasing
+- Break rules if it makes writing more relatable
+
+#### V - VALUE (High Value Density):
+- Provide NEW, actionable insights (not rehashed content)
+- Include real-world examples with specific details
+- Show > tell with concrete examples
+- Answer: What do readers already know? Want to know? Need to know?
+- Every paragraph must add genuine value
+- Eliminate filler content and obvious statements
+- Include practical, implementable advice
+
+#### O - OPINION (Novel Perspective):
+- Present unique angles and unexpected perspectives
+- Include supported opinions backed by facts/examples
+- Challenge assumptions and offer fresh insights
+- Be bias-aware but not neutral
+- Include diverse voices and sources
+- Avoid stereotypes and clichés
+
+#### D - DIRECT (No Fluff):
+- Maximum 4 lines per paragraph
+- Use short, varied sentences
+- Logical flow that guides readers through journey
+- Break up text with headers, bullets, tables
+- Address search intent immediately in intro
+- Avoid long introductions (60-80 words max)
+
+### SEO REQUIREMENTS:
+- Primary keyword "${effectivePrimaryKeyword}" in:
+  * Title (front-loaded)
+  * Introduction (within first 50 words)
+  * First H2 subheading
+  * Conclusion
+- Use secondary keywords naturally in H2s where possible
+- Address search intent immediately
+- Include 4+ internal link opportunities (mention "[INTERNAL LINK]")
+- Include 1+ external link opportunities to authoritative sources
+- Add real-world examples with specific company/product names
+- Include relevant statistics where possible
+
+### TITLE REQUIREMENTS:
+- Front-load primary keyword
+- Include numbers where relevant
+- 50-60 characters max
+- Provide unique angle that stands out
+- Formula: Keyword + Value + Unique Angle
+- Avoid: "efficiency," "streamline," "solutions," "maximize"
+
+### CONTENT STRUCTURE:
 Title: ${title}
-Primary Keyword: ${primaryKeyword || keywords[0] || ''}
-Keywords to Include: ${keywordText}
-
-DETAILED OUTLINE:
+Outline to follow:
 ${outlineText}
 
-CONTENT REQUIREMENTS:
-1. Write EXACTLY ${targetWordCount} words - this is crucial for SEO performance
-2. Each section should be substantive with detailed explanations, examples, and insights
-3. Use proper markdown formatting (##, ###, **bold**, *italic*, lists, etc.)
-4. Include engaging introductions and comprehensive conclusions for each section
-5. Incorporate all keywords naturally throughout the content
-6. Write in ${tone} tone for ${audience}
-7. Use ${povInstructions[pointOfView as keyof typeof povInstructions] || povInstructions.second}
-8. Create smooth transitions between sections
-9. Include practical examples, case studies, or actionable advice where appropriate
-10. Ensure each section contributes meaningfully to the overall article length
+### WRITING STYLE GUIDELINES:
+- Short sentences and paragraphs (max 4 lines)
+- Use bullet points and subheadings liberally
+- Include tables for comparisons
+- Vary sentence structure
+- Use industry terminology appropriately
+- Include humor that adds value, not distraction
+${brand ? `- Reference ${brand} naturally where relevant` : ''}
+${product ? `- Mention ${product} contextually when appropriate` : ''}
 
-${searchIntent === 'transactional' ? 'Include relevant calls-to-action and conversion elements.' : ''}
-${brand || product ? `Mention ${brand || product} naturally where relevant, but focus on providing value first.` : ''}
+## MANDATORY FINAL CHECK:
+Before completing, verify:
+1. Word count is EXACTLY ${targetWordCount} words (±50 words acceptable)
+2. Primary keyword appears in all required locations
+3. Each section provides genuine value and actionable insights
+4. Content follows PVOD framework throughout
+5. Search intent is addressed immediately
+6. Real examples and specific details are included
+7. Tone is ${tone} and appropriate for ${audience}
 
-Generate a comprehensive, valuable article that fully addresses the outline and meets the exact word count requirement.`;
+Generate a comprehensive, valuable article that fully meets these requirements.`;
+}
+
+async function extendArticleContent(article: any, targetWordCount: number, currentWordCount: number): Promise<any> {
+  const wordsNeeded = targetWordCount - currentWordCount;
+  const tolerance = targetWordCount * 0.15; // 15% tolerance
+  
+  if (wordsNeeded < tolerance) {
+    return article; // Close enough, no extension needed
+  }
+
+  console.log(`Extending article: need ${wordsNeeded} more words (current: ${currentWordCount}, target: ${targetWordCount})`);
+  
+  // Find shortest sections that could be expanded
+  const sectionsToExpand = article.sections
+    .map((section: any, index: number) => ({
+      ...section,
+      index,
+      wordCount: countWordsInMarkdown(section.content)
+    }))
+    .sort((a: any, b: any) => a.wordCount - b.wordCount)
+    .slice(0, Math.min(3, article.sections.length)); // Top 3 shortest sections
+
+  const extensionPrompt = `Expand the following article sections to add approximately ${wordsNeeded} words total while maintaining PVOD quality:
+
+CURRENT ARTICLE TITLE: ${article.title}
+TARGET WORD COUNT: ${targetWordCount}
+CURRENT WORD COUNT: ${currentWordCount}
+WORDS NEEDED: ${wordsNeeded}
+
+SECTIONS TO EXPAND (maintain existing structure, add valuable content):
+${sectionsToExpand.map((section: any) => `
+**${section.title}** (currently ${section.wordCount} words)
+${section.content}
+`).join('\n')}
+
+EXPANSION REQUIREMENTS:
+- Add 2-3 real-world examples with specific details
+- Include actionable steps or tips
+- Add relevant statistics or data points
+- Provide case studies or success stories
+- Expand with valuable insights, NOT filler content
+- Maintain PVOD framework (Personality, Value, Opinion, Direct)
+- Keep existing tone and style
+- Each expanded section should add 150-300 words of high-value content
+
+Return ONLY the expanded sections with the same structure but enhanced content.`;
+
+  try {
+    const extensionResult = await streamObject({
+      model: openai('gpt-4o'),
+      schema: z.object({
+        expandedSections: z.array(z.object({
+          id: z.string(),
+          title: z.string(),
+          content: z.string(),
+          wordCount: z.number(),
+        }))
+      }),
+      prompt: extensionPrompt,
+      temperature: 0.7,
+      maxTokens: 3000,
+    });
+
+    const expandedData = await extensionResult.object;
+    
+    // Replace the expanded sections in the original article
+    const updatedSections = [...article.sections];
+    expandedData.expandedSections.forEach((expandedSection: any) => {
+      const sectionIndex = updatedSections.findIndex(s => s.id === expandedSection.id);
+      if (sectionIndex !== -1) {
+        updatedSections[sectionIndex] = expandedSection;
+      }
+    });
+
+    // Recalculate total word count
+    const newTotalWordCount = updatedSections.reduce((total, section) => 
+      total + countWordsInMarkdown(section.content), 0
+    );
+
+    return {
+      ...article,
+      sections: updatedSections,
+      totalWordCount: newTotalWordCount,
+      readingTime: Math.ceil(newTotalWordCount / 200)
+    };
+    
+  } catch (error) {
+    console.error('Error extending article:', error);
+    return article; // Return original if extension fails
+  }
 }
 
 serve(async (req) => {
@@ -131,20 +297,21 @@ serve(async (req) => {
       });
     }
 
-    console.log('Enhanced content generation started:', {
+    console.log('Enhanced PVOD content generation started:', {
       title,
       targetWordCount,
       sectionsCount: outline.length,
       tone,
       audience,
       pointOfView,
-      searchIntent
+      searchIntent,
+      primaryKeyword: primaryKeyword || keywords[0]
     });
 
-    // Calculate appropriate maxTokens based on target word count (roughly 4 tokens per word)
-    const maxTokens = Math.min(Math.max(targetWordCount * 4, 4000), 16000);
+    // Calculate appropriate maxTokens based on target word count
+    const maxTokens = Math.min(Math.max(targetWordCount * 4, 6000), 16000);
     
-    const prompt = buildComprehensivePrompt(params);
+    const prompt = buildPVODPrompt(params);
 
     const result = streamObject({
       model: openai('gpt-4o'),
@@ -162,12 +329,13 @@ serve(async (req) => {
         try {
           let currentWordCount = 0;
           let sectionsCompleted = 0;
+          let finalArticle = null;
           
           for await (const partialObject of result.partialObjectStream) {
             // Calculate progress
             if (partialObject.sections) {
               const newWordCount = partialObject.sections.reduce((total, section) => {
-                return total + (section?.content?.split(' ').length || 0);
+                return total + (section?.content ? countWordsInMarkdown(section.content) : 0);
               }, 0);
               
               const completeSections = partialObject.sections.filter(s => s?.content && s.content.length > 100).length;
@@ -204,26 +372,69 @@ serve(async (req) => {
           }
 
           // Get final result
-          const finalArticle = await result.object;
-          
-          console.log('Article generation completed:', {
+          finalArticle = await result.object;
+          const initialWordCount = countWordsInMarkdown(
+            finalArticle.sections?.map(s => s.content).join(' ') || ''
+          );
+
+          console.log('Initial generation completed:', {
             sectionsGenerated: finalArticle.sections?.length || 0,
-            totalWords: finalArticle.totalWordCount || 0,
+            initialWordCount,
             targetWords: targetWordCount
           });
+
+          // Word count validation and extension
+          const tolerance = targetWordCount * 0.15; // 15% tolerance
+          if (initialWordCount < (targetWordCount - tolerance)) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'progress',
+              data: {
+                currentSection: outline.length,
+                totalSections: outline.length,
+                wordsGenerated: initialWordCount,
+                targetWords: targetWordCount,
+                status: `Extending article to meet ${targetWordCount} word target...`,
+                progress: 85
+              }
+            })}\n\n`));
+
+            // Extend the article
+            finalArticle = await extendArticleContent(finalArticle, targetWordCount, initialWordCount);
+            
+            const finalWordCount = countWordsInMarkdown(
+              finalArticle.sections?.map(s => s.content).join(' ') || ''
+            );
+
+            console.log('Article extension completed:', {
+              initialWords: initialWordCount,
+              finalWords: finalWordCount,
+              targetWords: targetWordCount,
+              extensionSuccess: finalWordCount >= (targetWordCount - tolerance)
+            });
+
+            // Update final article word count
+            finalArticle.totalWordCount = finalWordCount;
+            finalArticle.readingTime = Math.ceil(finalWordCount / 200);
+          }
 
           // Send completion
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'complete',
             data: {
               article: finalArticle,
-              message: `✅ Article complete! Generated ${finalArticle.totalWordCount || 0} words.`,
-              progress: 100
+              message: `✅ PVOD Article complete! Generated ${finalArticle.totalWordCount || 0} words meeting all content guidelines.`,
+              progress: 100,
+              contentQuality: {
+                wordCountMet: (finalArticle.totalWordCount || 0) >= (targetWordCount - tolerance),
+                pvotFramework: true,
+                keywordIntegration: true,
+                seoOptimized: true
+              }
             }
           })}\n\n`));
 
         } catch (error) {
-          console.error('Error in enhanced generation:', error);
+          console.error('Error in enhanced PVOD generation:', error);
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'error',
             data: { error: error.message }

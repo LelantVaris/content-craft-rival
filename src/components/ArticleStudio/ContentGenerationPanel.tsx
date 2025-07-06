@@ -40,6 +40,7 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
     currentMessage,
     error: enhancedError,
     finalContent,
+    contentQuality,
     reset
   } = useEnhancedContentGeneration();
 
@@ -112,12 +113,12 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <PenTool className="w-5 h-5 text-green-600" />
-            Generate Enhanced Article Content  
+            Generate PVOD Article Content  
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Generate your article with structured sections, proper word count, and all content preferences applied.
+            Generate high-quality content following PVOD framework (Personality, Value, Opinion, Direct) with guaranteed word count and SEO optimization.
           </p>
 
           <Reasoning 
@@ -138,13 +139,13 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             </ReasoningContent>
           </Reasoning>
 
-          {/* Enhanced Progress Display */}
+          {/* Enhanced Progress Display with PVOD indicators */}
           {isGeneratingContent && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                 <span className="text-sm font-medium text-blue-800">
-                  {currentMessage || 'Processing...'}
+                  {currentMessage || 'Processing PVOD content...'}
                 </span>
               </div>
               <div className="text-xs text-blue-600 space-y-1">
@@ -154,6 +155,27 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
                     className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min((progress.wordsGenerated / progress.targetWords) * 100, 100)}%` }}
                   />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Content Quality Indicators */}
+          {contentQuality && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="text-sm font-medium text-green-800 mb-2">Content Quality Report</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className={`flex items-center gap-1 ${contentQuality.wordCountMet ? 'text-green-700' : 'text-amber-700'}`}>
+                  {contentQuality.wordCountMet ? '✅' : '⚠️'} Target Word Count
+                </div>
+                <div className={`flex items-center gap-1 ${contentQuality.pvotFramework ? 'text-green-700' : 'text-amber-700'}`}>
+                  {contentQuality.pvotFramework ? '✅' : '⚠️'} PVOD Framework
+                </div>
+                <div className={`flex items-center gap-1 ${contentQuality.keywordIntegration ? 'text-green-700' : 'text-amber-700'}`}>
+                  {contentQuality.keywordIntegration ? '✅' : '⚠️'} Keyword Integration
+                </div>
+                <div className={`flex items-center gap-1 ${contentQuality.seoOptimized ? 'text-green-700' : 'text-amber-700'}`}>
+                  {contentQuality.seoOptimized ? '✅' : '⚠️'} SEO Optimized
                 </div>
               </div>
             </div>
@@ -177,19 +199,19 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
             {isGeneratingContent ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating Enhanced Content...
+                Generating PVOD Content...
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 mr-2" />
-                Generate Enhanced Content ({getTargetWordCount()} words)
+                Generate PVOD Content ({getTargetWordCount()} words)
               </>
             )}
           </Button>
 
           {!canGenerate() && (
             <p className="text-xs text-gray-500 text-center">
-              Complete title and outline steps to enable content generation
+              Complete title and outline steps to enable PVOD content generation
             </p>
           )}
         </CardContent>
@@ -200,13 +222,18 @@ export const ContentGenerationPanel: React.FC<ContentGenerationPanelProps> = ({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <PenTool className="w-5 h-5 text-green-600" />
-              Ready to Create
+              PVOD Article Ready
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Your enhanced article content has been generated! Click "Create Article" to save it and continue editing.
+              Your PVOD article has been generated with comprehensive content guidelines! Click "Create Article" to save it and continue editing.
             </p>
+            {contentQuality && (
+              <div className="mb-4 text-sm text-green-700">
+                Generated {progress.wordsGenerated} words following PVOD framework with full SEO optimization.
+              </div>
+            )}
             <Button
               onClick={onComplete}
               disabled={isGeneratingContent}

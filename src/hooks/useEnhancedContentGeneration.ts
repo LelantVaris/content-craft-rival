@@ -8,6 +8,13 @@ export interface StreamEvent {
   data: any;
 }
 
+export interface ContentQuality {
+  wordCountMet: boolean;
+  pvotFramework: boolean;
+  keywordIntegration: boolean;
+  seoOptimized: boolean;
+}
+
 export function useEnhancedContentGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<StreamingProgress>({
@@ -21,6 +28,7 @@ export function useEnhancedContentGeneration() {
   const [error, setError] = useState<string | null>(null);
   const [finalContent, setFinalContent] = useState('');
   const [partialArticle, setPartialArticle] = useState<Partial<ArticleContent> | null>(null);
+  const [contentQuality, setContentQuality] = useState<ContentQuality | null>(null);
 
   const generateContent = useCallback(async (params: {
     title: string;
@@ -35,7 +43,7 @@ export function useEnhancedContentGeneration() {
     searchIntent?: string;
     primaryKeyword?: string;
   }) => {
-    console.log('=== ENHANCED CONTENT GENERATION START ===');
+    console.log('=== ENHANCED PVOD CONTENT GENERATION START ===');
     console.log('Parameters:', {
       title: params.title,
       outlineSections: params.outline.length,
@@ -43,19 +51,21 @@ export function useEnhancedContentGeneration() {
       pointOfView: params.pointOfView,
       searchIntent: params.searchIntent,
       brand: params.brand,
-      product: params.product
+      product: params.product,
+      primaryKeyword: params.primaryKeyword
     });
 
     setIsGenerating(true);
     setError(null);
     setFinalContent('');
     setPartialArticle(null);
+    setContentQuality(null);
     setProgress({
       currentSection: 0,
       totalSections: params.outline.length,
       wordsGenerated: 0,
       targetWords: params.targetWordCount || 4000,
-      status: 'Initializing...'
+      status: 'Initializing PVOD content generation...'
     });
 
     try {
@@ -71,7 +81,7 @@ export function useEnhancedContentGeneration() {
         headers['authorization'] = `Bearer ${sessionData.session.access_token}`;
       }
 
-      // Include ALL content preferences in the request
+      // Enhanced request body with comprehensive PVOD parameters
       const requestBody = {
         title: params.title,
         outline: params.outline,
@@ -86,7 +96,7 @@ export function useEnhancedContentGeneration() {
         primaryKeyword: params.primaryKeyword || params.keywords[0] || ''
       };
 
-      console.log('Making request with comprehensive parameters:', requestBody);
+      console.log('Making PVOD content request with comprehensive parameters:', requestBody);
 
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -131,7 +141,7 @@ export function useEnhancedContentGeneration() {
       }
 
     } catch (err) {
-      console.error('Enhanced content generation error:', err);
+      console.error('Enhanced PVOD content generation error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       setCurrentMessage(`Error: ${errorMessage}`);
@@ -141,7 +151,7 @@ export function useEnhancedContentGeneration() {
   }, []);
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
-    console.log('Stream event:', event.type, event.data);
+    console.log('PVOD Stream event:', event.type, event.data);
     
     switch (event.type) {
       case 'progress':
@@ -179,6 +189,11 @@ export function useEnhancedContentGeneration() {
           setFinalContent(markdown);
           setCurrentMessage(event.data.message);
           setProgress(prev => ({ ...prev, progress: 100 }));
+          
+          // Set content quality indicators
+          if (event.data.contentQuality) {
+            setContentQuality(event.data.contentQuality);
+          }
         }
         break;
 
@@ -202,6 +217,7 @@ export function useEnhancedContentGeneration() {
     setError(null);
     setFinalContent('');
     setPartialArticle(null);
+    setContentQuality(null);
   }, []);
 
   return {
@@ -212,6 +228,7 @@ export function useEnhancedContentGeneration() {
     error,
     finalContent,
     partialArticle,
+    contentQuality,
     reset,
     // Legacy compatibility
     sections: [],
