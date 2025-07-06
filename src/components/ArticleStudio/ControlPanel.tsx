@@ -20,6 +20,10 @@ interface ControlPanelProps {
   getPrimaryKeyword: () => string;
   getSecondaryKeywords: () => string[];
   getTargetWordCount: () => number;
+  generatedTitles: string[];
+  setGeneratedTitles: (titles: string[]) => void;
+  isFormValid: () => boolean;
+  enhancedGeneration: any;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -35,7 +39,11 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   setStreamingStatus,
   getPrimaryKeyword,
   getSecondaryKeywords,
-  getTargetWordCount
+  getTargetWordCount,
+  generatedTitles,
+  setGeneratedTitles,
+  isFormValid,
+  enhancedGeneration
 }) => {
   const renderStepContent = () => {
     switch (articleData.currentStep) {
@@ -44,6 +52,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           <TitleGenerationPanel
             articleData={articleData}
             onUpdate={updateArticleData}
+            generatedTitles={generatedTitles}
+            setGeneratedTitles={setGeneratedTitles}
+            isFormValid={isFormValid}
           />
         );
       case 2:
@@ -51,6 +62,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           <OutlineCreationPanel
             articleData={articleData}
             onUpdate={updateArticleData}
+            getPrimaryKeyword={getPrimaryKeyword}
+            getSecondaryKeywords={getSecondaryKeywords}
+            getTargetWordCount={getTargetWordCount}
           />
         );
       case 3:
@@ -65,6 +79,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             getPrimaryKeyword={getPrimaryKeyword}
             getSecondaryKeywords={getSecondaryKeywords}
             getTargetWordCount={getTargetWordCount}
+            enhancedGeneration={enhancedGeneration}
           />
         );
       default:
