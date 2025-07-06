@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { streamObject } from "npm:ai@4.3.16";
@@ -46,6 +45,15 @@ function countWordsInMarkdown(content: string): number {
 }
 
 function buildPVODPrompt(params: any): string {
+  console.log('🏗️ Building PVOD prompt with parameters:', {
+    title: params.title?.length || 0,
+    outlineSections: params.outline?.length || 0,
+    keywordsCount: params.keywords?.length || 0,
+    audience: params.audience || 'NOT PROVIDED',
+    tone: params.tone || 'NOT PROVIDED',
+    targetWordCount: params.targetWordCount || 'NOT PROVIDED'
+  });
+
   const {
     title,
     outline,
@@ -81,7 +89,7 @@ function buildPVODPrompt(params: any): string {
     'commercial': 'Compare options and guide purchase decisions'
   };
 
-  return `You are an expert content writer creating high-quality articles following the PVOD (Personality, Value, Opinion, Direct) framework.
+  const prompt = `You are an expert content writer creating high-quality articles following the PVOD (Personality, Value, Opinion, Direct) framework.
 
 ## CRITICAL REQUIREMENTS - MUST FOLLOW EXACTLY:
 
@@ -177,7 +185,303 @@ Before completing, verify:
 7. Tone is ${tone} and appropriate for ${audience}
 
 Generate a comprehensive, valuable article that fully meets these requirements.`;
+
+  console.log('✅ PVOD prompt built successfully, length:', prompt.length);
+  return prompt;
 }
+
+serve(async (req) => {
+  console.log('=== ENHANCED CONTENT GENERATION START ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
+  if (req.method === 'OPTIONS') {
+    console.log('✅ Handling CORS preflight request');
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    console.log('📥 Reading request body...');
+    const requestText = await req.text();
+    console.log('📄 Request body length:', requestText.length);
+    
+    let params;
+    try {
+      params = JSON.parse(requestText);
+      console.log('✅ Request JSON parsed successfully');
+    } catch (parseError) {
+      console.error('❌ Failed to parse request JSON:', parseError);
+      console.error('Request text preview:', requestText.substring(0, 500));
+      throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+    }
+
+    console.log('🔍 Request parameters received:', {
+      title: params.title?.length || 0,
+      outline: params.outline?.length || 0,
+      keywords: params.keywords?.length || 0,
+      audience: params.audience || 'NOT PROVIDED',
+      tone: params.tone || 'NOT PROVIDED',
+      targetWordCount: params.targetWordCount || 'NOT PROVIDED',
+      pointOfView: params.pointOfView || 'NOT PROVIDED',
+      searchIntent: params.searchIntent || 'NOT PROVIDED',
+      brand: params.brand || 'NOT PROVIDED',
+      product: params.product || 'NOT PROVIDED',
+      primaryKeyword: params.primaryKeyword || 'NOT PROVIDED'
+    });
+
+    // Enhanced parameter validation
+    const { 
+      title, 
+      outline, 
+      keywords = [], 
+      audience = 'general audience', 
+      tone = 'professional',
+      targetWordCount = 4000,
+      pointOfView = 'second',
+      brand = '',
+      product = '',
+      searchIntent = 'informational',
+      primaryKeyword = ''
+    } = params;
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      const errorMsg = 'Title is required and must be a non-empty string';
+      console.error('❌ Validation failed:', errorMsg);
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!outline || !Array.isArray(outline) || outline.length === 0) {
+      const errorMsg = 'Outline is required and must be a non-empty array';
+      console.error('❌ Validation failed:', errorMsg);
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check OpenAI API key
+    if (!openAIApiKey) {
+      const errorMsg = 'OpenAI API key is not configured';
+      console.error('❌ Configuration error:', errorMsg);
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('✅ All validations passed');
+    console.log('🚀 Enhanced PVOD content generation started:', {
+      title: title.substring(0, 50) + (title.length > 50 ? '...' : ''),
+      targetWordCount,
+      sectionsCount: outline.length,
+      tone,
+      audience,
+      pointOfView,
+      searchIntent,
+      primaryKeyword: primaryKeyword || keywords[0] || 'none'
+    });
+
+    // Calculate appropriate maxTokens based on target word count
+    const maxTokens = Math.min(Math.max(targetWordCount * 4, 6000), 16000);
+    console.log('🎯 Using maxTokens:', maxTokens);
+    
+    console.log('🏗️ Building PVOD prompt...');
+    const prompt = buildPVODPrompt(params);
+    
+    console.log('🤖 Calling OpenAI with streamObject...');
+    const result = streamObject({
+      model: openai('gpt-4o'),
+      schema: ArticleSchema,
+      prompt,
+      temperature: 0.7,
+      maxTokens,
+    });
+
+    console.log('✅ OpenAI stream initialized');
+
+    // Create a readable stream for the structured response
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        
+        try {
+          console.log('🔄 Starting stream processing...');
+          let currentWordCount = 0;
+          let sectionsCompleted = 0;
+          let finalArticle = null;
+          let eventCount = 0;
+          
+          for await (const partialObject of result.partialObjectStream) {
+            eventCount++;
+            console.log(`📦 Processing partial object #${eventCount}:`, {
+              hasTitle: !!partialObject.title,
+              hasSections: !!partialObject.sections,
+              sectionsLength: partialObject.sections?.length || 0
+            });
+
+            // Calculate progress
+            if (partialObject.sections) {
+              const newWordCount = partialObject.sections.reduce((total, section) => {
+                return total + (section?.content ? countWordsInMarkdown(section.content) : 0);
+              }, 0);
+              
+              const completeSections = partialObject.sections.filter(s => s?.content && s.content.length > 100).length;
+              
+              if (newWordCount !== currentWordCount || completeSections !== sectionsCompleted) {
+                currentWordCount = newWordCount;
+                sectionsCompleted = completeSections;
+                
+                console.log(`📊 Progress: ${sectionsCompleted}/${outline.length} sections, ${currentWordCount}/${targetWordCount} words`);
+                
+                // Send progress update
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                  type: 'progress',
+                  data: {
+                    currentSection: sectionsCompleted,
+                    totalSections: outline.length,
+                    wordsGenerated: currentWordCount,
+                    targetWords: targetWordCount,
+                    status: sectionsCompleted < outline.length 
+                      ? `Writing section ${sectionsCompleted + 1} of ${outline.length}...`
+                      : 'Finalizing article...',
+                    progress: Math.min((currentWordCount / targetWordCount) * 100, 95)
+                  }
+                })}\n\n`));
+              }
+            }
+            
+            // Send content update
+            console.log(`📤 Sending content update #${eventCount}`);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'content',
+              data: {
+                partialContent: partialObject,
+                status: 'streaming'
+              }
+            })}\n\n`));
+          }
+
+          console.log('✅ Partial object stream completed, getting final result...');
+          // Get final result
+          finalArticle = await result.object;
+          const initialWordCount = countWordsInMarkdown(
+            finalArticle.sections?.map(s => s.content).join(' ') || ''
+          );
+
+          console.log('📈 Initial generation completed:', {
+            sectionsGenerated: finalArticle.sections?.length || 0,
+            initialWordCount,
+            targetWords: targetWordCount
+          });
+
+          // Word count validation and extension
+          const tolerance = targetWordCount * 0.15; // 15% tolerance
+          if (initialWordCount < (targetWordCount - tolerance)) {
+            console.log('⚠️ Article is too short, extending...');
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'progress',
+              data: {
+                currentSection: outline.length,
+                totalSections: outline.length,
+                wordsGenerated: initialWordCount,
+                targetWords: targetWordCount,
+                status: `Extending article to meet ${targetWordCount} word target...`,
+                progress: 85
+              }
+            })}\n\n`));
+
+            // Extend the article (keeping existing extendArticleContent function)
+            try {
+              finalArticle = await extendArticleContent(finalArticle, targetWordCount, initialWordCount);
+              console.log('✅ Article extension completed');
+            } catch (extendError) {
+              console.error('⚠️ Article extension failed:', extendError);
+              // Continue with original article if extension fails
+            }
+            
+            const finalWordCount = countWordsInMarkdown(
+              finalArticle.sections?.map(s => s.content).join(' ') || ''
+            );
+
+            console.log('📊 Final word count results:', {
+              initialWords: initialWordCount,
+              finalWords: finalWordCount,
+              targetWords: targetWordCount,
+              withinTolerance: finalWordCount >= (targetWordCount - tolerance)
+            });
+
+            // Update final article word count
+            finalArticle.totalWordCount = finalWordCount;
+            finalArticle.readingTime = Math.ceil(finalWordCount / 200);
+          }
+
+          // Send completion
+          console.log('🎉 Sending completion event...');
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'complete',
+            data: {
+              article: finalArticle,
+              message: `✅ PVOD Article complete! Generated ${finalArticle.totalWordCount || 0} words meeting all content guidelines.`,
+              progress: 100,
+              contentQuality: {
+                wordCountMet: (finalArticle.totalWordCount || 0) >= (targetWordCount - tolerance),
+                pvotFramework: true,
+                keywordIntegration: true,
+                seoOptimized: true
+              }
+            }
+          })}\n\n`));
+
+          console.log('🏁 Stream processing completed successfully');
+
+        } catch (error) {
+          console.error('=== ERROR IN ENHANCED PVOD GENERATION ===');
+          console.error('Error type:', typeof error);
+          console.error('Error name:', error instanceof Error ? error.name : 'Unknown');
+          console.error('Error message:', error instanceof Error ? error.message : String(error));
+          console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+          
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'error',
+            data: { error: errorMessage }
+          })}\n\n`));
+        } finally {
+          console.log('🔒 Closing stream controller');
+          controller.close();
+        }
+      }
+    });
+
+    console.log('📡 Returning streaming response');
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+
+  } catch (error) {
+    console.error('=== ERROR IN GENERATE-ENHANCED-CONTENT FUNCTION ===');
+    console.error('Error type:', typeof error);
+    console.error('Error name:', error instanceof Error ? error.name : 'Unknown');
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : String(error) 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
 
 async function extendArticleContent(article: any, targetWordCount: number, currentWordCount: number): Promise<any> {
   const wordsNeeded = targetWordCount - currentWordCount;
@@ -268,240 +572,3 @@ Return ONLY the expanded sections with the same structure but enhanced content.`
     return article; // Return original if extension fails
   }
 }
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    console.log('=== ENHANCED CONTENT GENERATION EDGE FUNCTION START ===');
-    console.log('Request method:', req.method);
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
-
-    const params = await req.json();
-    console.log('Request parameters received:', {
-      title: params.title?.length || 0,
-      outline: params.outline?.length || 0,
-      keywords: params.keywords?.length || 0,
-      audience: params.audience || 'NOT PROVIDED',
-      tone: params.tone || 'NOT PROVIDED',
-      targetWordCount: params.targetWordCount || 'NOT PROVIDED',
-      pointOfView: params.pointOfView || 'NOT PROVIDED',
-      searchIntent: params.searchIntent || 'NOT PROVIDED'
-    });
-
-    const { 
-      title, 
-      outline, 
-      keywords = [], 
-      audience = 'general audience', 
-      tone = 'professional',
-      targetWordCount = 4000,
-      pointOfView = 'second',
-      brand = '',
-      product = '',
-      searchIntent = 'informational',
-      primaryKeyword = ''
-    } = params;
-
-    if (!title || !outline || outline.length === 0) {
-      const errorMsg = 'Title and outline are required';
-      console.error('Validation failed:', errorMsg);
-      return new Response(JSON.stringify({ error: errorMsg }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Enhanced PVOD content generation started:', {
-      title,
-      targetWordCount,
-      sectionsCount: outline.length,
-      tone,
-      audience,
-      pointOfView,
-      searchIntent,
-      primaryKeyword: primaryKeyword || keywords[0]
-    });
-
-    // Calculate appropriate maxTokens based on target word count
-    const maxTokens = Math.min(Math.max(targetWordCount * 4, 6000), 16000);
-    console.log('Using maxTokens:', maxTokens);
-    
-    const prompt = buildPVODPrompt(params);
-    console.log('Generated prompt length:', prompt.length);
-
-    const result = streamObject({
-      model: openai('gpt-4o'),
-      schema: ArticleSchema,
-      prompt,
-      temperature: 0.7,
-      maxTokens,
-    });
-
-    // Create a readable stream for the structured response
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder();
-        
-        try {
-          console.log('Starting stream processing...');
-          let currentWordCount = 0;
-          let sectionsCompleted = 0;
-          let finalArticle = null;
-          let eventCount = 0;
-          
-          for await (const partialObject of result.partialObjectStream) {
-            eventCount++;
-            console.log(`Processing partial object #${eventCount}:`, {
-              hasSections: !!partialObject.sections,
-              sectionsLength: partialObject.sections?.length || 0
-            });
-
-            // Calculate progress
-            if (partialObject.sections) {
-              const newWordCount = partialObject.sections.reduce((total, section) => {
-                return total + (section?.content ? countWordsInMarkdown(section.content) : 0);
-              }, 0);
-              
-              const completeSections = partialObject.sections.filter(s => s?.content && s.content.length > 100).length;
-              
-              if (newWordCount !== currentWordCount || completeSections !== sectionsCompleted) {
-                currentWordCount = newWordCount;
-                sectionsCompleted = completeSections;
-                
-                // Send progress update
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                  type: 'progress',
-                  data: {
-                    currentSection: sectionsCompleted,
-                    totalSections: outline.length,
-                    wordsGenerated: currentWordCount,
-                    targetWords: targetWordCount,
-                    status: sectionsCompleted < outline.length 
-                      ? `Writing section ${sectionsCompleted + 1} of ${outline.length}...`
-                      : 'Finalizing article...',
-                    progress: Math.min((currentWordCount / targetWordCount) * 100, 95)
-                  }
-                })}\n\n`));
-              }
-            }
-            
-            // Send content update
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              type: 'content',
-              data: {
-                partialContent: partialObject,
-                status: 'streaming'
-              }
-            })}\n\n`));
-          }
-
-          console.log('Partial object stream completed, getting final result...');
-          // Get final result
-          finalArticle = await result.object;
-          const initialWordCount = countWordsInMarkdown(
-            finalArticle.sections?.map(s => s.content).join(' ') || ''
-          );
-
-          console.log('Initial generation completed:', {
-            sectionsGenerated: finalArticle.sections?.length || 0,
-            initialWordCount,
-            targetWords: targetWordCount
-          });
-
-          // Word count validation and extension
-          const tolerance = targetWordCount * 0.15; // 15% tolerance
-          if (initialWordCount < (targetWordCount - tolerance)) {
-            console.log('Article is too short, extending...');
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              type: 'progress',
-              data: {
-                currentSection: outline.length,
-                totalSections: outline.length,
-                wordsGenerated: initialWordCount,
-                targetWords: targetWordCount,
-                status: `Extending article to meet ${targetWordCount} word target...`,
-                progress: 85
-              }
-            })}\n\n`));
-
-            // Extend the article
-            finalArticle = await extendArticleContent(finalArticle, targetWordCount, initialWordCount);
-            
-            const finalWordCount = countWordsInMarkdown(
-              finalArticle.sections?.map(s => s.content).join(' ') || ''
-            );
-
-            console.log('Article extension completed:', {
-              initialWords: initialWordCount,
-              finalWords: finalWordCount,
-              targetWords: targetWordCount,
-              extensionSuccess: finalWordCount >= (targetWordCount - tolerance)
-            });
-
-            // Update final article word count
-            finalArticle.totalWordCount = finalWordCount;
-            finalArticle.readingTime = Math.ceil(finalWordCount / 200);
-          }
-
-          // Send completion
-          console.log('Sending completion event...');
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-            type: 'complete',
-            data: {
-              article: finalArticle,
-              message: `✅ PVOD Article complete! Generated ${finalArticle.totalWordCount || 0} words meeting all content guidelines.`,
-              progress: 100,
-              contentQuality: {
-                wordCountMet: (finalArticle.totalWordCount || 0) >= (targetWordCount - tolerance),
-                pvotFramework: true,
-                keywordIntegration: true,
-                seoOptimized: true
-              }
-            }
-          })}\n\n`));
-
-          console.log('Stream processing completed successfully');
-
-        } catch (error) {
-          console.error('=== ERROR IN ENHANCED PVOD GENERATION ===');
-          console.error('Error type:', typeof error);
-          console.error('Error message:', error instanceof Error ? error.message : String(error));
-          console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-          
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-            type: 'error',
-            data: { error: error instanceof Error ? error.message : String(error) }
-          })}\n\n`));
-        } finally {
-          console.log('Closing stream controller');
-          controller.close();
-        }
-      }
-    });
-
-    return new Response(stream, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
-
-  } catch (error) {
-    console.error('=== ERROR IN GENERATE-ENHANCED-CONTENT FUNCTION ===');
-    console.error('Error type:', typeof error);
-    console.error('Error message:', error instanceof Error ? error.message : String(error));
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : String(error) 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-});

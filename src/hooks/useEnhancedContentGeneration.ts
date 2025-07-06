@@ -44,27 +44,41 @@ export function useEnhancedContentGeneration() {
     primaryKeyword?: string;
   }) => {
     console.log('=== ENHANCED PVOD CONTENT GENERATION START ===');
-    console.log('Input parameters validation:', {
-      title: params.title?.length || 0,
-      outlineSections: params.outline?.length || 0,
-      keywordsCount: params.keywords?.length || 0,
-      audience: params.audience || 'NOT PROVIDED',
-      tone: params.tone || 'NOT PROVIDED',
-      targetWordCount: params.targetWordCount || 'NOT PROVIDED',
-      pointOfView: params.pointOfView || 'NOT PROVIDED',
-      searchIntent: params.searchIntent || 'NOT PROVIDED',
-      brand: params.brand || 'NOT PROVIDED',
-      product: params.product || 'NOT PROVIDED',
-      primaryKeyword: params.primaryKeyword || 'NOT PROVIDED'
-    });
+    console.log('Raw input parameters:', JSON.stringify(params, null, 2));
 
-    // Validate required parameters
-    if (!params.title || !params.outline || params.outline.length === 0) {
-      const errorMsg = 'Missing required parameters: title or outline';
-      console.error('Parameter validation failed:', errorMsg);
+    // Enhanced parameter validation with defaults
+    const validatedParams = {
+      title: params.title || 'Untitled Article',
+      outline: Array.isArray(params.outline) ? params.outline : [],
+      keywords: Array.isArray(params.keywords) ? params.keywords : [],
+      audience: params.audience || 'general audience',
+      tone: params.tone || 'professional',
+      targetWordCount: params.targetWordCount || 4000,
+      pointOfView: params.pointOfView || 'second',
+      brand: params.brand || '',
+      product: params.product || '',
+      searchIntent: params.searchIntent || 'informational',
+      primaryKeyword: params.primaryKeyword || (params.keywords && params.keywords[0]) || ''
+    };
+
+    console.log('Validated parameters:', JSON.stringify(validatedParams, null, 2));
+
+    // Validate critical requirements
+    if (!validatedParams.title || validatedParams.title === 'Untitled Article') {
+      const errorMsg = 'Title is required for content generation';
+      console.error('❌ Parameter validation failed:', errorMsg);
       setError(errorMsg);
       return;
     }
+
+    if (!validatedParams.outline || validatedParams.outline.length === 0) {
+      const errorMsg = 'Outline sections are required for content generation';
+      console.error('❌ Parameter validation failed:', errorMsg);
+      setError(errorMsg);
+      return;
+    }
+
+    console.log('✅ Parameter validation passed');
 
     setIsGenerating(true);
     setError(null);
@@ -73,19 +87,25 @@ export function useEnhancedContentGeneration() {
     setContentQuality(null);
     setProgress({
       currentSection: 0,
-      totalSections: params.outline.length,
+      totalSections: validatedParams.outline.length,
       wordsGenerated: 0,
-      targetWords: params.targetWordCount || 4000,
+      targetWords: validatedParams.targetWordCount,
       status: 'Initializing PVOD content generation...'
     });
 
     try {
-      console.log('Getting Supabase session...');
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Session data:', sessionData.session ? 'Valid session' : 'No session');
+      console.log('🔐 Getting Supabase session...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Session error:', sessionError);
+        throw new Error(`Session error: ${sessionError.message}`);
+      }
+      
+      console.log('✅ Session status:', sessionData.session ? 'Valid session' : 'No session');
       
       const functionUrl = `https://wpezdklekanfcctswtbz.supabase.co/functions/v1/generate-enhanced-content`;
-      console.log('Function URL:', functionUrl);
+      console.log('🌐 Function URL:', functionUrl);
 
       const headers = {
         'Content-Type': 'application/json',
@@ -94,110 +114,146 @@ export function useEnhancedContentGeneration() {
 
       if (sessionData.session?.access_token) {
         headers['authorization'] = `Bearer ${sessionData.session.access_token}`;
-        console.log('Added authorization header');
+        console.log('✅ Added authorization header');
+      } else {
+        console.log('⚠️ No access token found');
       }
 
-      // Enhanced request body with comprehensive PVOD parameters
-      const requestBody = {
-        title: params.title,
-        outline: params.outline,
-        keywords: params.keywords || [],
-        audience: params.audience || 'general audience',
-        tone: params.tone || 'professional',
-        targetWordCount: params.targetWordCount || 4000,
-        pointOfView: params.pointOfView || 'second',
-        brand: params.brand || '',
-        product: params.product || '',
-        searchIntent: params.searchIntent || 'informational',
-        primaryKeyword: params.primaryKeyword || params.keywords?.[0] || ''
-      };
+      console.log('📤 Making PVOD content request...');
+      console.log('Request headers:', Object.keys(headers));
+      console.log('Request body size:', JSON.stringify(validatedParams).length, 'characters');
 
-      console.log('Making PVOD content request with comprehensive parameters:', requestBody);
+      // Add timeout to fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Request timeout after 30 seconds');
+        controller.abort();
+      }, 30000);
 
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(validatedParams),
+        signal: controller.signal
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      clearTimeout(timeoutId);
+
+      console.log('📥 Response received:');
+      console.log('  Status:', response.status);
+      console.log('  Status Text:', response.statusText);
+      console.log('  Headers:', Object.fromEntries(response.headers.entries()));
+      console.log('  OK:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('HTTP Error Response:', errorText);
+        console.error('❌ HTTP Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
       if (!reader) {
         throw new Error('No response stream available');
       }
 
-      console.log('Starting to read stream...');
+      const decoder = new TextDecoder();
+      console.log('🔄 Starting to read stream...');
+      
       let buffer = '';
       let eventCount = 0;
+      let chunkCount = 0;
       
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          console.log('Stream reading completed. Total events processed:', eventCount);
-          break;
-        }
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          chunkCount++;
+          
+          if (done) {
+            console.log('✅ Stream reading completed');
+            console.log('  Total chunks:', chunkCount);
+            console.log('  Total events:', eventCount);
+            console.log('  Final buffer:', buffer.length > 0 ? `"${buffer}"` : 'empty');
+            break;
+          }
 
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
+          const chunk = decoder.decode(value, { stream: true });
+          console.log(`📦 Chunk #${chunkCount} (${chunk.length} chars):`, 
+            chunk.length > 200 ? `"${chunk.substring(0, 200)}..."` : `"${chunk}"`);
+          
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              eventCount++;
-              console.log(`Processing stream event #${eventCount}:`, eventData.type, eventData.data);
-              handleStreamEvent(eventData);
-            } catch (e) {
-              console.warn('Failed to parse SSE data:', line, e);
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6));
+                eventCount++;
+                console.log(`🎯 Event #${eventCount} (${eventData.type}):`, 
+                  eventData.type === 'content' ? 'Content update' : 
+                  eventData.type === 'progress' ? `Progress: ${eventData.data?.status}` :
+                  eventData.type);
+                handleStreamEvent(eventData);
+              } catch (parseError) {
+                console.warn('⚠️ Failed to parse SSE data:', {
+                  line: line.length > 100 ? `${line.substring(0, 100)}...` : line,
+                  error: parseError
+                });
+              }
+            } else if (line.trim()) {
+              console.log('📄 Non-data line:', line.length > 100 ? `${line.substring(0, 100)}...` : line);
             }
           }
         }
+      } finally {
+        reader.releaseLock();
       }
 
-      console.log('Stream processing completed successfully');
+      console.log('✅ Stream processing completed successfully');
 
     } catch (err) {
       console.error('=== ENHANCED PVOD CONTENT GENERATION ERROR ===');
       console.error('Error type:', typeof err);
-      console.error('Error instanceof Error:', err instanceof Error);
+      console.error('Error name:', err instanceof Error ? err.name : 'Unknown');
       console.error('Error message:', err instanceof Error ? err.message : String(err));
       console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
       
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.error('❌ Request was aborted (timeout)');
+      }
+      
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setCurrentMessage(`Error: ${errorMessage}`);
     } finally {
-      console.log('Setting isGenerating to false');
+      console.log('🏁 Setting isGenerating to false');
       setIsGenerating(false);
     }
   }, []);
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
-    console.log('PVOD Stream event received:', event.type, 'data keys:', Object.keys(event.data || {}));
+    console.log('🎯 Stream event received:', event.type, 
+      event.data ? `(${Object.keys(event.data).length} data keys)` : '(no data)');
     
     switch (event.type) {
       case 'progress':
-        console.log('Progress update:', event.data);
+        console.log('📊 Progress update:', event.data);
         setProgress(event.data);
         setCurrentMessage(event.data.status);
         break;
 
       case 'content':
-        console.log('Content update received, has partialContent:', !!event.data.partialContent);
+        console.log('📝 Content update:', {
+          hasPartialContent: !!event.data.partialContent,
+          hasTitle: !!event.data.partialContent?.title,
+          hasSections: !!event.data.partialContent?.sections,
+          sectionsLength: event.data.partialContent?.sections?.length || 0
+        });
+        
         if (event.data.partialContent) {
           setPartialArticle(event.data.partialContent);
           
@@ -211,14 +267,19 @@ export function useEnhancedContentGeneration() {
                   : ''
               ).join('')
             }`;
-            console.log('Generated markdown length:', markdown.length);
+            console.log('📄 Generated markdown length:', markdown.length);
             setFinalContent(markdown);
           }
         }
         break;
 
       case 'complete':
-        console.log('Generation completed, processing final article...');
+        console.log('✅ Generation completed:', {
+          hasArticle: !!event.data.article,
+          hasContentQuality: !!event.data.contentQuality,
+          message: event.data.message
+        });
+        
         const finalArticle = event.data.article;
         if (finalArticle && finalArticle.sections) {
           const markdown = `# ${finalArticle.title}\n\n${
@@ -226,29 +287,31 @@ export function useEnhancedContentGeneration() {
               `## ${section.title}\n\n${section.content}\n\n`
             ).join('')
           }`;
-          console.log('Final article markdown length:', markdown.length);
+          console.log('📄 Final article markdown length:', markdown.length);
           setFinalContent(markdown);
           setCurrentMessage(event.data.message);
           setProgress(prev => ({ ...prev, progress: 100 }));
           
-          // Set content quality indicators
           if (event.data.contentQuality) {
-            console.log('Content quality indicators:', event.data.contentQuality);
+            console.log('🏆 Content quality indicators:', event.data.contentQuality);
             setContentQuality(event.data.contentQuality);
           }
         }
         break;
 
       case 'error':
-        console.error('Stream error event:', event.data.error);
+        console.error('❌ Stream error event:', event.data.error);
         setError(event.data.error);
         setCurrentMessage(`Error: ${event.data.error}`);
         break;
+
+      default:
+        console.warn('⚠️ Unknown stream event type:', event.type);
     }
   }, []);
 
   const reset = useCallback(() => {
-    console.log('Resetting enhanced content generation state');
+    console.log('🔄 Resetting enhanced content generation state');
     setIsGenerating(false);
     setProgress({
       currentSection: 0,
