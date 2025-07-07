@@ -12,7 +12,6 @@ import Magic from "../icons/Magic";
 import CrazySpinner from "../icons/CrazySpinner";
 import AICompletionCommands from "./AICompletionCommands";
 import AISelectorCommands from "./AISelectorCommands";
-import { supabase } from "@/integrations/supabase/client";
 
 interface AISelectorProps {
   open: boolean;
@@ -24,20 +23,7 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
   const [inputValue, setInputValue] = useState("");
 
   const { completion, complete, isLoading } = useCompletion({
-    api: async (body) => {
-      // Use Supabase Edge Function instead of direct API call
-      const { data, error } = await supabase.functions.invoke('generate-ai-completion', {
-        body: JSON.parse(body)
-      });
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return new Response(data.generatedText, {
-        headers: { 'Content-Type': 'text/plain' }
-      });
-    },
+    api: "/api/generate",
     onResponse: (response) => {
       if (response.status === 429) {
         toast.error("You have reached your request limit for the day.");

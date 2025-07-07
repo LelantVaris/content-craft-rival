@@ -1,3 +1,4 @@
+
 import {
   TiptapImage,
   TiptapLink,
@@ -12,8 +13,18 @@ import {
   Twitter,
   TextStyle,
   AIHighlight,
+  CharacterCount,
+  CodeBlockLowlight,
+  Color,
+  CustomKeymap,
+  GlobalDragHandle,
+  HighlightExtension,
+  MarkdownExtension,
+  Mathematics,
+  UploadImagesPlugin,
 } from "novel";
 import { cx } from "class-variance-authority";
+import { common, createLowlight } from "lowlight";
 
 // You can overwrite the placeholder with your own configuration
 const placeholder = Placeholder;
@@ -28,7 +39,16 @@ const tiptapLink = TiptapLink.configure({
 
 const tiptapImage = TiptapImage.extend({
   addProseMirrorPlugins() {
-    return [];
+    return [
+      UploadImagesPlugin({
+        imageClass: cx("opacity-40 rounded-lg border border-stone-200"),
+      }),
+    ];
+  },
+}).configure({
+  allowBase64: true,
+  HTMLAttributes: {
+    class: cx("rounded-lg border border-muted"),
   },
 });
 
@@ -46,7 +66,7 @@ const taskList = TaskList.configure({
 
 const taskItem = TaskItem.configure({
   HTMLAttributes: {
-    class: cx("flex items-start my-4"),
+    class: cx("flex gap-2 items-start my-4"),
   },
   nested: true,
 });
@@ -80,7 +100,7 @@ const starterKit = StarterKit.configure({
   },
   codeBlock: {
     HTMLAttributes: {
-      class: cx("rounded-sm bg-muted border p-5 font-mono font-medium"),
+      class: cx("rounded-md bg-muted text-muted-foreground border p-5 font-mono font-medium"),
     },
   },
   code: {
@@ -97,23 +117,50 @@ const starterKit = StarterKit.configure({
   gapcursor: false,
 });
 
+const codeBlockLowlight = CodeBlockLowlight.configure({
+  lowlight: createLowlight(common),
+});
+
 const youtube = Youtube.configure({
   HTMLAttributes: {
     class: cx("rounded-lg border border-muted"),
   },
+  inline: false,
 });
 
 const twitter = Twitter.configure({
   HTMLAttributes: {
-    class: cx("rounded-lg border border-muted"),
+    class: cx("not-prose"),
+  },
+  inline: false,
+});
+
+const mathematics = Mathematics.configure({
+  HTMLAttributes: {
+    class: cx("text-foreground rounded p-1 hover:bg-accent cursor-pointer"),
+  },
+  katexOptions: {
+    throwOnError: false,
   },
 });
 
-const underline = TiptapUnderline;
+const characterCount = CharacterCount.configure();
+
+const markdownExtension = MarkdownExtension.configure({
+  html: true,
+  tightLists: true,
+  tightListClass: "tight",
+  bulletListMarker: "-",
+  linkify: false,
+  breaks: false,
+  transformPastedText: false,
+  transformCopiedText: false,
+});
 
 // Add TextStyle and AIHighlight extensions for color functionality
 const textStyle = TextStyle;
 const highlight = AIHighlight;
+const aiHighlight = AIHighlight;
 
 export const defaultExtensions = [
   starterKit,
@@ -124,9 +171,17 @@ export const defaultExtensions = [
   taskList,
   taskItem,
   horizontalRule,
-  underline,
+  aiHighlight,
+  codeBlockLowlight,
   youtube,
   twitter,
+  mathematics,
+  characterCount,
+  TiptapUnderline,
+  markdownExtension,
+  HighlightExtension,
   textStyle,
-  highlight,
+  Color,
+  CustomKeymap,
+  GlobalDragHandle,
 ];
