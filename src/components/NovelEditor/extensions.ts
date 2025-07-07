@@ -8,6 +8,9 @@ import {
   HorizontalRule,
   StarterKit,
   Placeholder,
+  TiptapUnderline,
+  Youtube,
+  Twitter,
 } from "novel";
 import { cx } from "class-variance-authority";
 
@@ -19,6 +22,18 @@ const tiptapLink = TiptapLink.configure({
     class: cx(
       "text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer",
     ),
+  },
+});
+
+const tiptapImage = TiptapImage.extend({
+  addProseMirrorPlugins() {
+    return [];
+  },
+});
+
+const updatedImage = UpdatedImage.configure({
+  HTMLAttributes: {
+    class: cx("rounded-lg border border-muted"),
   },
 });
 
@@ -81,13 +96,30 @@ const starterKit = StarterKit.configure({
   gapcursor: false,
 });
 
+const youtube = Youtube.configure({
+  HTMLAttributes: {
+    class: cx("rounded-lg border border-muted"),
+  },
+});
+
+const twitter = Twitter.configure({
+  HTMLAttributes: {
+    class: cx("rounded-lg border border-muted"),
+  },
+});
+
+const underline = TiptapUnderline;
+
 export const defaultExtensions = [
   starterKit,
   placeholder,
   tiptapLink,
-  TiptapImage,
-  UpdatedImage,
+  tiptapImage,
+  updatedImage,
   taskList,
   taskItem,
   horizontalRule,
+  underline,
+  youtube,
+  twitter,
 ];

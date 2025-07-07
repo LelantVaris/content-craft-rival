@@ -51,7 +51,12 @@ function testCode() {
 
 ---
 
-Testing horizontal rules and various formatting options.`;
+Testing horizontal rules and various formatting options.
+
+### Task List Testing:
+- [ ] Incomplete task
+- [x] Completed task
+- [ ] Another incomplete task`;
     
     setContent(sampleContent);
     setWordCount(sampleContent.split(/\s+/).filter(word => word.length > 0).length);
@@ -63,7 +68,7 @@ Testing horizontal rules and various formatting options.`;
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-gray-900">Novel Editor Test Page</h1>
-          <p className="text-gray-600">Testing Novel editor integration with Vite</p>
+          <p className="text-gray-600">Testing Novel editor integration with enhanced features</p>
         </div>
 
         {/* Stats */}
@@ -135,16 +140,19 @@ Testing horizontal rules and various formatting options.`;
                 <Separator />
 
                 <div>
-                  <h4 className="font-semibold mb-2">Features to Test:</h4>
+                  <h4 className="font-semibold mb-2">Enhanced Features to Test:</h4>
                   <ul className="text-sm space-y-1 list-disc list-inside">
-                    <li>Text formatting (bold, italic, strikethrough)</li>
+                    <li>Text formatting (bold, italic, strikethrough, underline)</li>
                     <li>Headings (H1, H2, H3)</li>
-                    <li>Lists (ordered and unordered)</li>
+                    <li>Lists (ordered, unordered, and task lists)</li>
                     <li>Code blocks and inline code</li>
                     <li>Blockquotes</li>
                     <li>Horizontal rules</li>
-                    <li>Bubble menu (select text to see)</li>
-                    <li>Slash commands (type / to see)</li>
+                    <li>Image upload (type "/" and select "Image")</li>
+                    <li>YouTube embeds (type "/" and select "Youtube")</li>
+                    <li>Twitter embeds (type "/" and select "Twitter")</li>
+                    <li>Bubble menu (select text to see formatting options)</li>
+                    <li>Slash commands (type "/" to see all options)</li>
                   </ul>
                 </div>
               </div>
@@ -158,7 +166,7 @@ Testing horizontal rules and various formatting options.`;
             <CardTitle>Test Instructions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <h4 className="font-semibold mb-2">Basic Testing:</h4>
                 <ul className="space-y-1 list-disc list-inside">
@@ -170,12 +178,23 @@ Testing horizontal rules and various formatting options.`;
               </div>
               
               <div>
-                <h4 className="font-semibold mb-2">Advanced Testing:</h4>
+                <h4 className="font-semibold mb-2">Slash Commands:</h4>
                 <ul className="space-y-1 list-disc list-inside">
-                  <li>Select text to test bubble menu</li>
-                  <li>Type "/" to test slash commands</li>
+                  <li>Type "/" to open command palette</li>
+                  <li>Test text, headings, lists, quotes</li>
+                  <li>Test code blocks and task lists</li>
+                  <li>Test image upload functionality</li>
+                  <li>Test YouTube and Twitter embeds</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Bubble Menu:</h4>
+                <ul className="space-y-1 list-disc list-inside">
+                  <li>Select text to show bubble menu</li>
+                  <li>Test bold, italic, underline</li>
+                  <li>Test strikethrough and code</li>
                   <li>Test keyboard shortcuts (Ctrl+B, Ctrl+I)</li>
-                  <li>Test drag and drop functionality</li>
                 </ul>
               </div>
             </div>
