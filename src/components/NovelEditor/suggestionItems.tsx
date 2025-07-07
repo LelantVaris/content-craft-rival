@@ -7,10 +7,11 @@ import {
   Heading3,
   List,
   ListOrdered,
+  MessageSquarePlus,
   Text,
   TextQuote,
 } from "lucide-react";
-import { createSuggestionItems } from "novel";
+import { createSuggestionItems } from "novel/extensions";
 
 export const suggestionItems = createSuggestionItems([
   {
