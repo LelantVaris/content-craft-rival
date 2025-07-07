@@ -1,4 +1,3 @@
-
 import {
   TiptapImage,
   TiptapLink,
@@ -12,7 +11,7 @@ import {
   Youtube,
   Twitter,
   TextStyle,
-  Highlight,
+  AIHighlight,
 } from "novel";
 import { cx } from "class-variance-authority";
 
@@ -112,9 +111,9 @@ const twitter = Twitter.configure({
 
 const underline = TiptapUnderline;
 
-// Add TextStyle and Highlight extensions for color functionality
+// Add TextStyle and AIHighlight extensions for color functionality
 const textStyle = TextStyle;
-const highlight = Highlight.configure({
+const highlight = AIHighlight.configure({
   multicolor: true,
 });
 

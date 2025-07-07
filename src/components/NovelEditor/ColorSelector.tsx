@@ -102,7 +102,7 @@ export const ColorSelector = ({ open, onOpenChange }: ColorSelectorProps) => {
   );
 
   const activeHighlightItem = HIGHLIGHT_COLORS.find(({ color }) =>
-    editor.isActive("highlight", { color })
+    editor.isActive("aiHighlight", { color })
   );
 
   return (
@@ -175,7 +175,7 @@ export const ColorSelector = ({ open, onOpenChange }: ColorSelectorProps) => {
                 </div>
                 <span>{name}</span>
               </div>
-              {editor.isActive("highlight", { color }) && <Check className="h-4 w-4" />}
+              {editor.isActive("aiHighlight", { color }) && <Check className="h-4 w-4" />}
             </EditorBubbleItem>
           ))}
         </div>
