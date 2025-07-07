@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import CrawlerTest from "./pages/CrawlerTest";
+import NovelEditorTest from "./pages/NovelEditorTest";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -41,6 +42,7 @@ function AppContent() {
             <Route path="/article/editor" element={<ProtectedRoute><ArticleEditorRoute /></ProtectedRoute>} />
             <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
             <Route path="/crawler-test" element={<ProtectedRoute><CrawlerTest /></ProtectedRoute>} />
+            <Route path="/novel-editor-test" element={<ProtectedRoute><NovelEditorTest /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </SidebarInset>
