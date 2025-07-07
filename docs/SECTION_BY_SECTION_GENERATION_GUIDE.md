@@ -7,9 +7,10 @@ This guide outlines the complete migration from edge functions to AI SDK for sec
 ## 🎯 Implementation Goals
 - [ ] Replace single large article generation with section-by-section approach
 - [ ] Migrate from Supabase Edge Functions to AI SDK
-- [ ] Integrate Novel editor for Notion-style WYSIWYG editing
+- [ ] Integrate Novel editor as primary WYSIWYG editor throughout the app
 - [ ] Implement progressive content saving and error recovery
 - [ ] Add section-level retry and regeneration capabilities
+- [ ] Replace full-article generation completely
 
 ## 📋 Phase 1: Database Schema Updates
 - [ ] Add `sections` JSONB field to articles table
@@ -49,28 +50,328 @@ npm install novel @tiptap/react @tiptap/starter-kit
 - [ ] Implement streaming for individual sections
 - [ ] Add retry mechanism for failed sections
 
-## 📋 Phase 3: Frontend Components
+## 📋 Phase 3: Novel Editor Integration (Primary Editor)
 
-### 3.1 Novel Editor Integration
-- [ ] Replace ArticlePreview with Novel editor
-- [ ] Configure editor with custom styling
+### 3.1 Novel Editor Setup and Configuration
+
+#### Install Dependencies
+```bash
+npm install novel @tiptap/react @tiptap/starter-kit class-variance-authority
+```
+
+#### Default Extensions Configuration
+```typescript
+// extensions.ts
+import {
+  TiptapImage,
+  TiptapLink,
+  UpdatedImage,
+  TaskList,
+  TaskItem,
+  HorizontalRule,
+  StarterKit,
+  Placeholder,
+} from "novel/extensions";
+import { cx } from "class-variance-authority";
+
+// You can overwrite the placeholder with your own configuration
+const placeholder = Placeholder;
+
+const tiptapLink = TiptapLink.configure({
+  HTMLAttributes: {
+    class: cx(
+      "text-muted-foreground underline underline-offset-[3px] hover:text-primary transition-colors cursor-pointer",
+    ),
+  },
+});
+
+const taskList = TaskList.configure({
+  HTMLAttributes: {
+    class: cx("not-prose pl-2"),
+  },
+});
+
+const taskItem = TaskItem.configure({
+  HTMLAttributes: {
+    class: cx("flex items-start my-4"),
+  },
+  nested: true,
+});
+
+const horizontalRule = HorizontalRule.configure({
+  HTMLAttributes: {
+    class: cx("mt-4 mb-6 border-t border-muted-foreground"),
+  },
+});
+
+const starterKit = StarterKit.configure({
+  bulletList: {
+    HTMLAttributes: {
+      class: cx("list-disc list-outside leading-3 -mt-2"),
+    },
+  },
+  orderedList: {
+    HTMLAttributes: {
+      class: cx("list-decimal list-outside leading-3 -mt-2"),
+    },
+  },
+  listItem: {
+    HTMLAttributes: {
+      class: cx("leading-normal -mb-2"),
+    },
+  },
+  blockquote: {
+    HTMLAttributes: {
+      class: cx("border-l-4 border-primary"),
+    },
+  },
+  codeBlock: {
+    HTMLAttributes: {
+      class: cx("rounded-sm bg-muted border p-5 font-mono font-medium"),
+    },
+  },
+  code: {
+    HTMLAttributes: {
+      class: cx("rounded-md bg-muted px-1.5 py-1 font-mono font-medium"),
+      spellcheck: "false",
+    },
+  },
+  horizontalRule: false,
+  dropcursor: {
+    color: "#DBEAFE",
+    width: 4,
+  },
+  gapcursor: false,
+});
+
+export const defaultExtensions = [
+  starterKit,
+  placeholder,
+  tiptapLink,
+  TiptapImage,
+  UpdatedImage,
+  taskList,
+  taskItem,
+  horizontalRule,
+];
+```
+
+#### Tailwind Intellisense Configuration
+Add to VS Code settings.json:
+```json
+"tailwindCSS.experimental.classRegex": [
+  ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+]
+```
+
+#### Slash Command Configuration
+```typescript
+// suggestionItems.tsx
+import {
+  CheckSquare,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  MessageSquarePlus,
+  Text,
+  TextQuote,
+} from "lucide-react";
+import { createSuggestionItems } from "novel/extensions";
+import { Command, renderItems } from "novel/extensions";
+
+export const suggestionItems = createSuggestionItems([
+  {
+    title: "Send Feedback",
+    description: "Let us know how we can improve.",
+    icon: <MessageSquarePlus size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      window.open("/feedback", "_blank");
+    },
+  },
+  {
+    title: "Text",
+    description: "Just start typing with plain text.",
+    searchTerms: ["p", "paragraph"],
+    icon: <Text size={18} />,
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleNode("paragraph", "paragraph")
+        .run();
+    },
+  },
+  {
+    title: "To-do List",
+    description: "Track tasks with a to-do list.",
+    searchTerms: ["todo", "task", "list", "check", "checkbox"],
+    icon: <CheckSquare size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).toggleTaskList().run();
+    },
+  },
+  {
+    title: "Heading 1",
+    description: "Big section heading.",
+    searchTerms: ["title", "big", "large"],
+    icon: <Heading1 size={18} />,
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 1 })
+        .run();
+    },
+  },
+  {
+    title: "Heading 2",
+    description: "Medium section heading.",
+    searchTerms: ["subtitle", "medium"],
+    icon: <Heading2 size={18} />,
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 2 })
+        .run();
+    },
+  },
+  {
+    title: "Heading 3",
+    description: "Small section heading.",
+    searchTerms: ["subtitle", "small"],
+    icon: <Heading3 size={18} />,
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode("heading", { level: 3 })
+        .run();
+    },
+  },
+  {
+    title: "Bullet List",
+    description: "Create a simple bullet list.",
+    searchTerms: ["unordered", "point"],
+    icon: <List size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).toggleBulletList().run();
+    },
+  },
+  {
+    title: "Numbered List",
+    description: "Create a list with numbering.",
+    searchTerms: ["ordered"],
+    icon: <ListOrdered size={18} />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+    },
+  },
+  {
+    title: "Quote",
+    description: "Capture a quote.",
+    searchTerms: ["blockquote"],
+    icon: <TextQuote size={18} />,
+    command: ({ editor, range }) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .toggleNode("paragraph", "paragraph")
+        .toggleBlockquote()
+        .run(),
+  },
+  {
+    title: "Code",
+    description: "Capture a code snippet.",
+    searchTerms: ["codeblock"],
+    icon: <Code size={18} />,
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+  },
+]);
+
+export const slashCommand = Command.configure({
+  suggestion: {
+    items: () => suggestionItems,
+    render: renderItems,
+  },
+});
+```
+
+#### Bubble Menu Configuration
+```typescript
+// editor.tsx
+import { NodeSelector } from "./selectors/node-selector";
+import { LinkSelector } from "./selectors/link-selector";
+import { ColorSelector } from "./selectors/color-selector";
+import { TextButtons } from "./selectors/text-buttons";
+
+// In your editor component:
+<EditorContent>
+  <EditorBubble
+    tippyOptions={{
+      placement: openAI ? "bottom-start" : "top",
+    }}
+    className='flex w-fit max-w-[90vw] overflow-hidden rounded border border-muted bg-background shadow-xl'>
+      <NodeSelector open={openNode} onOpenChange={setOpenNode} />
+      <LinkSelector open={openLink} onOpenChange={setOpenLink} />
+      <TextButtons />
+      <ColorSelector open={openColor} onOpenChange={setOpenColor} />
+  </EditorBubble>
+</EditorContent>
+```
+
+#### Slash Command UI Implementation
+```typescript
+// Command palette UI
+<EditorContent>
+  <EditorCommand className='z-50 h-auto max-h-[330px] w-72 overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all'>
+    <EditorCommandEmpty className='px-2 text-muted-foreground'>No results</EditorCommandEmpty>
+    <EditorCommandList>
+      {suggestionItems.map((item) => (
+        <EditorCommandItem
+          value={item.title}
+          onCommand={(val) => item.command(val)}
+          className={`flex w-full items-center space-x-2 rounded-md px-2 py-1 text-left text-sm hover:bg-accent aria-selected:bg-accent `}
+          key={item.title}>
+          <div className='flex h-10 w-10 items-center justify-center rounded-md border border-muted bg-background'>
+            {item.icon}
+          </div>
+          <div>
+            <p className='font-medium'>{item.title}</p>
+            <p className='text-xs text-muted-foreground'>{item.description}</p>
+          </div>
+        </EditorCommandItem>
+      ))}
+    </EditorCommandList>
+  </EditorCommand>
+</EditorContent>
+```
+
+### 3.2 Complete Novel Editor Setup
+- [ ] Create isolated Novel editor component
+- [ ] Configure all extensions and plugins
 - [ ] Add section-level editing capabilities
+- [ ] Implement real-time collaboration features
 
-### 3.2 Progress UI Components
-- [ ] Create section progress indicator
-- [ ] Add per-section retry buttons
-- [ ] Implement real-time status updates
+### 3.3 App-wide Novel Integration
+- [ ] Replace ArticlePreview with Novel editor
+- [ ] Replace all text editing components with Novel
+- [ ] Update Article Studio to use Novel
+- [ ] Update Article Editor to use Novel
 
-### 3.3 Section Management
-- [ ] Add section reordering capabilities
-- [ ] Implement section deletion/regeneration
-- [ ] Add section-level word count tracking
+## 📋 Phase 4: Exact Prompt Preservation
 
-## 🔧 Technical Implementation Details
-
-### PVOD Prompt Templates
-
-#### Main Article Context Prompt
+### 4.1 Main Article Context Prompt (PRESERVED EXACTLY)
 ```typescript
 const buildArticleContextPrompt = (params: ArticleParams) => `
 You are an expert content writer creating high-quality articles following the PVOD (Personality, Value, Opinion, Direct) framework.
@@ -120,7 +421,7 @@ ${params.outline.map((section, index) =>
 `;
 ```
 
-#### Section Generation Prompt
+### 4.2 Section Generation Prompt (PRESERVED EXACTLY)
 ```typescript
 const buildSectionPrompt = (
   articleContext: string,
@@ -135,9 +436,10 @@ ${articleContext}
 Generate Section ${sectionIndex + 1}: "${sectionData.title}"
 
 ### Section Requirements:
-- **Word Count Target**: ${Math.floor(4000 / outline.length)} words (±50 words acceptable)
+- **Word Count Target**: ${getWeightedWordCount(sectionData, sectionIndex)} words (±50 words acceptable)
 - **Section Description**: ${sectionData.content}
 - **Position**: Section ${sectionIndex + 1} of ${outline.length}
+- **Section Importance**: ${getSectionImportance(sectionData)}
 
 ### Context for Continuity:
 ${previousContent ? `
@@ -175,9 +477,41 @@ Generate ONLY the content for Section ${sectionIndex + 1}. Do not include the se
 `;
 ```
 
-### AI SDK Implementation Examples
+### 4.3 Weighted Word Count Distribution
+```typescript
+// Helper function for weighted section word counts based on importance
+const getWeightedWordCount = (section: OutlineSection, index: number, totalWords: number = 4000) => {
+  const importance = getSectionImportance(section);
+  const basePerSection = totalWords / outline.length;
+  
+  switch (importance) {
+    case 'high': return Math.floor(basePerSection * 1.3);
+    case 'medium': return Math.floor(basePerSection * 1.0);
+    case 'low': return Math.floor(basePerSection * 0.7);
+    default: return Math.floor(basePerSection);
+  }
+};
 
-#### Section Generation Client
+const getSectionImportance = (section: OutlineSection): 'high' | 'medium' | 'low' => {
+  // Introduction and conclusion are high importance
+  if (section.title.toLowerCase().includes('introduction') || 
+      section.title.toLowerCase().includes('conclusion')) {
+    return 'high';
+  }
+  
+  // Main content sections are medium
+  if (section.content.length > 100) {
+    return 'medium';
+  }
+  
+  // Short sections are low importance
+  return 'low';
+};
+```
+
+## 📋 Phase 5: AI SDK Implementation
+
+### 5.1 Section Generation Client
 ```typescript
 // Client-side AI integration
 import { generateText } from 'ai';
@@ -207,7 +541,7 @@ export async function generateSection(
 }
 ```
 
-#### Streaming Section Generation
+### 5.2 Streaming Section Generation
 ```typescript
 // Streaming implementation for real-time updates
 import { streamText } from 'ai';
@@ -237,76 +571,76 @@ export async function streamSectionGeneration(
 }
 ```
 
-### Novel Editor Configuration
-
-#### Basic Editor Setup
+### 5.3 Complete Section-by-Section Hook
 ```typescript
-// Novel editor configuration
-import { EditorRoot, EditorContent } from 'novel';
-import { defaultExtensions } from './extensions';
+export function useSectionGeneration() {
+  const [currentSection, setCurrentSection] = useState(0);
+  const [sections, setSections] = useState<GeneratedSection[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-export function ArticleEditor({ content, onChange }: EditorProps) {
-  return (
-    <EditorRoot>
-      <EditorContent
-        initialContent={content}
-        extensions={defaultExtensions}
-        onUpdate={({ editor }) => {
-          onChange(editor.getHTML());
-        }}
-        className="min-h-[600px] w-full"
-        editorProps={{
-          attributes: {
-            class: "prose prose-lg max-w-none focus:outline-none",
-          },
-        }}
-      />
-    </EditorRoot>
-  );
+  const generateAllSections = async (params: ArticleParams) => {
+    setIsGenerating(true);
+    const articleContext = buildArticleContextPrompt(params);
+    
+    for (let i = 0; i < params.outline.length; i++) {
+      setCurrentSection(i);
+      const previousContent = sections[i - 1]?.content || '';
+      
+      try {
+        const content = await streamSectionGeneration(
+          articleContext,
+          params.outline[i],
+          i,
+          (partialContent) => {
+            // Update section in real-time
+            setSections(prev => {
+              const updated = [...prev];
+              updated[i] = { ...params.outline[i], content: partialContent };
+              return updated;
+            });
+          }
+        );
+        
+        // Save completed section to database
+        await saveSectionToDatabase(params.articleId, i, content);
+        
+        setProgress(((i + 1) / params.outline.length) * 100);
+      } catch (error) {
+        console.error(`Failed to generate section ${i}:`, error);
+        // Implement retry logic here
+      }
+    }
+    
+    setIsGenerating(false);
+  };
+
+  return {
+    generateAllSections,
+    currentSection,
+    sections,
+    isGenerating,
+    progress,
+    retrySection: (index: number) => {
+      // Implement single section retry
+    }
+  };
 }
 ```
 
-#### Custom Extensions for Sections
-```typescript
-// Section-aware editor extensions
-import { Node } from '@tiptap/core';
+## 📋 Phase 6: Error Handling & Recovery
 
-export const SectionNode = Node.create({
-  name: 'section',
-  content: 'block+',
-  group: 'block',
-  
-  addAttributes() {
-    return {
-      sectionId: {
-        default: null,
-      },
-      isGenerating: {
-        default: false,
-      },
-    };
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ['div', { 
-      ...HTMLAttributes, 
-      class: 'section-block border-l-4 border-blue-200 pl-4 mb-6' 
-    }, 0];
-  },
-});
-```
-
-## 📋 Phase 4: Error Handling & Recovery
-
-### 4.1 Section-Level Error Recovery
+### 6.1 Section-Level Error Recovery
 - [ ] Implement automatic retry for failed sections
 - [ ] Add manual retry buttons for each section
 - [ ] Store partial progress in database
+- [ ] Resume generation from last completed section
 
-### 4.2 User Experience Enhancements
+### 6.2 User Experience Enhancements
 - [ ] Show generation progress per section
 - [ ] Allow editing while other sections generate
 - [ ] Implement auto-save for completed sections
+- [ ] Add section reordering in Novel editor
 
 ## 🔗 API References
 
@@ -319,7 +653,19 @@ export const SectionNode = Node.create({
 - `EditorRoot` - Main editor wrapper
 - `EditorContent` - Editable content area
 - `EditorCommand` - Command palette integration
+- `EditorBubble` - Bubble menu for formatting
+- `EditorCommandItem` - Individual command items
 - Custom extensions for enhanced functionality
+
+### Novel Extensions Used
+- `StarterKit` - Basic editing functionality
+- `TiptapLink` - Link handling with custom styling
+- `TiptapImage` - Image embedding
+- `UpdatedImage` - Enhanced image features
+- `TaskList` & `TaskItem` - Todo functionality
+- `HorizontalRule` - Divider elements
+- `Placeholder` - Placeholder text
+- `Command` - Slash command system
 
 ### Supabase Integration
 - Real-time updates for collaborative editing
@@ -329,28 +675,45 @@ export const SectionNode = Node.create({
 ## ✅ Implementation Checklist
 
 ### Backend (AI SDK Migration)
-- [ ] Remove existing edge functions
+- [ ] Remove existing edge functions completely
 - [ ] Set up AI SDK with OpenAI provider
 - [ ] Implement section generation logic
 - [ ] Add error handling and retry mechanisms
+- [ ] Add weighted word count distribution
 
-### Frontend (Novel Integration)
-- [ ] Install and configure Novel editor
-- [ ] Create section-aware editing interface
-- [ ] Implement progress tracking UI
+### Novel Editor (Primary Editor Integration)
+- [ ] Create isolated Novel editor component
+- [ ] Install and configure all Novel extensions
+- [ ] Set up slash commands and bubble menu
+- [ ] Configure Tailwind integration
+- [ ] Test all editor functionality
+
+### Frontend (Complete Novel Integration)
+- [ ] Replace ArticlePreview with Novel editor
+- [ ] Update Article Studio to use Novel
+- [ ] Update Article Editor to use Novel
+- [ ] Implement section-aware editing interface
+- [ ] Add progress tracking UI
 - [ ] Add retry buttons and status indicators
 
 ### Database & State Management
-- [ ] Update articles table schema
+- [ ] Update articles table schema (sections, progress tracking)
 - [ ] Implement section-based storage
 - [ ] Add progress tracking fields
 - [ ] Create recovery mechanisms
+
+### App-wide Refactoring
+- [ ] Replace all text editing components with Novel
+- [ ] Update all markdown preview components
+- [ ] Ensure consistent editor experience
+- [ ] Test Novel editor across all use cases
 
 ### Testing & Validation
 - [ ] Test section generation flow
 - [ ] Validate PVOD prompt effectiveness
 - [ ] Ensure proper error recovery
-- [ ] Test editor integration
+- [ ] Test Novel editor integration
+- [ ] Validate weighted word count distribution
 
 ## 📊 Expected Benefits
 
@@ -361,29 +724,57 @@ export const SectionNode = Node.create({
 - Reduced timeout issues
 
 ### User Experience
-- Real-time content preview
-- Notion-style editing experience
+- Real-time content preview with Novel editor
+- Notion-style editing experience throughout app
 - Section-level control and editing
 - Progressive article building
+- Consistent WYSIWYG experience
 
 ### Maintainability
 - Simpler client-side AI integration
 - Reduced edge function complexity
 - Better error handling and debugging
 - More modular architecture
+- Unified editing experience
 
 ## 🚀 Migration Strategy
 
 1. **Start with Database Schema** - Add sections support
-2. **Implement AI SDK Integration** - Replace edge functions
-3. **Add Novel Editor** - Replace current preview
-4. **Enhanced UX Features** - Progress tracking, retries
-5. **Testing & Optimization** - Validate complete flow
+2. **Create Isolated Novel Component** - Build and test Novel editor
+3. **Implement AI SDK Integration** - Replace edge functions
+4. **Add Novel Throughout App** - Replace all text editing
+5. **Enhanced UX Features** - Progress tracking, retries
+6. **Testing & Optimization** - Validate complete flow
 
-## Questions for Implementation
+## ❓ Implementation Questions
 
-1. Should we maintain backward compatibility with existing articles?
-2. What's the preferred section word count distribution?
-3. Should sections be editable independently during generation?
-4. How should we handle section reordering in the editor?
-5. What Novel editor extensions should we include by default?
+### Novel Editor Integration
+1. Should we maintain backward compatibility with existing markdown content?
+2. How should we handle the conversion from markdown to Novel's JSON structure?
+3. What's the preferred approach for handling collaborative editing conflicts?
+4. Should sections be editable independently during generation?
+5. How should we handle section reordering in the Novel editor?
+
+### Technical Implementation
+1. Should we implement section generation as a queue system?
+2. What's the preferred error recovery strategy for failed sections?
+3. How should we handle partial content when switching between sections?
+4. Should we implement real-time collaboration features immediately?
+
+### User Experience
+1. Should users be able to edit generated sections immediately?
+2. How should we handle conflicts between user edits and ongoing generation?
+3. What visual indicators should we use for generation progress?
+4. Should we allow users to pause/resume generation?
+
+### Database and State Management
+1. Should we store intermediate generation states?
+2. How should we handle version control for edited sections?
+3. What's the preferred approach for auto-saving during generation?
+4. Should we implement section-level revision history?
+
+### Migration Strategy
+1. Should we run old and new systems in parallel during migration?
+2. How should we handle existing articles during the transition?
+3. What's the rollback strategy if issues arise?
+4. Should we migrate users gradually or all at once?
