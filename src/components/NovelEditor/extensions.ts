@@ -11,6 +11,8 @@ import {
   TiptapUnderline,
   Youtube,
   Twitter,
+  TextStyle,
+  Highlight,
 } from "novel";
 import { cx } from "class-variance-authority";
 
@@ -110,6 +112,12 @@ const twitter = Twitter.configure({
 
 const underline = TiptapUnderline;
 
+// Add TextStyle and Highlight extensions for color functionality
+const textStyle = TextStyle;
+const highlight = Highlight.configure({
+  multicolor: true,
+});
+
 export const defaultExtensions = [
   starterKit,
   placeholder,
@@ -122,4 +130,6 @@ export const defaultExtensions = [
   underline,
   youtube,
   twitter,
+  textStyle,
+  highlight,
 ];

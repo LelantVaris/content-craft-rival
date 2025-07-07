@@ -7,16 +7,17 @@ import {
   EditorCommandList,
   EditorCommandItem,
   EditorBubble,
-  EditorBubbleItem,
   type JSONContent 
 } from "novel";
 import { useState, useCallback } from "react";
 import { defaultExtensions } from "./NovelEditor/extensions";
 import { slashCommand } from "./NovelEditor/slashCommand";
 import { suggestionItems } from "./NovelEditor/suggestionItems";
-import { Button } from "@/components/ui/button";
+import { NodeSelector } from "./NovelEditor/NodeSelector";
+import { LinkSelector } from "./NovelEditor/LinkSelector";
+import { TextButtons } from "./NovelEditor/TextButtons";
+import { ColorSelector } from "./NovelEditor/ColorSelector";
 import { Separator } from "@/components/ui/separator";
-import { Bold, Italic, Underline, Strikethrough, Code } from "lucide-react";
 
 interface NovelEditorProps {
   content: string;
@@ -26,6 +27,9 @@ interface NovelEditorProps {
 
 export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) => {
   const [saveStatus, setSaveStatus] = useState("Saved");
+  const [openNode, setOpenNode] = useState(false);
+  const [openColor, setOpenColor] = useState(false);
+  const [openLink, setOpenLink] = useState(false);
 
   // Combine default extensions with slash command
   const extensions = [...defaultExtensions, slashCommand];
@@ -127,64 +131,14 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
             tippyOptions={{
               placement: "top",
             }}
-            className="flex w-fit max-w-[90vw] overflow-hidden rounded-md border border-muted bg-background shadow-xl"
+            className="flex w-fit max-w-[90vw] overflow-hidden rounded border border-muted bg-background shadow-xl"
           >
-            <EditorBubbleItem
-              onSelect={(editor) => {
-                editor.chain().focus().toggleBold().run();
-              }}
-              className="p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Button variant="ghost" size="sm">
-                <Bold className="h-4 w-4" />
-              </Button>
-            </EditorBubbleItem>
-
-            <EditorBubbleItem
-              onSelect={(editor) => {
-                editor.chain().focus().toggleItalic().run();
-              }}
-              className="p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Button variant="ghost" size="sm">
-                <Italic className="h-4 w-4" />
-              </Button>
-            </EditorBubbleItem>
-
-            <EditorBubbleItem
-              onSelect={(editor) => {
-                editor.chain().focus().toggleUnderline().run();
-              }}
-              className="p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Button variant="ghost" size="sm">
-                <Underline className="h-4 w-4" />
-              </Button>
-            </EditorBubbleItem>
-
-            <EditorBubbleItem
-              onSelect={(editor) => {
-                editor.chain().focus().toggleStrike().run();
-              }}
-              className="p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Button variant="ghost" size="sm">
-                <Strikethrough className="h-4 w-4" />
-              </Button>
-            </EditorBubbleItem>
-
+            <NodeSelector open={openNode} onOpenChange={setOpenNode} />
+            <LinkSelector open={openLink} onOpenChange={setOpenLink} />
             <Separator orientation="vertical" />
-
-            <EditorBubbleItem
-              onSelect={(editor) => {
-                editor.chain().focus().toggleCode().run();
-              }}
-              className="p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Button variant="ghost" size="sm">
-                <Code className="h-4 w-4" />
-              </Button>
-            </EditorBubbleItem>
+            <TextButtons />
+            <Separator orientation="vertical" />
+            <ColorSelector open={openColor} onOpenChange={setOpenColor} />
           </EditorBubble>
         </EditorContent>
       </EditorRoot>
