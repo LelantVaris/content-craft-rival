@@ -2,79 +2,83 @@
 # Article Studio Master Plan
 
 ## Project Overview
-**Goal**: Create a modern 3-step Article Studio with web research, simultaneous editing, and SEO optimization  
-**Current Status**: ✅ Phase 2 Complete → 🔄 Phase 3 (AI SDK Implementation) → Phase 1 UI Fixes  
-**Target**: Complete MVP with clean UI, real-time streaming and enhanced UX
+**Goal:** Create a modern 3-step Article Studio with web research, simultaneous editing, and SEO optimization  
+**Current Status:** ✅ Phase 2 Complete → 🔄 Phase 3 (AI SDK Implementation) → Phase 1 UI Fixes  
+**Target:** Complete MVP with clean UI, real-time streaming and enhanced UX
 
 ## Strategic Vision
 
 ### Core Experience ✅ FOUNDATION COMPLETE
 Transform article creation from a basic form-based approach to an AI-powered, interactive experience with:
-- [x] **3-Step Workflow**: Title → Outline → Article Generation ✅ IMPLEMENTED
-- [x] **Clean Dual-Panel Layout**: 40/60 resizable panels without headers or visual separators ✅ COMPLETED
-- [x] **Progressive Content Display**: Empty states, title selection, outline creation, article preview ✅ IMPLEMENTED
-- [x] **Conditional Statistics**: Stats/SEO/Publishing shown only when relevant ✅ COMPLETED
-- [ ] **Real-time Streaming**: Section-by-section content generation with progress indicators 🔄 IN PROGRESS
-- [ ] **Simultaneous Editing**: Users can edit while content streams using Novel WYSIWYG editor
-- [ ] **Web Research Integration**: Enhanced content quality through automated research
-- [x] **SEO Optimization**: Built-in SEO scoring and keyword optimization ✅ FOUNDATION READY
+- [x] **3-Step Workflow:** Title → Outline → Article Generation ✅ IMPLEMENTED
+- [x] **Clean Dual-Panel Layout:** 40/60 resizable panels without headers or visual separators ✅ COMPLETED
+- [x] **Progressive Content Display:** Empty states, title selection, outline creation, article preview ✅ IMPLEMENTED
+- [x] **Conditional Statistics:** Stats/SEO/Publishing shown only when relevant ✅ COMPLETED
+- [ ] **Real-time Streaming:** Section-by-section content generation with progress indicators 🔄 IN PROGRESS
+- [ ] **Simultaneous Editing:** Users can edit while content streams using Novel WYSIWYG editor
+- [ ] **Web Research Integration:** Enhanced content quality through automated research
+- [x] **SEO Optimization:** Built-in SEO scoring and keyword optimization ✅ FOUNDATION READY
 
 ### Key Design Principles ✅ COMPLETED
-- [x] **Clean Interface**: Removed panel headers and visual noise ✅ COMPLETED
-- [x] **Conditional Display**: Hide irrelevant information until needed ✅ COMPLETED
-- [x] **Progressive Disclosure**: Each step reveals appropriate content ✅ IMPLEMENTED
-- [ ] **Real-time Feedback**: Live preview and streaming content generation 🔄 NEXT PRIORITY
-- [ ] **User Control**: Ability to edit, customize, and override AI suggestions
-- [ ] **Quality Focus**: Research-backed content with SEO optimization
+- [x] **Clean Interface:** Removed panel headers and visual noise ✅ COMPLETED
+- [x] **Conditional Display:** Hide irrelevant information until needed ✅ COMPLETED
+- [x] **Progressive Disclosure:** Each step reveals appropriate content ✅ IMPLEMENTED
+- [ ] **Real-time Feedback:** Live preview and streaming content generation 🔄 NEXT PRIORITY
+- [ ] **User Control:** Ability to edit, customize, and override AI suggestions
+- [ ] **Quality Focus:** Research-backed content with SEO optimization
 
 ## Technical Architecture Decisions
 
 ### ✅ Finalized Technical Choices - IMPLEMENTED
 
 #### Layout & UI Framework ✅ ALL COMPLETED
-- [x] **Layout**: 40/60 resizable panels using `react-resizable-panels` → `src/pages/ArticleStudio.tsx`
-- [x] **Left Panel**: Step-based controls and forms (40% width) → `src/components/ArticleStudio/UnifiedControlPanel.tsx`
-- [x] **Right Panel**: Dynamic content preview area (60% width) → `src/components/ArticleStudio/LivePreviewPanel.tsx`
-- [x] **Headers**: Removed "Control Panel" and "Live Preview" headers for clean interface ✅ COMPLETED
-- [x] **Visual Separators**: No visual separator between panels, hidden resizable handle by default ✅ COMPLETED
-- [x] **Conditional Display**: Stats, SEO, and Publishing options shown only when relevant ✅ COMPLETED
-- [ ] **Editor**: Novel WYSIWYG with simultaneous editing capabilities → `src/components/NovelEditor.tsx` (EXISTS)
-- [x] **Foundation**: Fixed SidebarInset integration ✅ COMPLETED
+**Main Files:**
+- [x] **Layout:** 40/60 resizable panels using `react-resizable-panels` → `src/pages/ArticleStudio.tsx`
+- [x] **Left Panel:** Step-based controls and forms (40% width) → `src/components/ArticleStudio/UnifiedControlPanel.tsx`
+- [x] **Right Panel:** Dynamic content preview area (60% width) → `src/components/ArticleStudio/LivePreviewPanel.tsx`
+- [x] **Headers:** Removed "Control Panel" and "Live Preview" headers for clean interface ✅ COMPLETED
+- [x] **Visual Separators:** No visual separator between panels, hidden resizable handle by default ✅ COMPLETED
+- [x] **Conditional Display:** Stats, SEO, and Publishing options shown only when relevant ✅ COMPLETED
+- [ ] **Editor:** Novel WYSIWYG with simultaneous editing capabilities → `src/components/NovelEditor.tsx` (EXISTS)
+- [x] **Foundation:** Fixed SidebarInset integration ✅ COMPLETED
 
 #### Content Generation Strategy 🔄 HYBRID APPROACH DECIDED
-**Current Decision**: Hybrid approach for optimal performance and user experience
+**Current Decision:** Hybrid approach for optimal performance and user experience
 
 **✅ Keep Direct API Calls** (Speed Critical):
-- [x] **Title Generation**: `supabase/functions/generate-titles/index.ts` - Fast response needed
-- [x] **Outline Generation**: `supabase/functions/generate-outline/index.ts` - Quick structure creation
-- [x] **Keyword Generation**: `supabase/functions/generate-keywords/index.ts` - Instant suggestions
+- [x] **Title Generation:** `supabase/functions/generate-titles/index.ts` - Fast response needed
+- [x] **Outline Generation:** `supabase/functions/generate-outline/index.ts` - Quick structure creation
+- [x] **Keyword Generation:** `supabase/functions/generate-keywords/index.ts` - Instant suggestions
 
 **🔄 Convert to AI SDK** (User Experience Critical):
-- [ ] **Article Content**: `supabase/functions/generate-content-ai-sdk/index.ts` - Real-time streaming
-- [ ] **Frontend Integration**: `src/components/ArticleStudio/ContentGenerationPanel.tsx` - Use AI SDK hooks
-- [ ] **Novel Editor Streaming**: `src/components/NovelEditor.tsx` - Real-time content insertion
+- [ ] **Article Content:** `supabase/functions/generate-content-ai-sdk/index.ts` - Real-time streaming
+- [ ] **Frontend Integration:** `src/components/ArticleStudio/ContentGenerationPanel.tsx` - Use AI SDK hooks
+- [ ] **Novel Editor Streaming:** `src/components/NovelEditor.tsx` - Real-time content insertion
 
 #### Streaming Implementation Plan 🔄 IN PROGRESS
-- [ ] **Phase 1**: Fix AI SDK in `generate-content-ai-sdk` function
+**Current Files:**
+- [ ] **Phase 1:** Fix AI SDK in `generate-content-ai-sdk` function
   - [ ] Replace CDN imports causing 429 errors
   - [ ] Implement `streamText()` from AI SDK
   - [ ] Maintain PVOD prompt structure
-- [ ] **Phase 2**: Frontend streaming integration
+- [ ] **Phase 2:** Frontend streaming integration
   - [ ] Use `useChat` or `useCompletion` from AI SDK
   - [ ] Connect to Novel Editor for real-time insertion
   - [ ] Add progress indicators and status updates
 
 #### AI Integration Architecture ✅ FOUNDATION + 🔄 STREAMING
-- [x] **Basic Generation**: All edge functions working with OpenAI ✅ COMPLETED
-- [x] **Error Handling**: Comprehensive error recovery implemented ✅ COMPLETED
-- [x] **Type Safety**: TypeScript coverage across all components ✅ COMPLETED
-- [ ] **AI SDK Migration**: Streaming implementation for article generation 🔄 PRIORITY
-- [ ] **Streaming Reliability**: Real-time content generation without errors
+**Working Files:**
+- [x] **Basic Generation:** All edge functions working with OpenAI ✅ COMPLETED
+- [x] **Error Handling:** Comprehensive error recovery implemented ✅ COMPLETED
+- [x] **Type Safety:** TypeScript coverage across all components ✅ COMPLETED
+- [ ] **AI SDK Migration:** Streaming implementation for article generation 🔄 PRIORITY
+- [ ] **Streaming Reliability:** Real-time content generation without errors
 
 #### Database & Persistence ✅ COMPLETED
-- [x] **SEO Settings**: Save to `user_seo_preferences` table for user preferences ✅ COMPLETED
-- [x] **Session Management**: Maintain settings across sessions ✅ COMPLETED
-- [x] **Article Storage**: Enhanced with scheduling and calendar integration ✅ READY
+**Database Files:**
+- [x] **SEO Settings:** Save to `user_seo_preferences` table for user preferences ✅ COMPLETED
+- [x] **Session Management:** Maintain settings across sessions ✅ COMPLETED
+- [x] **Article Storage:** Enhanced with scheduling and calendar integration ✅ READY
 
 ## Component Architecture & References
 
@@ -126,23 +130,23 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [x] "Write my own title" fallback option ✅
 
 ### ✅ Step 2: Title Selection & Outline Creation - COMPLETED
-**Left Panel**: 
+**Left Panel:** 
 - [x] Form in review mode with edit capability ✅
 - [x] Outline management controls ✅
 
-**Right Panel**: 
+**Right Panel:** 
 - [x] Generated titles in selectable cards with auto-selection ✅
 - [x] Outline preview with structured display ✅
 - [x] Loading states between steps ✅
 
 ### 🔄 Step 3: Article Generation - NEEDS AI SDK STREAMING
-**Left Panel**: 
+**Left Panel:** 
 - [x] Generation progress tracking and controls ✅
 - [x] Step completion indicators ✅
 
-**Right Panel**: 
+**Right Panel:** 
 - [x] Novel editor integration ready ✅
-- [ ] **PRIORITY**: Real-time streaming implementation 🔄
+- [ ] **PRIORITY:** Real-time streaming implementation 🔄
 - [x] Conditional display of statistics after generation complete ✅:
   - [x] Word count, read time, SEO score (shown when content >500 chars) ✅
   - [x] Keywords analysis, structure analysis (shown when content >1000 chars) ✅
@@ -154,31 +158,34 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 ## Implementation Phases - Updated Status
 
 ### ✅ Phase 0: Layout Foundation - COMPLETED
+**Files Modified:**
 - [x] Fixed SidebarInset integration for proper content resizing
 - [x] Content area fills full available width dynamically
 - [x] Header with SidebarTrigger and breadcrumbs implemented
 
 ### ✅ Phase 1: Database Setup & Core Layout - COMPLETED
+**Database Changes:**
 - [x] Create `user_seo_preferences` table with RLS policies
 - [x] Implement resizable 40/60 panel layout
 - [x] Remove panel headers for clean interface
 - [x] Set up conditional display architecture
 
 ### ✅ Phase 2: Clean UI Implementation - COMPLETED
-**Goal**: Implement clean, progressive interface with reference design matching
-- [x] Remove visual separators and hide resizable handle by default ✅ COMPLETED
-- [x] Conditional statistics display implementation ✅ COMPLETED
-- [x] Create empty state display with search icon illustration ✅ COMPLETED
-- [x] Update messaging: "No titles generated" with descriptive copy ✅ COMPLETED
-- [x] Add "Try example" button with random topics (no dropdown) ✅ COMPLETED
-- [x] Update step labels to "Title", "Outline", "Article" (keep descriptions) ✅ COMPLETED
-- [x] Implement loading screen overlays between steps ✅ COMPLETED
-- [x] Ensure article length matches target setting ✅ COMPLETED
+**Goal:** Implement clean, progressive interface with reference design matching
+
+**Files Modified:**
+- [x] `src/pages/ArticleStudio.tsx` - Remove visual separators and hide resizable handle ✅ COMPLETED
+- [x] `src/components/ArticleStudio/LivePreviewPanel.tsx` - Conditional statistics display ✅ COMPLETED
+- [x] `src/components/ArticleStudio/EmptyStateDisplay.tsx` - Create empty state with search icon ✅ COMPLETED
+- [x] `src/utils/exampleTopics.ts` - Add "Try example" button with random topics ✅ COMPLETED
+- [x] `src/components/ArticleStudio/StepNavigation.tsx` - Update step labels to "Title", "Outline", "Article" ✅ COMPLETED
+- [x] `src/components/ArticleStudio/AnimatedLoadingSkeleton.tsx` - Loading screen overlays between steps ✅ COMPLETED
+- [x] Article length matches target setting ✅ COMPLETED
 - [x] Match color schema from reference screenshots ✅ COMPLETED
 
 ### 🔄 Phase 3: AI SDK Migration - IN PROGRESS (CRITICAL PRIORITY)
-**Goal**: Implement real-time streaming for article generation
-**Current Status**: Planning complete, implementation needed
+**Goal:** Implement real-time streaming for article generation
+**Current Status:** Planning complete, implementation needed
 
 #### Immediate Tasks (Priority Order):
 1. **[ ] Fix AI SDK Edge Function** (`supabase/functions/generate-content-ai-sdk/index.ts`)
@@ -206,88 +213,96 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 - [ ] Seamless integration with existing 3-step workflow
 
 ### 📋 Phase 4: Enhanced Content Generation - PENDING
-**Goal**: Two-phase generation with web research
-**Dependencies**: Phase 3 complete
-- [ ] Implement skeleton → enhanced content pipeline
-- [ ] Add web search integration per section
-- [ ] Create section-by-section streaming with progress indicators
-- [ ] Enable simultaneous editing during generation
+**Goal:** Two-phase generation with web research
+**Dependencies:** Phase 3 complete
+
+**Files to Create:**
+- [ ] `src/hooks/useTwoPhaseGeneration.ts` - Skeleton → enhanced content pipeline
+- [ ] `src/lib/research/webSearch.ts` - Web search integration per section
+- [ ] `src/components/ArticleStudio/SectionProgress.tsx` - Section-by-section streaming with progress
+- [ ] `src/components/NovelEditor/SimultaneousEditing.tsx` - Enable simultaneous editing during generation
 
 ### 📋 Phase 5: Advanced Features & Polish - PENDING
-**Goal**: Production-ready experience
-**Dependencies**: Phase 4 complete
-- [ ] Complete outline creation with drag-and-drop
-- [ ] Add comprehensive SEO optimization
-- [ ] Implement publishing and export capabilities
-- [ ] Performance optimization and comprehensive testing
+**Goal:** Production-ready experience
+**Dependencies:** Phase 4 complete
+
+**Files to Create:**
+- [ ] `src/components/ArticleStudio/DragDropOutlines.tsx` - Complete outline creation with drag-and-drop
+- [ ] `src/components/ArticleStudio/AdvancedSEO.tsx` - Comprehensive SEO optimization
+- [ ] `src/components/ArticleStudio/PublishingExport.tsx` - Publishing and export capabilities
+- [ ] `src/lib/performance/optimization.ts` - Performance optimization and testing
 
 ## Example Topics Strategy ✅ IMPLEMENTED
 
 **Current Implementation** (`src/utils/exampleTopics.ts`):
+```typescript
+export const exampleTopics = [
+  "How to reduce customer churn in B2B SaaS",
+  "Building a sales funnel for early-stage startups",
+  "Content marketing strategies for technical products", 
+  "Pricing strategies for subscription businesses"
+];
+```
+
+**Working Features:**
 - [x] Random selection with no dropdown needed ✅
 - [x] Single pool of general example topics ✅
 - [x] Simple random example topics functionality ✅
 
-**Working Examples**:
-- [x] "How to reduce customer churn in B2B SaaS" ✅
-- [x] "Building a sales funnel for early-stage startups" ✅
-- [x] "Content marketing strategies for technical products" ✅
-- [x] "Pricing strategies for subscription businesses" ✅
-
 ## Success Metrics & Goals
 
 ### Technical Performance Targets
-- [ ] **Streaming Reliability**: 99%+ successful completion rate
-- [ ] **Generation Speed**: Complete article in <2 minutes
-- [ ] **Error Rate**: <1% React errors, <5% API failures
-- [ ] **User Experience**: Seamless workflow completion in <5 minutes
+- [ ] **Streaming Reliability:** 99%+ successful completion rate
+- [ ] **Generation Speed:** Complete article in <2 minutes
+- [ ] **Error Rate:** <1% React errors, <5% API failures
+- [ ] **User Experience:** Seamless workflow completion in <5 minutes
 
 ### Content Quality Targets
-- [x] **SEO Foundation**: Automatic keyword integration and scoring setup ✅
-- [ ] **Research Integration**: Up-to-date, research-backed content
-- [ ] **User Satisfaction**: Minimal editing required post-generation
-- [ ] **Variety**: Diverse, non-repetitive content suggestions
-- [x] **Length Accuracy**: Generated articles match target length settings ✅
+- [x] **SEO Foundation:** Automatic keyword integration and scoring setup ✅
+- [ ] **Research Integration:** Up-to-date, research-backed content
+- [ ] **User Satisfaction:** Minimal editing required post-generation
+- [ ] **Variety:** Diverse, non-repetitive content suggestions
+- [x] **Length Accuracy:** Generated articles match target length settings ✅
 
 ### User Adoption Targets
-- [x] **Workflow Foundation**: 3-step process implemented and functional ✅
-- [x] **Interface Design**: Clean, professional interface matching specifications ✅
-- [ ] **Feature Usage**: >85% SEO Pro mode adoption
-- [ ] **Time Savings**: 70% reduction in article creation time
-- [ ] **Return Usage**: Saved preferences leading to faster subsequent use
+- [x] **Workflow Foundation:** 3-step process implemented and functional ✅
+- [x] **Interface Design:** Clean, professional interface matching specifications ✅
+- [ ] **Feature Usage:** >85% SEO Pro mode adoption
+- [ ] **Time Savings:** 70% reduction in article creation time
+- [ ] **Return Usage:** Saved preferences leading to faster subsequent use
 
 ## Risk Mitigation Strategy
 
 ### Technical Risks & Mitigation
-- [x] **Layout Issues**: Resolved through careful SidebarInset integration ✅
-- [ ] **Streaming Failures**: AI SDK provides robust error recovery (implementing)
-- [ ] **Performance Issues**: Progressive enhancement and caching (planned)
-- [ ] **Editor Conflicts**: Transaction-based updates for simultaneous editing (planned)
-- [x] **API Limitations**: Hybrid approach balances speed and features ✅
+- [x] **Layout Issues:** Resolved through careful SidebarInset integration ✅
+- [ ] **Streaming Failures:** AI SDK provides robust error recovery (implementing)
+- [ ] **Performance Issues:** Progressive enhancement and caching (planned)
+- [ ] **Editor Conflicts:** Transaction-based updates for simultaneous editing (planned)
+- [x] **API Limitations:** Hybrid approach balances speed and features ✅
 
 ### User Experience Risks & Mitigation
-- [x] **Learning Curve**: Clean 3-step interface reduces complexity ✅
-- [x] **Feature Overload**: Progressive disclosure implemented ✅
-- [x] **Content Quality**: Preview and editing capabilities throughout process ✅
-- [x] **Mobile Experience**: Desktop-first approach with proper messaging ✅
+- [x] **Learning Curve:** Clean 3-step interface reduces complexity ✅
+- [x] **Feature Overload:** Progressive disclosure implemented ✅
+- [x] **Content Quality:** Preview and editing capabilities throughout process ✅
+- [x] **Mobile Experience:** Desktop-first approach with proper messaging ✅
 
 ## Current Blocking Issues & Resolution Plan
 
 ### 🚨 Phase 3 Critical Blockers
-1. **AI SDK Integration**: 
-   - **Issue**: Need to implement streaming for `generate-content-ai-sdk`
-   - **Solution**: Replace CDN imports, implement `streamText()`
-   - **Timeline**: 2-3 hours
+1. **AI SDK Integration:** 
+   - **Issue:** Need to implement streaming for `generate-content-ai-sdk`
+   - **Solution:** Replace CDN imports, implement `streamText()`
+   - **Timeline:** 2-3 hours
 
-2. **Frontend Streaming Integration**:
-   - **Issue**: Connect AI SDK to existing UI components
-   - **Solution**: Update `ContentGenerationPanel.tsx` with AI SDK hooks
-   - **Timeline**: 2-3 hours
+2. **Frontend Streaming Integration:**
+   - **Issue:** Connect AI SDK to existing UI components
+   - **Solution:** Update `ContentGenerationPanel.tsx` with AI SDK hooks
+   - **Timeline:** 2-3 hours
 
-3. **Novel Editor Connection**:
-   - **Issue**: Stream content directly into Novel Editor
-   - **Solution**: Implement real-time content insertion
-   - **Timeline**: 2-3 hours
+3. **Novel Editor Connection:**
+   - **Issue:** Stream content directly into Novel Editor
+   - **Solution:** Implement real-time content insertion
+   - **Timeline:** 2-3 hours
 
 ### Immediate Next Steps (Priority Order)
 1. **Implement AI SDK in edge function** - Fix streaming foundation
@@ -298,23 +313,24 @@ Transform article creation from a basic form-based approach to an AI-powered, in
 ## Future Roadmap
 
 ### Post-MVP Enhancements
-- [ ] **Advanced AI Features**: Custom writing styles and brand voice
-- [ ] **Collaboration**: Multi-user editing and review workflows
-- [ ] **Analytics**: Content performance tracking and optimization
-- [ ] **Integrations**: Enhanced CMS publishing and social media distribution
-- [ ] **Enterprise Features**: Team management and approval workflows
+**Future Files to Create:**
+- [ ] `src/lib/ai/customStyles.ts` - Custom writing styles and brand voice
+- [ ] `src/components/Collaboration/` - Multi-user editing and review workflows
+- [ ] `src/lib/analytics/performance.ts` - Content performance tracking and optimization
+- [ ] `src/integrations/cms/` - Enhanced CMS publishing and social media distribution
+- [ ] `src/features/enterprise/` - Team management and approval workflows
 
 ### Platform Evolution
-- [ ] **Mobile App**: Native mobile article creation experience
-- [ ] **API Access**: Third-party integrations and automation
-- [ ] **White Label**: Customizable interface for enterprise clients
-- [ ] **Advanced Research**: Integration with premium research databases
+- [ ] **Mobile App:** Native mobile article creation experience
+- [ ] **API Access:** Third-party integrations and automation
+- [ ] **White Label:** Customizable interface for enterprise clients
+- [ ] **Advanced Research:** Integration with premium research databases
 
 ---
 
-**Last Updated**: 2025-07-03  
-**Current Focus**: Phase 3 AI SDK Implementation for Streaming  
-**Next Milestone**: Real-time article generation with Novel Editor integration  
-**Document Version**: 3.0 - AI SDK Implementation Ready
+**Last Updated:** 2025-07-03  
+**Current Focus:** Phase 3 AI SDK Implementation for Streaming  
+**Next Milestone:** Real-time article generation with Novel Editor integration  
+**Document Version:** 3.0 - AI SDK Implementation Ready
 
 This master plan serves as the strategic foundation for all Article Studio development, with clear checkpoints and component references for the current AI SDK implementation priority.

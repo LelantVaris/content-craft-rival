@@ -41,18 +41,86 @@ npm install novel @tiptap/react @tiptap/starter-kit
 ```
 
 ### 2.2 Create Section Generation Hook
+**File**: `src/hooks/useSectionGeneration.ts`
 - [ ] Create `useSectionGeneration` hook
 - [ ] Implement section-by-section logic
 - [ ] Add progress tracking and error handling
 
+```typescript
+import { useState, useCallback } from 'react';
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+export interface SectionData {
+  title: string;
+  content: string;
+  wordCount?: number;
+  status: 'pending' | 'generating' | 'completed' | 'error';
+}
+
+export function useSectionGeneration() {
+  const [sections, setSections] = useState<SectionData[]>([]);
+  const [currentSection, setCurrentSection] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const generateSection = useCallback(async (
+    sectionIndex: number,
+    context: string,
+    previousContent: string
+  ) => {
+    // Implementation details
+  }, []);
+
+  return {
+    sections,
+    currentSection,
+    isGenerating,
+    progress,
+    generateSection,
+    retrySection: (index: number) => generateSection(index, '', ''),
+  };
+}
+```
+
 ### 2.3 Section Generation API Client
+**File**: `src/lib/sectionGeneration.ts`
 - [ ] Create client-side AI SDK integration
 - [ ] Implement streaming for individual sections
 - [ ] Add retry mechanism for failed sections
 
+```typescript
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+export async function generateSection(
+  articleContext: string,
+  sectionData: OutlineSection,
+  sectionIndex: number,
+  previousContent: string
+): Promise<string> {
+  const prompt = buildSectionPrompt(
+    articleContext, 
+    sectionData, 
+    sectionIndex, 
+    previousContent
+  );
+
+  const { text } = await streamText({
+    model: openai('gpt-4o'),
+    prompt,
+    maxTokens: 2000,
+    temperature: 0.7,
+  });
+
+  return text;
+}
+```
+
 ## 📋 Phase 3: Novel Editor Integration (Primary Editor)
 
 ### 3.1 Novel Editor Setup and Configuration
+**File**: `src/components/NovelEditor/index.tsx`
 
 #### Install Dependencies
 ```bash
@@ -60,8 +128,8 @@ npm install novel @tiptap/react @tiptap/starter-kit class-variance-authority
 ```
 
 #### Default Extensions Configuration
+**File**: `src/components/NovelEditor/extensions.ts`
 ```typescript
-// extensions.ts
 import {
   TiptapImage,
   TiptapLink,
@@ -165,8 +233,8 @@ Add to VS Code settings.json:
 ```
 
 #### Slash Command Configuration
+**File**: `src/components/NovelEditor/suggestionItems.tsx`
 ```typescript
-// suggestionItems.tsx
 import {
   CheckSquare,
   Code,
@@ -308,8 +376,8 @@ export const slashCommand = Command.configure({
 ```
 
 #### Bubble Menu Configuration
+**File**: `src/components/NovelEditor/editor.tsx`
 ```typescript
-// editor.tsx
 import { NodeSelector } from "./selectors/node-selector";
 import { LinkSelector } from "./selectors/link-selector";
 import { ColorSelector } from "./selectors/color-selector";
@@ -358,20 +426,23 @@ import { TextButtons } from "./selectors/text-buttons";
 ```
 
 ### 3.2 Complete Novel Editor Setup
-- [ ] Create isolated Novel editor component
-- [ ] Configure all extensions and plugins
+**Files to create**:
+- [ ] `src/components/NovelEditor/NovelEditor.tsx` - Main editor component
+- [ ] `src/components/NovelEditor/selectors/` - Bubble menu selectors
 - [ ] Add section-level editing capabilities
 - [ ] Implement real-time collaboration features
 
 ### 3.3 App-wide Novel Integration
-- [ ] Replace ArticlePreview with Novel editor
-- [ ] Replace all text editing components with Novel
-- [ ] Update Article Studio to use Novel
-- [ ] Update Article Editor to use Novel
+**Files to update**:
+- [ ] `src/components/ArticleStudio/StreamingArticlePreview.tsx` - Replace with Novel editor
+- [ ] `src/pages/ArticleStudio.tsx` - Update to use Novel
+- [ ] `src/components/ArticleEditor/ContentEditor.tsx` - Update to use Novel
+- [ ] All text editing components throughout the app
 
 ## 📋 Phase 4: Exact Prompt Preservation
 
 ### 4.1 Main Article Context Prompt (PRESERVED EXACTLY)
+**File**: `src/lib/prompts/articleContext.ts`
 ```typescript
 const buildArticleContextPrompt = (params: ArticleParams) => `
 You are an expert content writer creating high-quality articles following the PVOD (Personality, Value, Opinion, Direct) framework.
@@ -422,6 +493,7 @@ ${params.outline.map((section, index) =>
 ```
 
 ### 4.2 Section Generation Prompt (PRESERVED EXACTLY)
+**File**: `src/lib/prompts/sectionPrompt.ts`
 ```typescript
 const buildSectionPrompt = (
   articleContext: string,
@@ -478,6 +550,7 @@ Generate ONLY the content for Section ${sectionIndex + 1}. Do not include the se
 ```
 
 ### 4.3 Weighted Word Count Distribution
+**File**: `src/lib/utils/wordCountDistribution.ts`
 ```typescript
 // Helper function for weighted section word counts based on importance
 const getWeightedWordCount = (section: OutlineSection, index: number, totalWords: number = 4000) => {
@@ -512,6 +585,7 @@ const getSectionImportance = (section: OutlineSection): 'high' | 'medium' | 'low
 ## 📋 Phase 5: AI SDK Implementation
 
 ### 5.1 Section Generation Client
+**File**: `src/lib/ai/sectionGeneration.ts`
 ```typescript
 // Client-side AI integration
 import { generateText } from 'ai';
@@ -542,6 +616,7 @@ export async function generateSection(
 ```
 
 ### 5.2 Streaming Section Generation
+**File**: `src/lib/ai/streamingSectionGeneration.ts`
 ```typescript
 // Streaming implementation for real-time updates
 import { streamText } from 'ai';
@@ -572,6 +647,7 @@ export async function streamSectionGeneration(
 ```
 
 ### 5.3 Complete Section-by-Section Hook
+**File**: `src/hooks/useSectionGeneration.ts`
 ```typescript
 export function useSectionGeneration() {
   const [currentSection, setCurrentSection] = useState(0);
@@ -631,16 +707,18 @@ export function useSectionGeneration() {
 ## 📋 Phase 6: Error Handling & Recovery
 
 ### 6.1 Section-Level Error Recovery
+**File**: `src/hooks/useGenerationRecovery.ts`
 - [ ] Implement automatic retry for failed sections
 - [ ] Add manual retry buttons for each section
 - [ ] Store partial progress in database
 - [ ] Resume generation from last completed section
 
 ### 6.2 User Experience Enhancements
-- [ ] Show generation progress per section
-- [ ] Allow editing while other sections generate
-- [ ] Implement auto-save for completed sections
-- [ ] Add section reordering in Novel editor
+**Files to update**:
+- [ ] `src/components/ArticleStudio/SectionProgress.tsx` - Show generation progress per section
+- [ ] `src/components/ArticleStudio/SectionRetry.tsx` - Allow editing while other sections generate
+- [ ] `src/lib/storage/autoSave.ts` - Implement auto-save for completed sections
+- [ ] `src/components/NovelEditor/SectionReorder.tsx` - Add section reordering in Novel editor
 
 ## 🔗 API References
 
