@@ -1,4 +1,3 @@
-
 import { 
   EditorRoot, 
   EditorContent, 
@@ -6,7 +5,6 @@ import {
   EditorCommandEmpty,
   EditorCommandList,
   EditorCommandItem,
-  EditorBubble,
   type JSONContent 
 } from "novel";
 import { useState, useCallback } from "react";
@@ -18,6 +16,7 @@ import { LinkSelector } from "./NovelEditor/LinkSelector";
 import { TextButtons } from "./NovelEditor/TextButtons";
 import { ColorSelector } from "./NovelEditor/ColorSelector";
 import { Separator } from "@/components/ui/separator";
+import GenerativeMenuSwitch from "./NovelEditor/generative/GenerativeMenuSwitch";
 
 interface NovelEditorProps {
   content: string;
@@ -30,6 +29,7 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
   const [openNode, setOpenNode] = useState(false);
   const [openColor, setOpenColor] = useState(false);
   const [openLink, setOpenLink] = useState(false);
+  const [openAI, setOpenAI] = useState(false);
 
   // Combine default extensions with slash command
   const extensions = [...defaultExtensions, slashCommand];
@@ -86,7 +86,7 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
     <div className={className}>
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm text-muted-foreground">
-          Rich text editor with slash commands and bubble menu
+          Rich text editor with AI-powered assistance
         </div>
         <div className="text-sm text-muted-foreground">
           {saveStatus}
@@ -127,19 +127,14 @@ export const NovelEditor = ({ content, onChange, className }: NovelEditorProps) 
             </EditorCommandList>
           </EditorCommand>
 
-          <EditorBubble
-            tippyOptions={{
-              placement: "top",
-            }}
-            className="flex w-fit max-w-[90vw] overflow-hidden rounded border border-muted bg-background shadow-xl"
-          >
+          <GenerativeMenuSwitch open={openAI} onOpenChange={setOpenAI}>
             <NodeSelector open={openNode} onOpenChange={setOpenNode} />
             <LinkSelector open={openLink} onOpenChange={setOpenLink} />
             <Separator orientation="vertical" />
             <TextButtons />
             <Separator orientation="vertical" />
             <ColorSelector open={openColor} onOpenChange={setOpenColor} />
-          </EditorBubble>
+          </GenerativeMenuSwitch>
         </EditorContent>
       </EditorRoot>
     </div>
