@@ -113,9 +113,7 @@ const underline = TiptapUnderline;
 
 // Add TextStyle and AIHighlight extensions for color functionality
 const textStyle = TextStyle;
-const highlight = AIHighlight.configure({
-  multicolor: true,
-});
+const highlight = AIHighlight;
 
 export const defaultExtensions = [
   starterKit,
