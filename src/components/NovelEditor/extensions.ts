@@ -19,7 +19,6 @@ import {
   CustomKeymap,
   GlobalDragHandle,
   HighlightExtension,
-  MarkdownExtension,
   Mathematics,
   UploadImagesPlugin,
 } from "novel";
@@ -146,20 +145,8 @@ const mathematics = Mathematics.configure({
 
 const characterCount = CharacterCount.configure();
 
-const markdownExtension = MarkdownExtension.configure({
-  html: true,
-  tightLists: true,
-  tightListClass: "tight",
-  bulletListMarker: "-",
-  linkify: false,
-  breaks: false,
-  transformPastedText: false,
-  transformCopiedText: false,
-});
-
 // Add TextStyle and AIHighlight extensions for color functionality
 const textStyle = TextStyle;
-const highlight = AIHighlight;
 const aiHighlight = AIHighlight;
 
 export const defaultExtensions = [
@@ -178,7 +165,6 @@ export const defaultExtensions = [
   mathematics,
   characterCount,
   TiptapUnderline,
-  markdownExtension,
   HighlightExtension,
   textStyle,
   Color,
