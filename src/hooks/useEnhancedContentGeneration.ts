@@ -123,12 +123,12 @@ export function useEnhancedContentGeneration() {
       console.log('Request headers:', Object.keys(headers));
       console.log('Request body size:', JSON.stringify(validatedParams).length, 'characters');
 
-      // Add timeout to fetch request
+      // Add timeout to fetch request - INCREASED TO 2 MINUTES
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log('⏰ Request timeout after 30 seconds');
+        console.log('⏰ Request timeout after 2 minutes');
         controller.abort();
-      }, 30000);
+      }, 120000);
 
       const response = await fetch(functionUrl, {
         method: 'POST',
