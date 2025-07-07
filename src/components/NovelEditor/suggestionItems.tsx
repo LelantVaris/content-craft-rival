@@ -11,7 +11,7 @@ import {
   Text,
   TextQuote,
 } from "lucide-react";
-import { createSuggestionItems } from "novel/extensions";
+import { createSuggestionItems } from "novel";
 
 export const suggestionItems = createSuggestionItems([
   {

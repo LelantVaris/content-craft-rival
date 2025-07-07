@@ -1,5 +1,5 @@
 
-import { Command, renderItems } from "novel/extensions";
+import { Command, renderItems } from "novel";
 import { suggestionItems } from "./suggestionItems";
 
 export const slashCommand = Command.configure({
