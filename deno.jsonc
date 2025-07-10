@@ -1,0 +1,9 @@
+// deno.jsonc
+{
+  "imports": {
+    "@openai/openai": "jsr:@openai/openai@^0.5.0"
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --watch supabase/functions/generate/index.ts"
+  }
+}

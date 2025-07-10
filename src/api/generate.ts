@@ -1,4 +1,3 @@
-
 import { openai } from "@ai-sdk/openai";
 import { Ratelimit } from "@upstash/ratelimit";
 import { kv } from "@vercel/kv";
@@ -127,4 +126,4 @@ export async function POST(req: Request): Promise<Response> {
   });
 
   return result.toDataStreamResponse();
-}
+} 

@@ -11,6 +11,11 @@ const AICompletionCommands = ({
   onDiscard: () => void;
 }) => {
   const { editor } = useEditor();
+
+  if (!editor) {
+    return null;
+  }
+
   return (
     <>
       <CommandGroup>

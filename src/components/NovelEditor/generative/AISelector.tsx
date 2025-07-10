@@ -1,17 +1,15 @@
-
 import { Command, CommandInput } from "@/components/ui/command";
-import { useCompletion } from "ai/react";
 import { ArrowUp } from "lucide-react";
 import { useEditor } from "novel";
 import { useState } from "react";
 import Markdown from "react-markdown";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Magic from "../icons/Magic";
 import CrazySpinner from "../icons/CrazySpinner";
 import AICompletionCommands from "./AICompletionCommands";
 import AISelectorCommands from "./AISelectorCommands";
+import { useAiCompletion } from "@/hooks/useAiCompletion";
 
 interface AISelectorProps {
   open: boolean;
@@ -21,21 +19,26 @@ interface AISelectorProps {
 export function AISelector({ onOpenChange }: AISelectorProps) {
   const { editor } = useEditor();
   const [inputValue, setInputValue] = useState("");
+  const { completion, isLoading, generateCompletion } = useAiCompletion();
 
-  const { completion, complete, isLoading } = useCompletion({
-    api: "/api/generate",
-    onResponse: (response) => {
-      if (response.status === 429) {
-        toast.error("You have reached your request limit for the day.");
-        return;
-      }
-    },
-    onError: (e) => {
-      toast.error(e.message);
-    },
-  });
+  if (!editor) {
+    return null;
+  }
 
   const hasCompletion = completion.length > 0;
+
+  const getSelectedText = () => {
+    const slice = editor.state.selection.content();
+    return editor.storage.markdown?.serializer?.serialize(slice.content) || editor.getText();
+  };
+
+  // Update this function to match the expected signature
+  const handleComplete = async (text: string, { option, command }: { option: string; command?: string }) => {
+    const success = await generateCompletion(text, { option, command });
+    if (success && command) {
+      setInputValue("");
+    }
+  };
 
   return (
     <Command className="w-[350px]">
@@ -71,18 +74,11 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
               size="icon"
               className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-purple-500 hover:bg-purple-900"
               onClick={() => {
-                if (completion) {
-                  return complete(completion, {
-                    body: { option: "zap", command: inputValue },
-                  }).then(() => setInputValue(""));
-                }
-
-                const slice = editor.state.selection.content();
-                const text = editor.storage.markdown?.serializer?.serialize(slice.content) || editor.getText();
-
-                complete(text, {
-                  body: { option: "zap", command: inputValue },
-                }).then(() => setInputValue(""));
+                const text = completion || getSelectedText();
+                handleComplete(text, {
+                  option: "zap",
+                  command: inputValue
+                });
               }}
             >
               <ArrowUp className="h-4 w-4" />
@@ -97,7 +93,9 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
               completion={completion}
             />
           ) : (
-            <AISelectorCommands onSelect={(value, option) => complete(value, { body: { option } })} />
+            <AISelectorCommands 
+              onSelect={(value, option) => handleComplete(value, { option })} 
+            />
           )}
         </>
       )}

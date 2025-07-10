@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import CrawlerTest from "./pages/CrawlerTest";
 import NovelEditorTest from "./pages/NovelEditorTest";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { AiTest } from "./components/AiTest";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ function AppContent() {
             <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
             <Route path="/crawler-test" element={<ProtectedRoute><CrawlerTest /></ProtectedRoute>} />
             <Route path="/novel-editor-test" element={<ProtectedRoute><NovelEditorTest /></ProtectedRoute>} />
+            <Route path="/ai-test" element={<ProtectedRoute><AiTest /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </SidebarInset>

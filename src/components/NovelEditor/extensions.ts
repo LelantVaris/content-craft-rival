@@ -1,17 +1,4 @@
-
 import {
-  TiptapImage,
-  TiptapLink,
-  UpdatedImage,
-  TaskList,
-  TaskItem,
-  HorizontalRule,
-  StarterKit,
-  Placeholder,
-  TiptapUnderline,
-  Youtube,
-  Twitter,
-  TextStyle,
   AIHighlight,
   CharacterCount,
   CodeBlockLowlight,
@@ -19,15 +6,30 @@ import {
   CustomKeymap,
   GlobalDragHandle,
   HighlightExtension,
+  HorizontalRule,
   Mathematics,
+  Placeholder,
+  StarterKit,
+  TaskItem,
+  TaskList,
+  TextStyle,
+  TiptapImage,
+  TiptapLink,
+  TiptapUnderline,
+  Twitter,
+  UpdatedImage,
   UploadImagesPlugin,
+  Youtube,
 } from "novel";
+
+import { Markdown } from "tiptap-markdown";
 import { cx } from "class-variance-authority";
 import { common, createLowlight } from "lowlight";
 
-// You can overwrite the placeholder with your own configuration
+//TODO I am using cx here to get tailwind autocomplete working, idk if someone else can write a regex to just capture the class key in objects
+const aiHighlight = AIHighlight;
+//You can overwrite the placeholder with your own configuration
 const placeholder = Placeholder;
-
 const tiptapLink = TiptapLink.configure({
   HTMLAttributes: {
     class: cx(
@@ -59,10 +61,9 @@ const updatedImage = UpdatedImage.configure({
 
 const taskList = TaskList.configure({
   HTMLAttributes: {
-    class: cx("not-prose pl-2"),
+    class: cx("not-prose pl-2 "),
   },
 });
-
 const taskItem = TaskItem.configure({
   HTMLAttributes: {
     class: cx("flex gap-2 items-start my-4"),
@@ -77,6 +78,9 @@ const horizontalRule = HorizontalRule.configure({
 });
 
 const starterKit = StarterKit.configure({
+  // Disable the extensions that we're configuring separately
+  codeBlock: false,  // We're using CodeBlockLowlight instead
+  horizontalRule: false, // We're configuring this separately
   bulletList: {
     HTMLAttributes: {
       class: cx("list-disc list-outside leading-3 -mt-2"),
@@ -97,18 +101,12 @@ const starterKit = StarterKit.configure({
       class: cx("border-l-4 border-primary"),
     },
   },
-  codeBlock: {
-    HTMLAttributes: {
-      class: cx("rounded-md bg-muted text-muted-foreground border p-5 font-mono font-medium"),
-    },
-  },
   code: {
     HTMLAttributes: {
-      class: cx("rounded-md bg-muted px-1.5 py-1 font-mono font-medium"),
+      class: cx("rounded-md bg-muted  px-1.5 py-1 font-mono font-medium"),
       spellcheck: "false",
     },
   },
-  horizontalRule: false,
   dropcursor: {
     color: "#DBEAFE",
     width: 4,
@@ -117,6 +115,8 @@ const starterKit = StarterKit.configure({
 });
 
 const codeBlockLowlight = CodeBlockLowlight.configure({
+  // configure lowlight: common /  all / use highlightJS in case there is a need to specify certain language grammars only
+  // common: covers 37 language grammars which should be good enough in most cases
   lowlight: createLowlight(common),
 });
 
@@ -145,9 +145,16 @@ const mathematics = Mathematics.configure({
 
 const characterCount = CharacterCount.configure();
 
-// Add TextStyle and AIHighlight extensions for color functionality
-const textStyle = TextStyle;
-const aiHighlight = AIHighlight;
+const markdown = Markdown.configure({
+  html: true,  // Enable HTML mode for AI highlight support
+  tightLists: true,
+  tightListClass: 'tight',
+  bulletListMarker: '-',
+  linkify: false,
+  breaks: false,
+  transformPastedText: true,
+  transformCopiedText: true,
+});
 
 export const defaultExtensions = [
   starterKit,
@@ -165,8 +172,9 @@ export const defaultExtensions = [
   mathematics,
   characterCount,
   TiptapUnderline,
+  markdown,
   HighlightExtension,
-  textStyle,
+  TextStyle,
   Color,
   CustomKeymap,
   GlobalDragHandle,

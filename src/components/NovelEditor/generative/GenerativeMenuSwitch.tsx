@@ -1,9 +1,9 @@
-
 import { EditorBubble, useEditor } from "novel";
 import { Fragment, type ReactNode, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Magic from "../icons/Magic";
+import { Wand2 } from "lucide-react";
 import { AISelector } from "./AISelector";
+import { addAIHighlight, removeAIHighlight } from "novel";
 
 interface GenerativeMenuSwitchProps {
   children: ReactNode;
@@ -15,11 +15,16 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
   const { editor } = useEditor();
 
   useEffect(() => {
-    if (!open) {
-      // Remove any existing highlights when AI mode is closed
-      editor.chain().unsetHighlight().run();
+    if (!open || !editor) {
+      return;
     }
+    // No direct call to removeAIHighlight if editor is null
   }, [open, editor]);
+
+
+  if (!editor) {
+    return null;
+  }
 
   return (
     <EditorBubble
@@ -27,7 +32,9 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
         placement: open ? "bottom-start" : "top",
         onHidden: () => {
           onOpenChange(false);
-          editor.chain().unsetHighlight().run();
+          if (editor) {
+            removeAIHighlight(editor);
+          }
         },
       }}
       className="flex w-fit max-w-[90vw] overflow-hidden rounded-md border border-muted bg-background shadow-xl"
@@ -39,16 +46,16 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
             className="gap-1 rounded-none text-purple-500"
             variant="ghost"
             onClick={() => {
-              // Add highlight when opening AI mode
+              if (!editor) return;
               const { from, to } = editor.state.selection;
               if (from !== to) {
-                editor.chain().focus().setHighlight({ color: '#DDD6FE' }).run();
+                addAIHighlight(editor);
               }
               onOpenChange(true);
             }}
             size="sm"
           >
-            <Magic className="h-5 w-5" />
+            <Wand2 className="h-5 w-5" />
             Ask AI
           </Button>
           {children}

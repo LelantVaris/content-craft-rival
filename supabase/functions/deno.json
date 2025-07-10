@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "@openai/openai": "jsr:@openai/openai@^0.5.0"
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --watch generate/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"]
+  }
+}

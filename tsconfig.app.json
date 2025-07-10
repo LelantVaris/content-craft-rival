@@ -14,13 +14,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitAny": false,
-    "noFallthroughCasesInSwitch": false,
+    /* Linting - UPDATED */
+    "strict": true,
 
+    /* Paths - UPDATED */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
