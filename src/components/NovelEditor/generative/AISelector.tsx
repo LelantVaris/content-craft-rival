@@ -1,3 +1,4 @@
+
 import { Command, CommandInput } from "@/components/ui/command";
 import { ArrowUp } from "lucide-react";
 import { useEditor } from "novel";
@@ -28,12 +29,14 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
   const hasCompletion = completion.length > 0;
 
   const getSelectedText = () => {
-    const slice = editor.state.selection.content();
-    return editor.storage.markdown?.serializer?.serialize(slice.content) || editor.getText();
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      return editor.getText();
+    }
+    return editor.state.doc.textBetween(from, to);
   };
 
-  // Update this function to match the expected signature
-  const handleComplete = async (text: string, { option, command }: { option: string; command?: string }) => {
+  const handleComplete = async (text: string, option: string, command?: string) => {
     const success = await generateCompletion(text, { option, command });
     if (success && command) {
       setInputValue("");
@@ -75,10 +78,7 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
               className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full bg-purple-500 hover:bg-purple-900"
               onClick={() => {
                 const text = completion || getSelectedText();
-                handleComplete(text, {
-                  option: "zap",
-                  command: inputValue
-                });
+                handleComplete(text, "zap", inputValue);
               }}
             >
               <ArrowUp className="h-4 w-4" />
@@ -87,14 +87,14 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
           {hasCompletion ? (
             <AICompletionCommands
               onDiscard={() => {
-                editor.chain().unsetHighlight().focus().run();
+                editor.chain().focus().run();
                 onOpenChange(false);
               }}
               completion={completion}
             />
           ) : (
             <AISelectorCommands 
-              onSelect={(value, option) => handleComplete(value, { option })} 
+              onSelect={(value, option) => handleComplete(value, option)} 
             />
           )}
         </>

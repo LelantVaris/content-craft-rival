@@ -1,9 +1,9 @@
+
 import { EditorBubble, useEditor } from "novel";
 import { Fragment, type ReactNode, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
 import { AISelector } from "./AISelector";
-import { addAIHighlight, removeAIHighlight } from "novel";
 
 interface GenerativeMenuSwitchProps {
   children: ReactNode;
@@ -18,9 +18,7 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
     if (!open || !editor) {
       return;
     }
-    // No direct call to removeAIHighlight if editor is null
   }, [open, editor]);
-
 
   if (!editor) {
     return null;
@@ -32,9 +30,6 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
         placement: open ? "bottom-start" : "top",
         onHidden: () => {
           onOpenChange(false);
-          if (editor) {
-            removeAIHighlight(editor);
-          }
         },
       }}
       className="flex w-fit max-w-[90vw] overflow-hidden rounded-md border border-muted bg-background shadow-xl"
@@ -46,11 +41,6 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
             className="gap-1 rounded-none text-purple-500"
             variant="ghost"
             onClick={() => {
-              if (!editor) return;
-              const { from, to } = editor.state.selection;
-              if (from !== to) {
-                addAIHighlight(editor);
-              }
               onOpenChange(true);
             }}
             size="sm"

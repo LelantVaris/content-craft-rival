@@ -33,14 +33,27 @@ interface AISelectorCommandsProps {
 const AISelectorCommands = ({ onSelect }: AISelectorCommandsProps) => {
   const { editor } = useEditor();
 
+  const getSelectedText = () => {
+    if (!editor) return "";
+    
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      // No selection, get all text
+      return editor.getText();
+    }
+    
+    // Get selected text using the selection
+    const selectedText = editor.state.doc.textBetween(from, to);
+    return selectedText;
+  };
+
   return (
     <>
       <CommandGroup heading="Edit or review selection">
         {options.map((option) => (
           <CommandItem
             onSelect={(value) => {
-              const slice = editor.state.selection.content();
-              const text = editor.storage.markdown.serializer.serialize(slice.content);
+              const text = getSelectedText();
               onSelect(text, value);
             }}
             className="flex gap-2 px-4"
