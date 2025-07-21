@@ -38,8 +38,8 @@ interface NodeData extends Record<string, unknown> {
 }
 
 export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<NodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNode, setSelectedNode] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalNodes: 0, totalEdges: 0, isolatedNodes: 0 });
@@ -89,7 +89,7 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
             y: 300 + radius * Math.sin(angle),
           },
           data: {
-            label: getNodeLabel(page.title, page.url),
+            label: getNodeLabel(page.title || '', page.url),
             page: page as PageData,
             nodeType: nodeType,
           },
@@ -107,14 +107,16 @@ export const WebsiteMapGraph: React.FC<WebsiteGraphProps> = ({ websiteMapId }) =
       });
 
       // Create edges
-      const graphEdges: Edge[] = (connections || []).map(conn => ({
-        id: `${conn.source_page_id}-${conn.target_page_id}`,
-        source: conn.source_page_id,
-        target: conn.target_page_id,
-        type: 'smoothstep',
-        style: { stroke: '#9ca3af', strokeWidth: 2 },
-        animated: false,
-      }));
+      const graphEdges: Edge[] = (connections || [])
+        .filter(conn => conn.source_page_id && conn.target_page_id)
+        .map(conn => ({
+          id: `${conn.source_page_id}-${conn.target_page_id}`,
+          source: conn.source_page_id!,
+          target: conn.target_page_id!,
+          type: 'smoothstep',
+          style: { stroke: '#9ca3af', strokeWidth: 2 },
+          animated: false,
+        }));
 
       // Calculate stats
       const connectedNodeIds = new Set([

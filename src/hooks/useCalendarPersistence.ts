@@ -50,22 +50,24 @@ export function useCalendarPersistence() {
       // Transform database articles to ScheduledArticle format and group by date
       const contentByDate: Record<string, ScheduledArticle[]> = {};
       
-      data?.forEach((article: CalendarArticle) => {
-        const scheduledArticle: ScheduledArticle = {
-          id: article.id,
-          title: article.title,
-          content: article.content || '',
-          scheduledDate: new Date(article.scheduled_date),
-          status: article.status as 'draft' | 'scheduled' | 'published',
-          metaDescription: article.meta_description || undefined,
-          keywords: article.keywords || undefined
-        };
+      data?.forEach((article: any) => {
+        if (article.scheduled_date) {
+          const scheduledArticle: ScheduledArticle = {
+            id: article.id,
+            title: article.title,
+            content: article.content || '',
+            scheduledDate: new Date(article.scheduled_date),
+            status: article.status as 'draft' | 'scheduled' | 'published',
+            metaDescription: article.meta_description || undefined,
+            keywords: article.keywords || undefined
+          };
 
-        const dateKey = article.scheduled_date;
-        if (!contentByDate[dateKey]) {
-          contentByDate[dateKey] = [];
+          const dateKey = article.scheduled_date;
+          if (!contentByDate[dateKey]) {
+            contentByDate[dateKey] = [];
+          }
+          contentByDate[dateKey].push(scheduledArticle);
         }
-        contentByDate[dateKey].push(scheduledArticle);
       });
 
       setScheduledContent(contentByDate);

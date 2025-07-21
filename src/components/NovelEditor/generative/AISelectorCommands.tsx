@@ -69,9 +69,11 @@ const AISelectorCommands = ({ onSelect }: AISelectorCommandsProps) => {
       <CommandGroup heading="Use AI to do more">
         <CommandItem
           onSelect={() => {
-            const pos = editor.state.selection.from;
-            const text = getPrevText(editor, pos);
-            onSelect(text, "continue");
+            if (editor) {
+              const pos = editor.state.selection.from;
+              const text = getPrevText(editor, pos);
+              onSelect(text, "continue");
+            }
           }}
           value="continue"
           className="gap-2 px-4"

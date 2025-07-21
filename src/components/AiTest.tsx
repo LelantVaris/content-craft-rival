@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { testAiFunction } from '../utils/testAiFunction';
+// import { testAiFunction } from '../utils/testAiFunction';
 
 export function AiTest() {
   const [result, setResult] = useState('');
@@ -8,17 +8,12 @@ export function AiTest() {
 
   const handleTest = async () => {
     setIsLoading(true);
-    setResult('Testing...');
+    setResult('');
     
     try {
-      const response = await testAiFunction('Say hello!');
-      setResult(response);
+      setResult('AI test function has been removed. This component is for testing purposes only.');
     } catch (error) {
-      if (error instanceof Error) {
-        setResult(`Error: ${error.message}`);
-      } else {
-        setResult(`An unknown error occurred: ${String(error)}`);
-      }
+      setResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
