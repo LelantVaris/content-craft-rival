@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Target } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -21,6 +22,28 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setSignInError('Please enter your email address first.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+
+    if (error) {
+      setSignInError(getErrorMessage(error));
+    } else {
+      toast({
+        title: 'Password reset email sent',
+        description: 'Check your email for a password reset link.',
+      });
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (user) {
@@ -164,6 +187,15 @@ const Auth = () => {
                   disabled={loading}
                 >
                   {loading ? 'Signing In...' : 'Sign In'}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  className="w-full text-sm"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                >
+                  Forgot Password?
                 </Button>
                 {signInError && (
                   <p className="text-red-600 text-sm mt-2 text-center">
