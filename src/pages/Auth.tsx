@@ -125,6 +125,7 @@ const Auth = () => {
     setSignUpError('');
 
     console.log('Attempting sign up for:', email);
+    const signupStartTime = Date.now();
 
     const { error } = await signUp(email, password, fullName);
     
@@ -142,25 +143,45 @@ const Auth = () => {
       }
     } else {
       console.log('Sign up successful - checking for silent signup');
-      // Show success message but also inform about potential existing account
-      toast({
-        title: 'Account Setup Complete!',
-        description: 'If this is a new account, please check your email to verify it. If you already have an account, please sign in instead.',
-      });
       
-      // Clear the form
-      setEmail('');
-      setPassword('');
-      setFullName('');
-      
-      // Suggest switching to sign in tab
+      // Wait a moment to see if the user gets automatically signed in
+      // If they don't, it's likely a silent signup for an existing account
       setTimeout(() => {
-        setActiveTab('signin');
-        toast({
-          title: 'Try signing in',
-          description: 'If you already have an account, please use the sign in tab.',
-        });
-      }, 3000);
+        if (!user) {
+          console.log('No automatic sign-in detected after signup - likely existing account');
+          toast({
+            title: 'Account Setup Notice',
+            description: 'If you already have an account with this email, please use the sign in form instead.',
+            variant: 'default',
+          });
+          
+          // Auto-switch to sign in tab with email prefilled
+          setActiveTab('signin');
+          setPassword(''); // Clear password but keep email
+          setFullName(''); // Clear full name
+          
+          // Show additional guidance
+          setTimeout(() => {
+            toast({
+              title: 'Try signing in',
+              description: 'Your email has been saved. Please enter your password to sign in.',
+            });
+          }, 2000);
+        } else {
+          // User was actually signed in, so it was a successful new account
+          console.log('User signed in after signup - successful new account creation');
+          toast({
+            title: 'Welcome!',
+            description: 'Your account has been created successfully.',
+          });
+        }
+      }, 2000);
+      
+      // Show initial success message
+      toast({
+        title: 'Processing account...',
+        description: 'Please wait while we set up your account.',
+      });
     }
     
     setLoading(false);
