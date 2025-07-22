@@ -83,6 +83,7 @@ const ForgotPassword = () => {
             </div>
             <Button 
               type="submit" 
+              variant="default"
               className="w-full" 
               disabled={loading}
             >
