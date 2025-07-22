@@ -81,17 +81,20 @@ const VerifyOTP = () => {
   };
 
   const handleResendOTP = async () => {
+    console.log('🔔 Resend button clicked for email:', email);
     setResendLoading(true);
     
     const { error, data } = await sendPasswordResetOTP(email);
     
     if (error) {
+      console.error('❌ Resend OTP failed:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to resend code. Please try again.',
         variant: 'destructive',
       });
     } else {
+      console.log('✅ Resend OTP successful:', data);
       toast({
         title: 'Code resent!',
         description: 'A new verification code has been sent to your email.',
@@ -104,7 +107,7 @@ const VerifyOTP = () => {
       
       // Update debug OTP if available
       if (data?.debug_otp) {
-        console.log('New OTP:', data.debug_otp);
+        console.log('🔢 New OTP for testing:', data.debug_otp);
       }
     }
     

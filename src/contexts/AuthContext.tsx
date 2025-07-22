@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -79,35 +78,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendPasswordResetOTP = async (email: string) => {
+    console.log('🔄 Attempting to send password reset OTP for:', email);
+    
     try {
       const { data, error } = await supabase.functions.invoke('send-password-reset-otp', {
         body: { email }
       });
-      return { error, data };
+      
+      if (error) {
+        console.error('❌ Error from send-password-reset-otp function:', error);
+        return { error };
+      }
+      
+      console.log('✅ Successfully sent password reset OTP:', data);
+      return { error: null, data };
     } catch (error) {
-      return { error };
+      console.error('❌ Network/unexpected error in sendPasswordResetOTP:', error);
+      return { 
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to send reset code. Please check your connection and try again.',
+          details: error
+        }
+      };
     }
   };
 
   const verifyOTP = async (email: string, otpCode: string) => {
+    console.log('🔄 Attempting to verify OTP for:', email);
+    
     try {
       const { data, error } = await supabase.functions.invoke('verify-password-reset-otp', {
         body: { email, otpCode }
       });
-      return { error, data };
+      
+      if (error) {
+        console.error('❌ Error from verify-password-reset-otp function:', error);
+        return { error };
+      }
+      
+      console.log('✅ Successfully verified OTP:', data);
+      return { error: null, data };
     } catch (error) {
-      return { error };
+      console.error('❌ Network/unexpected error in verifyOTP:', error);
+      return { 
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to verify code. Please try again.',
+          details: error
+        }
+      };
     }
   };
 
   const resetPassword = async (email: string, otpCode: string, newPassword: string) => {
+    console.log('🔄 Attempting to reset password for:', email);
+    
     try {
       const { data, error } = await supabase.functions.invoke('reset-password-with-otp', {
         body: { email, otpCode, newPassword }
       });
-      return { error, data };
+      
+      if (error) {
+        console.error('❌ Error from reset-password-with-otp function:', error);
+        return { error };
+      }
+      
+      console.log('✅ Successfully reset password:', data);
+      return { error: null, data };
     } catch (error) {
-      return { error };
+      console.error('❌ Network/unexpected error in resetPassword:', error);
+      return { 
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to reset password. Please try again.',
+          details: error
+        }
+      };
     }
   };
 
