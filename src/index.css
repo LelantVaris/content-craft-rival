@@ -45,8 +45,8 @@
     --code-foreground: var(--surface-foreground);
     --code-highlight: oklch(0.96 0 0);
     --code-number: oklch(0.56 0 0);
-    --selection: oklch(0.145 0 0);
-    --selection-foreground: oklch(1 0 0);
+    --selection: 220 13% 91%;
+    --selection-foreground: 220 9% 46%;
   }
 
   .dark {
@@ -87,8 +87,8 @@
     --code-foreground: var(--surface-foreground);
     --code-highlight: oklch(0.27 0 0);
     --code-number: oklch(0.72 0 0);
-    --selection: oklch(0.922 0 0);
-    --selection-foreground: oklch(0.205 0 0);
+    --selection: 220 9% 46%;
+    --selection-foreground: 220 13% 91%;
   }
 }
 
