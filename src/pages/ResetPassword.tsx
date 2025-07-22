@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Target, Eye, EyeOff } from 'lucide-react';
@@ -95,12 +96,16 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Target className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">Metakit.ai</span>
+            <div className="p-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
+              <Target className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Metakit.ai
+            </span>
           </div>
           <CardTitle className="text-2xl">Create New Password</CardTitle>
           <CardDescription>
