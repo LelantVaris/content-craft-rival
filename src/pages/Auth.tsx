@@ -84,7 +84,7 @@ const Auth = () => {
       return 'Invalid email or password. Please try again.';
     }
     if (message.includes('User already registered')) {
-      return 'An account with this email already exists.';
+      return 'An account with this email already exists. Please sign in instead.';
     }
     if (message.includes('Password should be at least')) {
       return 'Password is too weak. Please choose a stronger password.';
@@ -101,11 +101,15 @@ const Auth = () => {
     setLoading(true);
     setSignInError('');
 
+    console.log('Attempting sign in for:', email);
+
     const { error } = await signIn(email, password);
     
     if (error) {
+      console.log('Sign in error:', error);
       setSignInError(getErrorMessage(error));
     } else {
+      console.log('Sign in successful');
       toast({
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
@@ -120,15 +124,43 @@ const Auth = () => {
     setLoading(true);
     setSignUpError('');
 
+    console.log('Attempting sign up for:', email);
+
     const { error } = await signUp(email, password, fullName);
     
+    console.log('Sign up response - error:', error);
+    
     if (error) {
-      setSignUpError(getErrorMessage(error));
+      const errorMessage = getErrorMessage(error);
+      console.log('Sign up error message:', errorMessage);
+      setSignUpError(errorMessage);
+      
+      // If user already exists, suggest signing in instead
+      if (error.message?.includes('User already registered') || 
+          error.message?.includes('already registered')) {
+        setSignUpError('An account with this email already exists. Please sign in instead or use the "Forgot Password?" link.');
+      }
     } else {
+      console.log('Sign up successful - checking for silent signup');
+      // Show success message but also inform about potential existing account
       toast({
-        title: 'Account Created!',
-        description: 'Please check your email to verify your account.',
+        title: 'Account Setup Complete!',
+        description: 'If this is a new account, please check your email to verify it. If you already have an account, please sign in instead.',
       });
+      
+      // Clear the form
+      setEmail('');
+      setPassword('');
+      setFullName('');
+      
+      // Suggest switching to sign in tab
+      setTimeout(() => {
+        setActiveTab('signin');
+        toast({
+          title: 'Try signing in',
+          description: 'If you already have an account, please use the sign in tab.',
+        });
+      }, 3000);
     }
     
     setLoading(false);
@@ -249,6 +281,11 @@ const Auth = () => {
                 {signUpError && (
                   <p className="text-red-600 text-sm mt-2 text-center">
                     {signUpError}
+                  </p>
+                )}
+                {loading && (
+                  <p className="text-gray-600 text-sm mt-2 text-center">
+                    Please wait while we process your request...
                   </p>
                 )}
               </form>
