@@ -10,6 +10,9 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  sendPasswordResetOTP: (email: string) => Promise<{ error: any; data?: any }>;
+  verifyOTP: (email: string, otpCode: string) => Promise<{ error: any; data?: any }>;
+  resetPassword: (email: string, otpCode: string, newPassword: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -75,6 +78,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
+  const sendPasswordResetOTP = async (email: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-password-reset-otp', {
+        body: { email }
+      });
+      return { error, data };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const verifyOTP = async (email: string, otpCode: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-password-reset-otp', {
+        body: { email, otpCode }
+      });
+      return { error, data };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const resetPassword = async (email: string, otpCode: string, newPassword: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-password-with-otp', {
+        body: { email, otpCode, newPassword }
+      });
+      return { error, data };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -82,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
+    sendPasswordResetOTP,
+    verifyOTP,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

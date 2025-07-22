@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,13 @@ import { Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get email from navigation state (from password reset flow)
+  const prefilledEmail = location.state?.email || '';
+  
+  const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,7 +27,6 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleForgotPassword = async () => {
     if (!email) {
@@ -49,7 +54,15 @@ const Auth = () => {
     if (user) {
       navigate('/');
     }
-  }, [user, navigate]);
+    
+    // If email was prefilled from password reset, show success message
+    if (prefilledEmail) {
+      toast({
+        title: 'Password reset successful!',
+        description: 'You can now sign in with your new password.',
+      });
+    }
+  }, [user, navigate, prefilledEmail, toast]);
 
   // Clear errors when switching tabs
   const handleTabChange = (value: string) => {
@@ -241,15 +254,14 @@ const Auth = () => {
                 >
                   {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  className="w-full text-sm"
-                  onClick={handleForgotPassword}
-                  disabled={loading}
-                >
-                  Forgot Password?
-                </Button>
+                <div className="text-center">
+                  <Link 
+                    to="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
                 {signInError && (
                   <p className="text-red-600 text-sm mt-2 text-center">
                     {signInError}

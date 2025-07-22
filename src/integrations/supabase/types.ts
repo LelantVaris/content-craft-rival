@@ -424,6 +424,36 @@ export type Database = {
           },
         ]
       }
+      password_reset_tokens: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          otp_code: string
+          used: boolean | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          used?: boolean | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          used?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -712,6 +742,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_password_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       deduct_credits: {
         Args: {
           p_user_id: string

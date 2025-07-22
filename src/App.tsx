@@ -17,6 +17,9 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import CrawlerTest from "./pages/CrawlerTest";
 import NovelEditorTest from "./pages/NovelEditorTest";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyOTP from "./pages/VerifyOTP";
+import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AiTest } from "./components/AiTest";
 import "./App.css";
@@ -64,6 +67,9 @@ function App() {
               <BrowserRouter>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/verify-otp" element={<VerifyOTP />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                   <Route path="/*" element={<AppContent />} />
                 </Routes>
