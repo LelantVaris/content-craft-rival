@@ -82,36 +82,53 @@ const VerifyOTP = () => {
 
   const handleResendOTP = async () => {
     console.log('🔔 Resend button clicked for email:', email);
-    setResendLoading(true);
+    console.log('🔔 Button state - canResend:', canResend, 'resendLoading:', resendLoading);
     
-    const { error, data } = await sendPasswordResetOTP(email);
-    
-    if (error) {
-      console.error('❌ Resend OTP failed:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to resend code. Please try again.',
-        variant: 'destructive',
-      });
-    } else {
-      console.log('✅ Resend OTP successful:', data);
-      toast({
-        title: 'Code resent!',
-        description: 'A new verification code has been sent to your email.',
-      });
-      
-      // Reset countdown
-      setCountdown(60);
-      setCanResend(false);
-      setOtp('');
-      
-      // Update debug OTP if available
-      if (data?.debug_otp) {
-        console.log('🔢 New OTP for testing:', data.debug_otp);
-      }
+    if (!canResend || resendLoading) {
+      console.log('🚫 Resend blocked - canResend:', canResend, 'resendLoading:', resendLoading);
+      return;
     }
     
-    setResendLoading(false);
+    setResendLoading(true);
+    
+    try {
+      console.log('🔄 Calling sendPasswordResetOTP...');
+      const { error, data } = await sendPasswordResetOTP(email);
+      
+      if (error) {
+        console.error('❌ Resend OTP failed:', error);
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to resend code. Please try again.',
+          variant: 'destructive',
+        });
+      } else {
+        console.log('✅ Resend OTP successful:', data);
+        toast({
+          title: 'Code resent!',
+          description: 'A new verification code has been sent to your email.',
+        });
+        
+        // Reset countdown
+        setCountdown(60);
+        setCanResend(false);
+        setOtp('');
+        
+        // Update debug OTP if available
+        if (data?.debug_otp) {
+          console.log('🔢 New OTP for testing:', data.debug_otp);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Unexpected error in handleResendOTP:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   if (!email) {

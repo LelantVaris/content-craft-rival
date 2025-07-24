@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,22 +79,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendPasswordResetOTP = async (email: string) => {
-    console.log('🔄 Attempting to send password reset OTP for:', email);
+    console.log('🔄 AuthContext: sendPasswordResetOTP called for:', email);
     
     try {
+      console.log('🔄 AuthContext: Invoking supabase function...');
       const { data, error } = await supabase.functions.invoke('send-password-reset-otp', {
         body: { email }
       });
       
+      console.log('🔄 AuthContext: Function response - data:', data, 'error:', error);
+      
       if (error) {
-        console.error('❌ Error from send-password-reset-otp function:', error);
+        console.error('❌ AuthContext: Error from send-password-reset-otp function:', error);
         return { error };
       }
       
-      console.log('✅ Successfully sent password reset OTP:', data);
+      console.log('✅ AuthContext: Successfully sent password reset OTP:', data);
       return { error: null, data };
     } catch (error) {
-      console.error('❌ Network/unexpected error in sendPasswordResetOTP:', error);
+      console.error('❌ AuthContext: Network/unexpected error in sendPasswordResetOTP:', error);
+      console.error('❌ AuthContext: Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return { 
         error: {
           message: error instanceof Error ? error.message : 'Failed to send reset code. Please check your connection and try again.',
